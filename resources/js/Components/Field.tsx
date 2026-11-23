@@ -59,3 +59,14 @@ export function SelectField({ label, name, value, onChange, options, error }: Se
         </label>
     );
 }
+
+/** Labelled textarea with error text. */
+export function TextArea({ label, name, value, onChange, error, dir, rows = 3 }: { label: string; name: string; value: string; onChange: (v: string) => void; error?: string; dir?: string; rows?: number }) {
+    return (
+        <label htmlFor={`f-${name}`} className="flex flex-col gap-1">
+            <span className="font-medium">{label}</span>
+            <textarea id={`f-${name}`} name={name} dir={dir} rows={rows} maxLength={2000} className={`field ${error ? 'border-danger' : ''}`} value={value} onChange={(e) => onChange(e.target.value)} />
+            {error && <span className="text-sm text-danger">{error}</span>}
+        </label>
+    );
+}

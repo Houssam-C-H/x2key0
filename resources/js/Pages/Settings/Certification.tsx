@@ -85,6 +85,12 @@ function ItemAction({ item }: { item: Item }) {
             );
         case 'identity':
             return <IdentityForm rejectedReason={item.rejectedReason} />;
+        case 'store':
+            return (
+                <Link href="/seller/onboarding" className="btn-outline-pill mt-3">
+                    {t('certification.action.store')}
+                </Link>
+            );
         default:
             return null;
     }

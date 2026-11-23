@@ -30,6 +30,8 @@ Multi-vendor digital game goods marketplace, IA modelled on Z2U. Full spec: docs
 - Auth = Fortify headless (ADR-007): Fortify owns POST routes, we own GET pages with the same route names.
 - A real screen replaces a dashboard placeholder via the `$implemented` map in `routes/web.php`, keeping the `dash.{menu key}` route name.
 - `Model::shouldBeStrict()` is on outside production: factories must set every column; actions return `->refresh()`ed models.
-- Demo accounts after `php artisan migrate:fresh --seed` (local): `admin_demo` / `buyer_demo`, password `password` (admin must enable 2FA before /admin opens).
+- Demo accounts after `php artisan migrate:fresh --seed` (local): `admin_demo` / `buyer_demo` / `seller_demo`, password `password` (admin must enable 2FA before /admin opens; seller_demo has an open store).
 - Catalog: `App\Domains\Catalog` — models, `Schema\{AttributeSchema,BuyerInputSchema}`, `Search\*` (ADR-011), `Support\{CatalogReader,CatalogPresenter,CatalogCache}`. Public controller: `Http\Controllers\Public\CatalogController`. Tests use `Tests\Support\CatalogFixture` (hand-countable facets).
 - Never name a column `attributes` (Eloquent internal); product values live in `attribute_values`.
+- Sellers: `AppDomainsSellers` — status changes only via `StateMachinesSellerProfileStateMachine` (ADR-013), actions in `Actions*`, props in `SupportSellerPresenter`. Seller Center controllers in `HttpControllersSeller` (read the profile with `ResolvesSeller`, never a cached relation). Seller routes get the `seller` middleware from the menu audience.
+- Seller-written text: validate with `AppSharedValidationNoContactInfo`.

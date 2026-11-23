@@ -27,6 +27,12 @@ use App\Domains\Identity\Listeners\RecordSuccessfulLogin;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\Identity\Support\LogSmsSender;
+use App\Domains\Sellers\Models\MerchantContact;
+use App\Domains\Sellers\Models\SellerLevel;
+use App\Domains\Sellers\Models\SellerProfile;
+use App\Domains\Sellers\Models\SellerServiceApplication;
+use App\Domains\Sellers\Policies\SellerLevelPolicy;
+use App\Domains\Sellers\Policies\SellerPolicy;
 use App\Shared\Audit\AuditLogger;
 use App\Shared\Support\Settings;
 use Illuminate\Auth\Events\Failed;
@@ -75,6 +81,11 @@ final class AppServiceProvider extends ServiceProvider
 
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Certification::class, CertificationPolicy::class);
+        Gate::policy(SellerLevel::class, SellerLevelPolicy::class);
+
+        foreach ([SellerProfile::class, SellerServiceApplication::class, MerchantContact::class] as $sellerModel) {
+            Gate::policy($sellerModel, SellerPolicy::class);
+        }
 
         foreach ([CategoryType::class, Game::class, GameCategory::class, Product::class, Platform::class, Region::class] as $catalogModel) {
             Gate::policy($catalogModel, CatalogPolicy::class);
@@ -88,6 +99,11 @@ final class AppServiceProvider extends ServiceProvider
         // Admins can do everything, except abilities that must hold for everyone (self-review).
         Gate::before(static function (User $user, string $ability, array $arguments): ?bool {
             if ($ability === 'review' && ($arguments[0] ?? null) instanceof Certification && $arguments[0]->user_id === $user->id) {
+                return false;
+            }
+
+            // Nobody decides on their own store's service applications.
+            if ($ability === 'moderate' && ($arguments[0] ?? null) instanceof SellerServiceApplication && $arguments[0]->profile->user_id === $user->id) {
                 return false;
             }
 

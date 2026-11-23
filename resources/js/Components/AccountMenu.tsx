@@ -27,6 +27,9 @@ export function AccountMenu({ user }: { user: AuthUser }) {
     const links = [
         { href: '/dashboard', label: t('header.dashboard') },
         { href: '/buy/orders', label: t('menu.buy.orders') },
+        user.seller?.opensSellerCenter
+            ? { href: '/seller/store', label: t('menu.seller') }
+            : { href: '/seller/onboarding', label: t('menu.seller.onboarding') },
         { href: '/settings/account', label: t('menu.settings.account') },
         { href: '/settings/security', label: t('menu.settings.security') },
         { href: '/settings/certification', label: t('menu.settings.certification') },

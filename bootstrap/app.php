@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnsureSeller;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequirePrivacyPassword;
 use App\Http\Middleware\RequireStaffTwoFactor;
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'privacy' => RequirePrivacyPassword::class,
             'staff.2fa' => RequireStaffTwoFactor::class,
+            'seller' => EnsureSeller::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

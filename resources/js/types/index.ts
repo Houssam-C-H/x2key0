@@ -20,6 +20,7 @@ export interface AuthUser {
     email: string;
     emailVerified: boolean;
     isStaff: boolean;
+    seller: { slug: string; status: string; opensSellerCenter: boolean } | null;
 }
 
 /** Props shared on every page by HandleInertiaRequests. */

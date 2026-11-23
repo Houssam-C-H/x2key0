@@ -9,6 +9,7 @@ use App\Domains\Certification\Enums\CertificationType;
 use App\Domains\Certification\Models\Certification;
 use App\Domains\Identity\Enums\StaffRole;
 use App\Domains\Identity\Enums\UserStatus;
+use App\Domains\Sellers\Models\SellerProfile;
 use App\Shared\Audit\Auditable;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -50,6 +51,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $last_login_at
  * @property Carbon $created_at
  * @property-read UserLevel|null $level
+ * @property-read SellerProfile|null $sellerProfile
  * @property-read UserSecurity|null $security
  * @property-read UserPreference|null $preferences
  */
@@ -166,6 +168,20 @@ final class User extends Authenticatable implements FilamentUser, MustVerifyEmai
     public function certifications(): HasMany
     {
         return $this->hasMany(Certification::class);
+    }
+
+    /**
+     * @return HasOne<SellerProfile, $this>
+     */
+    public function sellerProfile(): HasOne
+    {
+        return $this->hasOne(SellerProfile::class);
+    }
+
+    /** Has a store that opens the Seller Center (active, vacation or suspended — spec 3.2 / 6.3). */
+    public function isSeller(): bool
+    {
+        return $this->sellerProfile?->status->opensSellerCenter() === true;
     }
 
     public function isStaff(): bool

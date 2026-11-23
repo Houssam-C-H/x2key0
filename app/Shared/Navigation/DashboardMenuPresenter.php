@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Navigation;
 
+use App\Domains\Identity\Models\User;
 use Illuminate\Http\Request;
 
 /**
@@ -22,10 +23,36 @@ final class DashboardMenuPresenter
         $path = '/'.ltrim($request->path(), '/');
         $activeKey = $this->activeKey($path, $request);
         $active = null;
+        $user = $request->user();
+        $isSeller = $user instanceof User && $user->isSeller();
 
         $groups = [];
 
         foreach (DashboardMenu::groups() as $group) {
+            if ($group['audience'] === 'seller' && ! $isSeller) {
+                if ($group['key'] !== 'seller') {
+                    continue;
+                }
+
+                $onboardingActive = $path === DashboardMenu::ONBOARDING_PATH;
+                $label = $this->trans('menu.seller.onboarding');
+
+                if ($onboardingActive) {
+                    $active = ['key' => 'seller.onboarding', 'label' => $label, 'milestone' => 'M4', 'group' => $this->trans($group['label'])];
+                }
+
+                $groups[] = [
+                    'key' => $group['key'],
+                    'label' => $this->trans($group['label']),
+                    'icon' => $group['icon'],
+                    'audience' => $group['audience'],
+                    'open' => $onboardingActive,
+                    'children' => [['key' => 'seller.onboarding', 'label' => $label, 'href' => DashboardMenu::ONBOARDING_PATH, 'active' => $onboardingActive]],
+                ];
+
+                continue;
+            }
+
             $children = $this->nodes($group['children'], $activeKey, $group['label'], $active);
 
             $groups[] = [

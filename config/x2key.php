@@ -17,6 +17,10 @@ return [
         'name' => 'X2KEY',
     ],
 
+    'support' => [
+        'merchant_email' => env('MERCHANT_SERVICES_EMAIL', 'merchants@x2key.test'),
+    ],
+
     'settlement_currency' => 'USD',
 
     'locales' => [

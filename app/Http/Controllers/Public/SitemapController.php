@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Public;
 use App\Domains\Catalog\Models\Game;
 use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Product;
+use App\Domains\Sellers\Models\SellerProfile;
 use App\Http\Middleware\ResolveLocale;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Response;
@@ -84,6 +85,14 @@ final class SitemapController
                     $add("/{$product->gameCategory->game->slug}/{$product->gameCategory->slug}/{$product->slug}", $product->updated_at?->toDateString());
                 }
             });
+
+        // Public stores (active or on vacation).
+        SellerProfile::query()->public()->select(['id', 'slug', 'updated_at'])->chunkById(1000, function ($stores) use ($add): void {
+            foreach ($stores as $store) {
+                /** @var SellerProfile $store */
+                $add("/store/{$store->slug}", $store->updated_at->toDateString());
+            }
+        });
 
         $xml->endElement();
 

@@ -12,7 +12,9 @@ namespace App\Shared\Navigation;
  * implements the real screen. Routes for every leaf are registered from this tree,
  * so the sidebar and the router can never drift apart.
  *
- * Audience: `all` = every signed-in user; `seller` = active sellers (enforced from M4).
+ * Audience: `all` = every signed-in user; `seller` = users whose store opens the Seller Center. Others see
+ * the Seller Center group with a single "Become a seller" entry, and no Storage group; the routes of
+ * seller leaves redirect them to onboarding (`seller` middleware).
  *
  * @phpstan-type Leaf array{key: string, label: string, path: string, query?: array<string, string>, milestone: string}
  * @phpstan-type Node array{key: string, label: string, path?: string, query?: array<string, string>, milestone?: string, children?: list<array<string, mixed>>}
@@ -168,6 +170,27 @@ final class DashboardMenu
             && is_string($node['path'] ?? null)
             && is_string($node['milestone'] ?? null);
     }
+
+    /**
+     * Paths of every leaf in a `seller` audience group (guarded by the `seller` middleware).
+     *
+     * @return list<string>
+     */
+    public static function sellerPaths(): array
+    {
+        $paths = [];
+
+        foreach (self::groups() as $group) {
+            if ($group['audience'] === 'seller') {
+                $paths = [...$paths, ...array_column(self::collectLeaves($group['children']), 'path')];
+            }
+        }
+
+        return array_values(array_unique($paths));
+    }
+
+    /** Shown instead of the Seller Center group to users without an active store. */
+    public const string ONBOARDING_PATH = '/seller/onboarding';
 
     /**
      * Unique URL paths (several filter tabs share one path).

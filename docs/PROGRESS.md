@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M4 — Sellers (next). M1–M3 code complete; Docker/Postgres local run still pending (WSL2 admin install).
+**Current milestone:** M5 — Offers & storage (next). M1–M4 code complete; Docker/Postgres local run still pending (WSL2 admin install).
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -8,8 +8,27 @@
 | M1 | Scaffold | ✅ code done · ⏳ Sail run | See checklist below |
 | M2 | Identity, levels, settings, certification, roles | ✅ done | See checklist below |
 | M3 | Catalog, listing, facets, Meilisearch, sitemaps | ✅ done | See checklist below |
-| M4 | Sellers: activation, store, store management | next | |
-| M5–M19 | — | not started | |
+| M4 | Sellers: activation, store, store management | ✅ done | See checklist below |
+| M5 | Offers, storage vault, uploads | next | |
+| M6–M19 | — | not started | |
+
+## M4 checklist
+- [x] Tables: seller_levels (6 seeded tiers: commission, hold days, reserve, offer limit, auto-approve, rank boost, recompute thresholds), seller_profiles, seller_status_changes (append-only history), seller_stats, seller_service_applications, seller_store_media, merchant_contacts
+- [x] `SellerProfileStateMachine` (spec 6.3): inactive → active needs email + phone + identity verified; active ⇄ vacation; suspend/reinstate with reason; ban from anywhere; every transition writes a history row; `status` not mass assignable
+- [x] Activation via Certification Center: onboarding checklist page, `ActivateSeller` creates the store (unique name/slug from username, entry level, stats, media), records the "Store" certification; idempotent; banned stores and suspended accounts refused
+- [x] Seller audience: non-sellers see one "Become a seller" entry and no Storage group; every seller route redirects them to onboarding (`seller` middleware); suspended sellers keep read-only access
+- [x] Store Management › My Store: status + level terms, vacation mode (with return date), store notice (en/fr/ar), chat auto-reply + working hours, languages spoken
+- [x] Service Application Status (6.9): apply per game×category, duplicates blocked, refused → reapply, auto-approve levels pass at once; `SellerProfile::canSellIn()` for M5
+- [x] Seller Information: shop name (unique, case-insensitive), avatar + banner uploads (public disk, old file deleted), description per locale, operating info (status, level, payouts, services)
+- [x] Merchant Services Contacts: assigned manager, channels, merchant e-mail, ticket link
+- [x] Contact-info guard (`NoContactInfo` rule): e-mails, links, messenger handles and phone numbers refused in seller text
+- [x] Public store `/{locale}/store/{slug}` (SSR, SEO, sitemap): banner, avatar, level stars, member since, vacation/notice, about, services, stats, languages; only active/vacation stores are public
+- [x] Admin (merchant managers + admins): Stores (level override + lock, manager, payouts flag for finance, suspend/reinstate/ban with reason, contacts, status history), Service applications queue (pass/refuse, never your own), Seller levels (admins edit; managers/finance read)
+- [x] Demo: `seller_demo` / `password` with an open store and 4 approved services
+- [x] 285 tests green (onboarding flow end to end = acceptance test); Larastan max 0 errors; Pint; TS strict; live SSR smoke test
+- [ ] Featured offers and store video — with offers and file storage (M5)
+- [ ] Seller level recompute job and stats writers — M8/M16 (orders, disputes, reviews feed them)
+- [ ] Notifications to sellers on service decisions / suspension — with the notification matrix (M10)
 
 ## M3 checklist
 - [x] Tables: category_types (15, seeded, enable/disable per D3), games, game_categories (label override, attribute schema, buyer-input schema, delivery methods, policy override, notice, cached counts), platforms, regions, products (ULID, MSRP, cached lowest price/offers, soft deletes)
@@ -70,4 +89,5 @@
 - 2026-11-23 — M1 scaffold built with portable PHP 8.4 + Composer in C:\dev\tools (no admin needed). 59 tests green on SQLite; Larastan max clean; SSR verified in en/fr/ar.
 - 2026-11-23 — M2 identity built: Fortify auth + 2FA, sessions/devices, settings pages, certification center, staff roles, admin panel. 147 tests green. Bug found by tests and fixed: Fortify's 2FA QR label read a non-existent `login` attribute.
 - 2026-11-23 — Fix: password confirmation crashed for the same reason (Fortify reads `$user->login`); custom confirm callback + end-to-end 2FA test.
+- 2026-11-23 — M4 sellers built: activation via certification, store state machine, store management screens, public store page, seller admin. Bug found by tests and fixed: saving Seller Information without the description field wiped the stored description.
 - 2026-11-23 — M3 catalog built. Portable Meilisearch 1.57 in C:\dev\tools\meilisearch for local parity tests. SQLite dev DB switched to WAL + busy timeout (concurrent dev server no longer locks seeding).

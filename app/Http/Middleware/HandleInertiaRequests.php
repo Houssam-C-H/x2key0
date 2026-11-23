@@ -24,6 +24,10 @@ final class HandleInertiaRequests extends Middleware
         $locale = app()->getLocale();
         $user = $request->user();
 
+        if ($user instanceof User) {
+            $user->unsetRelation('sellerProfile'); // store status may have changed since the user was loaded
+        }
+
         return [
             ...parent::share($request),
             'app' => [
@@ -48,6 +52,11 @@ final class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'emailVerified' => $user->hasVerifiedEmail(),
                     'isStaff' => $user->isStaff(),
+                    'seller' => $user->sellerProfile === null ? null : [
+                        'slug' => $user->sellerProfile->slug,
+                        'status' => $user->sellerProfile->status->value,
+                        'opensSellerCenter' => $user->sellerProfile->status->opensSellerCenter(),
+                    ],
                 ] : null,
             ],
             // Mega menu columns (spec 1.1), cached per locale and flushed on catalog edits.

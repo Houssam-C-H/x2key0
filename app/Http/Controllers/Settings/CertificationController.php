@@ -32,7 +32,7 @@ final class CertificationController
                 'type' => $type->value,
                 'status' => $user->certificationStatus($type)->value,
                 'milestone' => $type->milestone(),
-                'available' => $type->milestone() === 'M2',
+                'available' => in_array($type->milestone(), ['M2', 'M4'], true),
                 'blockedBy' => array_map(static fn (CertificationType $r): string => $r->value, $blockedBy),
                 'rejectedReason' => $certification?->rejected_reason,
                 'verifiedAt' => $certification?->verified_at?->toIso8601String()

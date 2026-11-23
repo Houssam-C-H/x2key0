@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Sellers\Models\SellerProfile;
 use App\Shared\Navigation\DashboardMenu;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -12,13 +13,36 @@ it('sends guests to the localized login page', function (): void {
     $this->withUnencryptedCookie('locale', 'fr')->get('/buy/orders')->assertRedirect('/fr/login');
 });
 
-it('renders the dashboard home with every menu group as a card', function (): void {
-    $this->actingAs(User::factory()->create())
+it('renders the dashboard home with every menu group as a card for sellers', function (): void {
+    $this->actingAs(SellerProfile::factory()->create()->user)
         ->get('/dashboard')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Dashboard/Index')
             ->has('menu.groups', count(DashboardMenu::groups())));
+});
+
+it('shows non-sellers a single "become a seller" entry and no Storage group', function (): void {
+    $this->actingAs(User::factory()->create())
+        ->get('/dashboard')
+        ->assertInertia(function (Assert $page): void {
+            $groups = collect($page->toArray()['props']['menu']['groups'])->keyBy('key');
+
+            expect($groups)->toHaveCount(count(DashboardMenu::groups()) - 1)
+                ->and($groups->has('storage'))->toBeFalse()
+                ->and($groups['seller']['children'])->toHaveCount(1)
+                ->and($groups['seller']['children'][0]['href'])->toBe('/seller/onboarding');
+        });
+});
+
+it('redirects non-sellers from every seller page to onboarding', function (): void {
+    $user = User::factory()->create();
+
+    foreach (DashboardMenu::sellerPaths() as $path) {
+        $this->actingAs($user)->get($path)->assertRedirect('/seller/onboarding');
+    }
+
+    $this->get('/seller/onboarding')->assertOk()->assertInertia(fn (Assert $page) => $page->where('menu.active.key', 'seller.onboarding'));
 });
 
 it('matches the spec 1.7 group order', function (): void {
@@ -28,8 +52,8 @@ it('matches the spec 1.7 group order', function (): void {
 });
 
 it('renders every sidebar leaf with that leaf active (placeholder until its milestone ships)', function (): void {
-    $user = User::factory()->create();
-    $built = ['settings.account', 'settings.security', 'settings.certification'];
+    $user = SellerProfile::factory()->create()->user;
+    $built = ['settings.account', 'settings.security', 'settings.certification', 'seller.store.mine', 'seller.store.services', 'seller.info', 'seller.contacts'];
 
     foreach (DashboardMenu::leaves() as $leaf) {
         $url = $leaf['path'].(isset($leaf['query']) ? '?'.http_build_query($leaf['query']) : '');
@@ -61,7 +85,7 @@ it('marks query-filtered tabs active and opens their group', function (): void {
 });
 
 it('opens nested branches down to the active leaf', function (): void {
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(SellerProfile::factory()->create()->user)
         ->get('/seller/withdrawals/methods')
         ->assertInertia(function (Assert $page): void {
             $seller = collect($page->toArray()['props']['menu']['groups'])->firstWhere('key', 'seller');

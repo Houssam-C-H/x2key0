@@ -9,6 +9,12 @@ use App\Http\Controllers\PreferencesController;
 use App\Http\Controllers\Public\CatalogController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\SitemapController;
+use App\Http\Controllers\Public\StoreController;
+use App\Http\Controllers\Seller\MerchantContactsController;
+use App\Http\Controllers\Seller\OnboardingController;
+use App\Http\Controllers\Seller\SellerInfoController;
+use App\Http\Controllers\Seller\ServiceApplicationController;
+use App\Http\Controllers\Seller\StoreSettingsController;
 use App\Http\Controllers\Settings\AccountController;
 use App\Http\Controllers\Settings\CertificationController;
 use App\Http\Controllers\Settings\SecurityController;
@@ -46,6 +52,7 @@ Route::prefix('{locale}')
         Route::get('/games', [CatalogController::class, 'games'])->name('catalog.games');
         Route::get('/catalog/{type}', [CatalogController::class, 'categoryHub'])->where('type', '[a-z-]+')->name('catalog.type');
         Route::get('/search', [CatalogController::class, 'search'])->name('catalog.search');
+        Route::get('/store/{slug}', [StoreController::class, 'show'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('store.show');
 
         $gameSlug = '(?!(?:'.implode('|', array_map('preg_quote', Game::RESERVED_SLUGS)).')$)[a-z0-9][a-z0-9-]*';
         $slug = '[a-z0-9][a-z0-9-]*';
@@ -76,17 +83,34 @@ Route::middleware('auth')->group(function (): void {
         '/settings/account' => fn () => Route::get('/settings/account', [AccountController::class, 'show'])->name('dash.settings.account'),
         '/settings/security' => fn () => Route::get('/settings/security', [SecurityController::class, 'show'])->name('dash.settings.security'),
         '/settings/certification' => fn () => Route::get('/settings/certification', [CertificationController::class, 'show'])->name('dash.settings.certification'),
+        '/seller/store' => fn () => Route::get('/seller/store', [StoreSettingsController::class, 'show'])->name('dash.seller.store.mine'),
+        '/seller/services' => fn () => Route::get('/seller/services', [ServiceApplicationController::class, 'index'])->name('dash.seller.store.services'),
+        '/seller/info' => fn () => Route::get('/seller/info', [SellerInfoController::class, 'show'])->name('dash.seller.info'),
+        '/seller/contacts' => fn () => Route::get('/seller/contacts', MerchantContactsController::class)->name('dash.seller.contacts'),
     ];
 
+    $sellerPaths = DashboardMenu::sellerPaths();
+
     foreach (DashboardMenu::pages() as $path => $leaf) {
-        if (isset($implemented[$path])) {
-            $implemented[$path]();
+        $route = isset($implemented[$path])
+            ? $implemented[$path]()
+            : Route::get($path, [DashboardController::class, 'placeholder'])->name('dash.'.$leaf['key']);
 
-            continue;
+        if (in_array($path, $sellerPaths, true)) {
+            $route->middleware('seller');
         }
-
-        Route::get($path, [DashboardController::class, 'placeholder'])->name('dash.'.$leaf['key']);
     }
+
+    // Seller onboarding (spec 3.2 / 6.3)
+    Route::get(DashboardMenu::ONBOARDING_PATH, [OnboardingController::class, 'show'])->name('seller.onboarding');
+    Route::post('/seller/activate', [OnboardingController::class, 'activate'])->middleware('throttle:10,1')->name('seller.activate');
+
+    // Seller Center writes
+    Route::middleware('seller')->group(function (): void {
+        Route::put('/seller/store', [StoreSettingsController::class, 'update'])->name('seller.store.update');
+        Route::post('/seller/services', [ServiceApplicationController::class, 'store'])->middleware('throttle:30,1')->name('seller.services.store');
+        Route::post('/seller/info', [SellerInfoController::class, 'update'])->middleware('throttle:20,1')->name('seller.info.update');
+    });
 
     // Settings › Account
     Route::put('/settings/account', [AccountController::class, 'update'])->name('settings.account.update');

@@ -50,3 +50,13 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Game slugs cannot be reserved first-segment words (`Game::RESERVED_SLUGS`); routes also exclude them.
 - Category types are seeded and editable (name, order, enabled) but never created/deleted from the admin.
 - Admin catalog URLs live under `/admin/catalog/…`; moderators manage the catalog (`CatalogPolicy`).
+
+## ADR-013 — Seller conventions (2026-11-23)
+- Activation = Certification Center "Store" level: `ActivateSeller` needs email + phone + identity verified, opens the store and records the Store certification as verified (provider `system`).
+- The Seller Center opens for active, vacation and suspended stores (suspended = read-only: writes refused). Inactive/banned users see "Become a seller" instead; all seller routes carry the `seller` middleware generated from the menu's `seller` audience.
+- Only active and vacation stores are public (`/{locale}/store/{slug}`, sitemap). The slug is fixed at activation; the shop name can change (unique, case-insensitive).
+- The banner lives on `seller_profiles` only (spec also lists it on `seller_store_media`); `featured_offer_ids` is JSON, not `bigint[]`, to stay portable.
+- Seller status history is its own append-only table (`seller_status_changes`), like the other state machines.
+- Levels with `auto_approve` also pass service applications immediately (no reviewer); others wait for a merchant manager. Nobody reviews their own store's application.
+- Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
+- Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
