@@ -61,11 +61,13 @@ final class RefundCompletedOrder
         $netShare = $sellerPart - $commissionShare;
         $feesLeft = $order->fees() - $order->refunded_fee_amount;
         $feePart = $all ? $feesLeft : min($feesLeft, intdiv($order->fees() * $units, $item->quantity));
-        $total = $sellerPart + $feePart;
+        $promoLeft = $order->discount_platform_amount - $order->refunded_discount_platform_amount;
+        $promoPart = $all ? $promoLeft : min($promoLeft, intdiv($order->discount_platform_amount * $units, $item->quantity));
+        $total = $sellerPart - $promoPart + $feePart;
 
         if ($total > $order->refundable()) {
-            $feePart = max(0, $order->refundable() - $sellerPart);
-            $total = $sellerPart + $feePart;
+            $feePart = max(0, $order->refundable() - $sellerPart + $promoPart);
+            $total = $sellerPart - $promoPart + $feePart;
             if ($total > $order->refundable()) {
                 throw DisputeException::because('dispute.error.refund_units');
             }
@@ -82,6 +84,9 @@ final class RefundCompletedOrder
         }
         if ($feePart > 0) {
             $lines[] = [AccountRef::platform(AccountCode::RevBuyerFee, $currency), $feePart];
+        }
+        if ($promoPart > 0) {
+            $lines[] = [AccountRef::platform(AccountCode::ExpPromotions, $currency), -$promoPart];
         }
         if ($toCredits || $payment === null) {
             $lines[] = [AccountRef::user(AccountCode::BuyerCredits, $order->buyer_id, $currency), -($fromCredits + $fromPsp)];
@@ -120,6 +125,7 @@ final class RefundCompletedOrder
             'refunded_credits_amount' => $order->refunded_credits_amount + $fromCredits,
             'refunded_psp_amount' => $order->refunded_psp_amount + $fromPsp,
             'refunded_fee_amount' => $order->refunded_fee_amount + $feePart,
+            'refunded_discount_platform_amount' => $order->refunded_discount_platform_amount + $promoPart,
             'commission_amount' => $order->commission_amount - $commissionShare,
             'seller_net_amount' => $order->seller_net_amount - $netShare,
         ])->save();

@@ -43,10 +43,18 @@ final class RefundOrder
         }
 
         $whole = $item->delivered_qty === 0 && $item->refunded_qty === 0 && $units === $item->quantity;
+        $last = $units === $item->quantity - $item->refunded_qty;
         $feesLeft = $order->fees() - $order->refunded_fee_amount;
         $feePart = $whole ? $feesLeft : min($feesLeft, intdiv($order->fees() * $units, $item->quantity));
         $sellerPart = $item->unit_price_amount * $units;
-        $total = min($sellerPart + $feePart, $order->refundable());
+        // Platform coupon share of these units (spec 7.2): the buyer never paid it, so it goes back to promotions.
+        $promoLeft = $order->discount_platform_amount - $order->refunded_discount_platform_amount;
+        $promoPart = $last ? $promoLeft : min($promoLeft, intdiv($order->discount_platform_amount * $units, $item->quantity));
+        $excess = $sellerPart - $promoPart + $feePart - $order->refundable();
+        if ($excess > 0) {
+            $feePart = max(0, $feePart - $excess);
+        }
+        $total = $sellerPart - $promoPart + $feePart;
 
         [$fromCredits, $fromPsp] = self::split($order, $total);
 
@@ -55,7 +63,7 @@ final class RefundOrder
         $key = "REFUND:order:{$order->id}:{$seq}";
         $payment = $fromPsp > 0 ? self::pspPayment($order) : null;
 
-        $this->ledger->refund($order, $key, $sellerPart, $feePart, $fromCredits, $fromPsp, $payment?->provider, $toCredits);
+        $this->ledger->refund($order, $key, $sellerPart, $feePart, $fromCredits, $fromPsp, $payment?->provider, $toCredits, $promoPart);
 
         if ($payment !== null && ! $toCredits) {
             $result = $this->router->provider($payment->provider)->refund($payment, $fromPsp, $key);
@@ -72,6 +80,7 @@ final class RefundOrder
             'refunded_credits_amount' => $order->refunded_credits_amount + $fromCredits,
             'refunded_psp_amount' => $order->refunded_psp_amount + $fromPsp,
             'refunded_fee_amount' => $order->refunded_fee_amount + $feePart,
+            'refunded_discount_platform_amount' => $order->refunded_discount_platform_amount + $promoPart,
         ])->save();
     }
 

@@ -22,3 +22,4 @@ Schedule::command('disputes:escalate-overdue')->everyFiveMinutes()->withoutOverl
 Schedule::command('violations:process')->hourly()->withoutOverlapping()->onOneServer();
 Schedule::command('tickets:autoclose')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('invoices:issue-monthly')->monthlyOn(1, '04:00')->onOneServer();
+Schedule::command('coupons:expire-claims')->hourly()->onOneServer();

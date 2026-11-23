@@ -11,6 +11,7 @@ final readonly class CheckoutRequest
 {
     /**
      * @param  array<string, string|int|float|null>  $buyerInputs
+     * @param  list<string>  $couponClaimIds  claim public ids (max one store + one platform coupon)
      */
     public function __construct(
         public string $offerPublicId,
@@ -21,5 +22,6 @@ final readonly class CheckoutRequest
         public string $idempotencyKey,
         public ?string $ip,
         public ?string $country,
+        public array $couponClaimIds = [],
     ) {}
 }

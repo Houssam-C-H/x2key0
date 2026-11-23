@@ -46,6 +46,7 @@ use Illuminate\Support\Carbon;
  * @property int $refunded_credits_amount
  * @property int $refunded_psp_amount
  * @property int $refunded_fee_amount
+ * @property int $refunded_discount_platform_amount
  * @property int $commission_bps
  * @property int $commission_amount
  * @property int $seller_net_amount
@@ -104,6 +105,7 @@ final class Order extends Model
             'refunded_credits_amount' => 'integer',
             'refunded_psp_amount' => 'integer',
             'refunded_fee_amount' => 'integer',
+            'refunded_discount_platform_amount' => 'integer',
             'seller_acquisition_cost_amount' => 'integer',
             'commission_bps' => 'integer',
             'commission_amount' => 'integer',

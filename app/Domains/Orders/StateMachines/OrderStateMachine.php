@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Orders\StateMachines;
 
+use App\Domains\Coupons\Actions\CouponRedemptions;
 use App\Domains\Disputes\Support\OpenCases;
 use App\Domains\Identity\Models\User;
 use App\Domains\Ledger\Actions\SettleOrder;
@@ -66,6 +67,7 @@ final class OrderStateMachine
         private readonly RefundOrder $refunds,
         private readonly SettleOrder $settlement,
         private readonly AwardOrderPoints $points,
+        private readonly CouponRedemptions $coupons,
     ) {}
 
     /** First history row of a new order (created directly in pending_payment by CreateOrder). */
@@ -218,6 +220,7 @@ final class OrderStateMachine
             $o->cancel_reason = mb_substr($reason, 0, 64);
 
             $this->reservations->release($o->item);
+            $this->coupons->restore($o); // spec 14.1: claims come back if still valid
 
             if ($from === OrderStatus::PendingPayment) {
                 if ($o->paid_credits_amount > 0) {
@@ -358,6 +361,7 @@ final class OrderStateMachine
                     $o->cancel_reason = 'dispute_refund';
                     $o->confirm_due_at = null;
                     $this->reservations->release($o->item);
+                    $this->coupons->restore($o);
                     foreach (OrderTimerType::cases() as $type) {
                         self::closeTimer($o, $type);
                     }

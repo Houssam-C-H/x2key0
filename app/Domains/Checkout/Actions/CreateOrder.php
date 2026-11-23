@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Domains\Checkout\Actions;
 
 use App\Domains\Checkout\Data\CheckoutRequest;
+use App\Domains\Coupons\Actions\CouponRedemptions;
+use App\Domains\Coupons\Support\AppliedCoupons;
+use App\Domains\Coupons\Support\CouponPricing;
 use App\Domains\Checkout\Support\Quote;
 use App\Domains\Checkout\Support\QuoteCalculator;
 use App\Domains\Identity\Enums\UserStatus;
@@ -60,6 +63,8 @@ final class CreateOrder
         private readonly StartPayment $startPayment,
         private readonly CapturePath $capture,
         private readonly Settings $settings,
+        private readonly CouponPricing $coupons,
+        private readonly CouponRedemptions $redemptions,
     ) {}
 
     public function handle(User $buyer, CheckoutRequest $request): Order
@@ -84,10 +89,13 @@ final class CreateOrder
         $this->assertQuantity($offer, $request->quantity);
         $inputs = $this->buyerInputs($offer, $request->buyerInputs);
 
+        $listUnit = $this->quotes->quote($offer, $request->quantity, null, 0)->listUnitPrice;
+        $applied = $this->coupons->apply($offer, $request->quantity, $listUnit, $buyer, $request->couponClaimIds);
+
         $credits = $request->useCredits ? $this->wallet->available($buyer, $offer->currency) : 0;
-        $preview = $this->quotes->quote($offer, $request->quantity, null, $credits);
+        $preview = $this->quotes->quote($offer, $request->quantity, null, $credits, $applied);
         $method = $preview->pspDue > 0 ? $this->method($request, $offer->currency, $preview->pspDue) : null;
-        $quote = $method === null ? $preview : $this->quotes->quote($offer, $request->quantity, $method, $credits);
+        $quote = $method === null ? $preview : $this->quotes->quote($offer, $request->quantity, $method, $credits, $applied);
 
         if (! $this->hasCompletedOrder($buyer) && $quote->total > $this->settings->int('max_order_amount_new_buyer')) {
             throw CheckoutException::because('checkout.error.new_buyer_limit', ['amount' => number_format($this->settings->int('max_order_amount_new_buyer') / 100, 2)]);
@@ -100,7 +108,7 @@ final class CreateOrder
         }
 
         try {
-            $order = DB::transaction(fn (): Order => $this->open($buyer, $offer, $quote, $method, $inputs, $request, $risk->decision, $risk->score, $risk->rules()));
+            $order = DB::transaction(fn (): Order => $this->open($buyer, $offer, $quote, $method, $inputs, $request, $risk->decision, $risk->score, $risk->rules(), $applied));
         } catch (UniqueConstraintViolationException $e) {
             return self::existing($buyer, $request->idempotencyKey) ?? throw $e;
         } catch (InsufficientCredits) {
@@ -123,7 +131,7 @@ final class CreateOrder
      * @param  array<string, string|int|float|null>  $inputs
      * @param  list<string>  $rules
      */
-    private function open(User $buyer, Offer $offer, Quote $quote, ?PaymentMethod $method, array $inputs, CheckoutRequest $request, RiskDecision $decision, int $score, array $rules): Order
+    private function open(User $buyer, Offer $offer, Quote $quote, ?PaymentMethod $method, array $inputs, CheckoutRequest $request, RiskDecision $decision, int $score, array $rules, AppliedCoupons $applied): Order
     {
         $due = now()->addMinutes($this->settings->int('payment_window_minutes'));
         $sealed = $inputs === [] ? null : $this->vault->seal(json_encode($inputs, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
@@ -164,10 +172,11 @@ final class CreateOrder
             'offer_id' => $offer->id,
             'product_id' => $offer->product_id,
             'quantity' => $quote->quantity,
-            'unit_price_amount' => $quote->unitPrice,
-            'snapshot' => self::snapshot($offer),
+            'unit_price_amount' => $quote->unitPrice, // seller-side, after a store coupon
+            'snapshot' => [...self::snapshot($offer), 'list_unit_price_amount' => $quote->listUnitPrice],
         ])->save();
 
+        $this->redemptions->redeem($order, $applied);
         $this->reservations->reserve($item, $offer, $quote->quantity, $due);
         OrderTimer::query()->create(['order_id' => $order->id, 'type' => OrderTimerType::PaymentExpiry, 'due_at' => $due]);
         $this->machine->opened($order, $buyer);

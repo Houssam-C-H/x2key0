@@ -7,7 +7,8 @@ namespace App\Domains\Checkout\Support;
 /**
  * The priced breakdown of one checkout (spec 1.6 price lines, 7.2). All amounts are integer minor units of
  * `currency`; `total = subtotal − discounts + buyerFee + addonFee + methodFee + tax`, and
- * `total = credits + pspDue`.
+ * `total = credits + pspDue`. `unitPrice` is the seller-side unit price after a store coupon, `listUnitPrice` the
+ * offer's (tier) price before it.
  */
 final readonly class Quote
 {
@@ -15,6 +16,7 @@ final readonly class Quote
         public string $currency,
         public int $quantity,
         public int $unitPrice,
+        public int $listUnitPrice,
         public int $subtotal,
         public int $discountPlatform,
         public int $discountSeller,
@@ -39,6 +41,7 @@ final readonly class Quote
             'currency' => $this->currency,
             'quantity' => $this->quantity,
             'unitPrice' => $this->unitPrice,
+            'listUnitPrice' => $this->listUnitPrice,
             'subtotal' => $this->subtotal,
             'discountPlatform' => $this->discountPlatform,
             'discountSeller' => $this->discountSeller,

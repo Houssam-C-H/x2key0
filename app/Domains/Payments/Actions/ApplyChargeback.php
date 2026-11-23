@@ -171,16 +171,20 @@ final class ApplyChargeback
                 // Escrow holds the seller-side price of the kept units; all of it leaves with the closed order:
                 // the charged-back part covers the loss, anything above it (credits part) goes back to the buyer.
                 $kept = $order->item->unit_price_amount * ($order->item->quantity - $order->item->refunded_qty);
-                $recovered = min($locked->amount, $kept);
+                $promoLeft = $order->discount_platform_amount - $order->refunded_discount_platform_amount;
+                $recovered = min($locked->amount, $kept - $promoLeft);
                 if ($kept > 0) {
                     $lines[] = [AccountRef::platform(AccountCode::OrderEscrow, $currency), $kept];
                 }
-                if ($kept > $recovered) {
-                    $lines[] = [AccountRef::user(AccountCode::BuyerCredits, $order->buyer_id, $currency), -($kept - $recovered)];
+                if ($promoLeft > 0) {
+                    $lines[] = [AccountRef::platform(AccountCode::ExpPromotions, $currency), -$promoLeft];
+                }
+                if ($kept - $promoLeft > $recovered) {
+                    $lines[] = [AccountRef::user(AccountCode::BuyerCredits, $order->buyer_id, $currency), -($kept - $promoLeft - $recovered)];
                 }
             }
 
-            if ($recovered > 0) {
+            if ($lines !== []) {
                 $lines[] = [AccountRef::platform(AccountCode::ExpChargebackLoss, $currency), -$recovered];
                 $this->post->handle(new JournalDraft(
                     type: JournalType::ChargebackRecovered,

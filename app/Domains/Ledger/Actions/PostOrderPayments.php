@@ -57,19 +57,49 @@ final class PostOrderPayments
             sourceId: $order->id,
             description: "Order {$order->number}",
         ));
+
+        $this->platformCoupon($order);
     }
 
     /**
-     * REFUND (spec 7.2): escrow gives back the seller-side part, fee revenue the fee part; the buyer is paid
+     * PLATFORM_COUPON_FUNDED (spec 7.2): the platform pays the platform-coupon discount into escrow, so escrow holds
+     * the full seller-side price again: EXP_PROMOTIONS + discount, ORDER_ESCROW − discount. Idempotent per order.
+     */
+    public function platformCoupon(Order $order): void
+    {
+        if ($order->discount_platform_amount <= 0) {
+            return;
+        }
+
+        $this->post->handle(new JournalDraft(
+            type: JournalType::PlatformCouponFunded,
+            idempotencyKey: "PLATFORM_COUPON_FUNDED:order:{$order->id}",
+            lines: [
+                [AccountRef::platform(AccountCode::ExpPromotions, $order->currency), $order->discount_platform_amount],
+                [AccountRef::platform(AccountCode::OrderEscrow, $order->currency), -$order->discount_platform_amount],
+            ],
+            sourceType: 'order',
+            sourceId: $order->id,
+            description: "Order {$order->number}: platform coupon",
+        ));
+    }
+
+    /**
+     * REFUND (spec 7.2): escrow gives back the seller-side part, fee revenue the fee part, promotions the platform
+ * coupon share (the buyer never paid it); the buyer is paid
      * from the credits part (BUYER_CREDITS −) and the card part (PSP_CLEARING −), or everything as credits.
      */
-    public function refund(Order $order, string $key, int $sellerPart, int $feePart, int $fromCredits, int $fromPsp, ?string $provider, bool $toCredits): void
+    public function refund(Order $order, string $key, int $sellerPart, int $feePart, int $fromCredits, int $fromPsp, ?string $provider, bool $toCredits, int $promoPart = 0): void
     {
         $currency = $order->currency;
         $lines = [
             [AccountRef::platform(AccountCode::OrderEscrow, $currency), $sellerPart],
             [AccountRef::platform(AccountCode::RevBuyerFee, $currency), $feePart],
         ];
+        if ($promoPart > 0) {
+            // The platform coupon funding comes back (spec 7.2 REFUND: EXP_PROMOTIONS −).
+            $lines[] = [AccountRef::platform(AccountCode::ExpPromotions, $currency), -$promoPart];
+        }
 
         if ($toCredits || $provider === null) {
             $lines[] = [AccountRef::user(AccountCode::BuyerCredits, $order->buyer_id, $currency), -($fromCredits + $fromPsp)];

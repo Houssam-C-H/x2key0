@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Checkout\Support;
 
+use App\Domains\Coupons\Support\AppliedCoupons;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Payments\Models\PaymentMethod;
 use App\Shared\Money\Amount;
@@ -18,14 +19,17 @@ use App\Shared\Support\Settings;
  * - Category add-on fee = `policy_override.addon_fee_bps` × subtotal, paid by the buyer (spec 9.1).
  * - Credits pay first; the payment method surcharge (fee_bps + fee_fixed) applies to the PSP part only.
  * - Commission = seller level commission_bps × seller-side price; seller net = seller-side price − commission.
- * - Coupons (M14) and tax (VAT, founder decision) are zero for now.
+ * - Coupons (M14, CouponPricing): a store coupon lowers every unit's seller-side price (the order item keeps that
+ *   price, so escrow, settlement and refunds stay "unit price × units"); a platform coupon takes an amount off the
+ *   order that the platform funds into escrow at capture (PLATFORM_COUPON_FUNDED). Tax (VAT) is zero for now.
  */
 final class QuoteCalculator
 {
     public function __construct(private readonly Settings $settings) {}
 
-    public function quote(Offer $offer, int $quantity, ?PaymentMethod $method, int $creditsAvailable): Quote
+    public function quote(Offer $offer, int $quantity, ?PaymentMethod $method, int $creditsAvailable, ?AppliedCoupons $coupons = null): Quote
     {
+        $coupons ??= AppliedCoupons::none();
         $offer->loadMissing(['seller.level', 'gameCategory']);
         $currency = $offer->currency;
 
@@ -37,8 +41,9 @@ final class QuoteCalculator
         }
 
         $subtotal = Amount::ofMinor($unit, $currency)->multipliedBy($quantity);
-        $discountPlatform = 0;
-        $discountSeller = 0;
+        $sellerUnit = $unit - $coupons->sellerUnitDiscount;
+        $discountSeller = $coupons->sellerUnitDiscount * $quantity;
+        $discountPlatform = $coupons->platformDiscount;
         $afterDiscounts = $subtotal->minus(Amount::ofMinor($discountPlatform + $discountSeller, $currency));
 
         $buyerFee = Amount::bpsWithMinimum($afterDiscounts, $this->settings->int('buyer_fee_bps'), Amount::ofMinor($this->settings->int('buyer_fee_min_amount'), $currency));
@@ -64,7 +69,8 @@ final class QuoteCalculator
         return new Quote(
             currency: $currency,
             quantity: $quantity,
-            unitPrice: $unit,
+            unitPrice: $sellerUnit,
+            listUnitPrice: $unit,
             subtotal: Amount::toMinor($subtotal),
             discountPlatform: $discountPlatform,
             discountSeller: $discountSeller,
