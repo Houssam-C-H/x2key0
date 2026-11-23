@@ -1,14 +1,30 @@
 # Progress
 
-**Current milestone:** M3 — Catalog (next). M1 and M2 code complete; Docker/Postgres local run still pending (WSL2 admin install).
+**Current milestone:** M4 — Sellers (next). M1–M3 code complete; Docker/Postgres local run still pending (WSL2 admin install).
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
 | M0 | Business feasibility (founder) | ⏳ founder | §2.3 decisions open; building on defaults (ADR-001) |
 | M1 | Scaffold | ✅ code done · ⏳ Sail run | See checklist below |
 | M2 | Identity, levels, settings, certification, roles | ✅ done | See checklist below |
-| M3 | Catalog, listing, facets, Meilisearch | next | |
-| M4–M19 | — | not started | |
+| M3 | Catalog, listing, facets, Meilisearch, sitemaps | ✅ done | See checklist below |
+| M4 | Sellers: activation, store, store management | next | |
+| M5–M19 | — | not started | |
+
+## M3 checklist
+- [x] Tables: category_types (15, seeded, enable/disable per D3), games, game_categories (label override, attribute schema, buyer-input schema, delivery methods, policy override, notice, cached counts), platforms, regions, products (ULID, MSRP, cached lowest price/offers, soft deletes)
+- [x] `AttributeSchema` (select / multiselect / number / boolean / text; validated on save; product values normalised) and `BuyerInputSchema` (text / number / select with regex; produces checkout validation rules for M6)
+- [x] Listing search behind `CatalogSearch`: exact database driver (default, tests) and Meilisearch driver (production) — disjunctive facet counts, number ranges, price range (USD cents), text search, 5 sorts, 24 per page; product changes sync to the index after commit; `catalog:search-sync`
+- [x] Parity test: Meilisearch returns the same ids, totals, facet counts and bounds as the database driver (10 scenarios, run against a live Meilisearch 1.57 locally and in CI)
+- [x] Public pages (SSR, en/fr/ar): Game Index (HOT + A–Z), category hub, game hub, game×category listing (filters with counts, sort, grid/list, pagination, notice, tabs), product page (attributes, MSRP; buy box waits for offers in M5), search (games by name/alias, products)
+- [x] Mega menu: one column per enabled category type, top 10 games, cached per locale, flushed on catalog edits
+- [x] SEO: canonical, hreflang (+ x-default), noindex for filtered/paged views except single platform/region, BreadcrumbList + Product JSON-LD, per-locale sitemaps without thin pages
+- [x] `catalog:recount` (scheduled every 10 min, idempotent); counts show offers once they exist, products until then
+- [x] Admin (moderators + admins): category types (edit only), games (+ categories), game categories with visual schema builders and validation, products (attributes checked against the schema), platforms, regions; all audited
+- [x] Demo seed: 15 types, 12 platforms, 10 regions, 48 games, 129 game×category pages, 346 products (2.8 s)
+- [x] 224 tests green; Larastan max 0 errors; Pint; TS strict; live SSR smoke test
+- [ ] Image uploads for games/products (paths only for now) — with file storage in M5
+- [ ] Offer cards in listings, buy box, "other sellers" — M5
 
 ## M2 checklist
 - [x] Users rewritten for spec 5.1: ULID `public_id`, username, phone, locale/currency/country/timezone, status, levels, `User` moved to `app/Domains/Identity`
@@ -53,3 +69,5 @@
 - 2026-11-22 — Repo moved to C:\dev\x2key. Docker Desktop installed; WSL2 install needs admin rights (founder action).
 - 2026-11-23 — M1 scaffold built with portable PHP 8.4 + Composer in C:\dev\tools (no admin needed). 59 tests green on SQLite; Larastan max clean; SSR verified in en/fr/ar.
 - 2026-11-23 — M2 identity built: Fortify auth + 2FA, sessions/devices, settings pages, certification center, staff roles, admin panel. 147 tests green. Bug found by tests and fixed: Fortify's 2FA QR label read a non-existent `login` attribute.
+- 2026-11-23 — Fix: password confirmation crashed for the same reason (Fortify reads `$user->login`); custom confirm callback + end-to-end 2FA test.
+- 2026-11-23 — M3 catalog built. Portable Meilisearch 1.57 in C:\dev\tools\meilisearch for local parity tests. SQLite dev DB switched to WAL + busy timeout (concurrent dev server no longer locks seeding).

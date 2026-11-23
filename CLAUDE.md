@@ -19,6 +19,7 @@ Multi-vendor digital game goods marketplace, IA modelled on Z2U. Full spec: docs
 - Local `.env` uses SQLite until Docker works; `.env.example` is the Sail/PostgreSQL config.
 - Commands: `composer test` · `composer stan` · `composer lint` / `composer fix` · `npm run typecheck` · `npm run build` (client + SSR) · `php artisan inertia:start-ssr`.
 - Sail (once Docker Desktop + WSL2 run): `cp .env.example .env && php artisan key:generate && ./vendor/bin/sail up -d`.
+- Local Meilisearch (portable, for the parity test or `CATALOG_SEARCH_DRIVER=meilisearch`): `C:\dev\tools\meilisearch\meilisearch.exe --db-path C:\dev\tools\meilisearch\data\ms --http-addr 127.0.0.1:7700 --no-analytics`. Without it, `MeilisearchParityTest` is skipped.
 
 ## Where things are
 - Policy defaults (Part 27): `config/x2key.php`, read via `App\Shared\Support\Settings`.
@@ -30,3 +31,5 @@ Multi-vendor digital game goods marketplace, IA modelled on Z2U. Full spec: docs
 - A real screen replaces a dashboard placeholder via the `$implemented` map in `routes/web.php`, keeping the `dash.{menu key}` route name.
 - `Model::shouldBeStrict()` is on outside production: factories must set every column; actions return `->refresh()`ed models.
 - Demo accounts after `php artisan migrate:fresh --seed` (local): `admin_demo` / `buyer_demo`, password `password` (admin must enable 2FA before /admin opens).
+- Catalog: `App\Domains\Catalog` — models, `Schema\{AttributeSchema,BuyerInputSchema}`, `Search\*` (ADR-011), `Support\{CatalogReader,CatalogPresenter,CatalogCache}`. Public controller: `Http\Controllers\Public\CatalogController`. Tests use `Tests\Support\CatalogFixture` (hand-countable facets).
+- Never name a column `attributes` (Eloquent internal); product values live in `attribute_values`.

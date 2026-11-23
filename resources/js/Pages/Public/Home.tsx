@@ -1,12 +1,13 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { categoryIcon, Icon } from '@/Components/Icon';
 import { PublicLayout } from '@/Layouts/PublicLayout';
-import { useShared, useT } from '@/lib/i18n';
+import { useLocalePath, useShared, useT } from '@/lib/i18n';
 
 /** Home shell: hero with the 8 category tiles (spec 1.3 #1). Other modules arrive in M17. */
 export default function Home() {
     const t = useT();
     const { categoryTypes } = useShared();
+    const lp = useLocalePath();
     const tiles = categoryTypes.filter((c) => c.hero);
 
     return (
@@ -30,10 +31,13 @@ export default function Home() {
                     <ul className="mt-10 grid grid-cols-4 gap-3 sm:grid-cols-8">
                         {tiles.map((c) => (
                             <li key={c.code}>
-                                <span className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 p-2 text-center text-xs font-semibold backdrop-blur transition hover:bg-white/15 sm:text-sm">
+                                <Link
+                                    href={lp(`/catalog/${c.code.replaceAll('_', '-')}`)}
+                                    className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 p-2 text-center text-xs font-semibold backdrop-blur transition hover:bg-white/15 sm:text-sm"
+                                >
                                     <Icon name={categoryIcon[c.code] ?? 'box'} size={26} />
                                     {c.label}
-                                </span>
+                                </Link>
                             </li>
                         ))}
                     </ul>

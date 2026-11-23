@@ -30,3 +30,5 @@ Homestead.yaml
 Thumbs.db
 /bootstrap/ssr
 /storage/phpstan
+/database/*.sqlite-wal
+/database/*.sqlite-shm

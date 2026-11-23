@@ -8,44 +8,63 @@ interface Props {
 }
 
 /**
- * Mega menu (spec 1.1): one column per category type with its top games.
- * Games come from the catalog in M3; until then each column shows its category only.
+ * Mega menu (spec 1.1): one column per category type with its top games and counts, "View all"
+ * to the category hub. Data is shared by the server (cached per locale).
  */
 export function MegaMenu({ open, onClose }: Props) {
     const t = useT();
     const lp = useLocalePath();
-    const { categoryTypes } = useShared();
+    const { megaMenu } = useShared();
 
     if (!open) return null;
 
+    const columns = megaMenu.filter((c) => c.games.length > 0);
+
     return (
-        <div className="absolute inset-x-0 top-full z-40 border-t border-line bg-white shadow-lg" role="dialog" aria-label={t('megamenu.title')}>
+        <div className="absolute inset-x-0 top-full z-40 max-h-[80vh] overflow-y-auto border-t border-line bg-white shadow-lg" role="dialog" aria-label={t('megamenu.title')}>
             <div className="mx-auto max-w-7xl p-6">
                 <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-base font-bold">{t('megamenu.title')}</h2>
-                    <button type="button" className="btn-ghost p-1" onClick={onClose} aria-label="Close">
+                    <button type="button" className="btn-ghost p-1" onClick={onClose} aria-label={t('locale.cancel')}>
                         <Icon name="x" />
                     </button>
                 </div>
-                <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                    {categoryTypes.map((c) => (
-                        <li key={c.code}>
-                            <span className="flex items-center gap-2 rounded-md p-2 font-semibold hover:bg-canvas">
-                                <Icon name={categoryIcon[c.code] ?? 'box'} className="text-primary" size={18} />
-                                {c.label}
-                            </span>
-                        </li>
-                    ))}
-                </ul>
-                <p className="mt-4 text-sm text-muted">{t('megamenu.coming')}</p>
-                <div className="mt-4 flex flex-wrap gap-4 border-t border-line pt-4 text-sm font-medium">
-                    <Link href={lp('/')} className="text-primary hover:underline">
+
+                {columns.length === 0 ? (
+                    <p className="text-sm text-muted">{t('megamenu.coming')}</p>
+                ) : (
+                    <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+                        {columns.map((col) => (
+                            <section key={col.code}>
+                                <h3 className="mb-2 flex items-center gap-2 font-bold">
+                                    <Icon name={categoryIcon[col.code] ?? 'box'} className="text-primary" size={18} />
+                                    {col.label}
+                                </h3>
+                                <ul className="space-y-1 text-sm">
+                                    {col.games.map((g) => (
+                                        <li key={g.href}>
+                                            <Link href={g.href} onClick={onClose} className="flex justify-between gap-2 text-ink/80 hover:text-primary">
+                                                <span className="truncate">{g.name}</span>
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <Link href={col.href} onClick={onClose} className="mt-2 inline-block text-xs font-semibold text-primary hover:underline">
+                                    {t('megamenu.view_all')}
+                                </Link>
+                            </section>
+                        ))}
+                    </div>
+                )}
+
+                <div className="mt-6 flex flex-wrap gap-4 border-t border-line pt-4 text-sm font-medium">
+                    <Link href={lp('/games')} onClick={onClose} className="text-primary hover:underline">
                         {t('megamenu.game_index')}
                     </Link>
-                    <Link href={lp('/')} className="text-primary hover:underline">
+                    <a href={lp('/page/how-to-buy')} className="text-primary hover:underline">
                         {t('megamenu.how_to_buy')}
-                    </Link>
-                    <Link href={lp('/')} className="text-primary hover:underline">
+                    </a>
+                    <Link href={lp('/register')} onClick={onClose} className="text-primary hover:underline">
                         {t('megamenu.sell')}
                     </Link>
                 </div>

@@ -27,6 +27,12 @@ return [
 
     'default_locale' => 'en',
 
+    // Listing search driver: 'database' (exact, any DB; dev/tests) or 'meilisearch' (production scale).
+    'search' => [
+        'driver' => env('CATALOG_SEARCH_DRIVER', 'database'),
+        'meilisearch_index' => env('CATALOG_SEARCH_INDEX', 'products'),
+    ],
+
     // Display currencies only (D5): checkout and ledger always settle in USD.
     'display_currencies' => [
         'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'BDT', 'BHD', 'BRL', 'CNY', 'CZK', 'EGP',

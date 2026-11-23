@@ -36,3 +36,17 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 
 ## ADR-010 — Provider seams for SMS and KYC (2026-11-23)
 `SmsSender` (dev: `LogSmsSender` writes to the log) and `KycProvider` (dev: `FakeKycProvider`, staff approve in the admin queue) are bound in `AppServiceProvider`. Real vendors are swapped in once D11 and the SMS vendor are chosen; no other code changes.
+
+## ADR-011 — Listing search: two drivers, one contract, a parity test (2026-11-23)
+**Context:** Spec 4.1 wants Meilisearch from M3 for faceted counts; dev machines and unit tests should not need a search server.
+**Decision:** `CatalogSearch` has a database driver (loads one game×category's active products and filters/counts in PHP — exact, works on SQLite and PostgreSQL) and a Meilisearch driver (one multi-search per page: results + bounds + one query per active facet). Both derive facet values from the same `ProductDocument`, so counts match by construction, and `MeilisearchParityTest` proves it on 10 scenarios against a live server. Driver chosen by `CATALOG_SEARCH_DRIVER` (default `database`; `.env.example`/production `meilisearch`).
+**Facet semantics:** disjunctive — values inside a group are ORed, groups are ANDed, and each group's counts ignore its own selection (so buyers can add more values). Unpriced products sort last on price sorts and drop out of price filters.
+**Limit:** the database driver is meant for up to a few thousand products per game×category; its product-name search does not match non-ASCII text stored as JSON escapes. Production uses Meilisearch.
+
+## ADR-012 — Catalog conventions (2026-11-23)
+- Product attribute column is `attribute_values` (spec says `attributes`, which collides with Eloquent's internal property).
+- Product slugs are unique per game×category (URLs are `/{locale}/{game}/{category}/{product}`), not globally.
+- Displayed counts are offer counts once offers exist (M5), product counts until then.
+- Game slugs cannot be reserved first-segment words (`Game::RESERVED_SLUGS`); routes also exclude them.
+- Category types are seeded and editable (name, order, enabled) but never created/deleted from the admin.
+- Admin catalog URLs live under `/admin/catalog/…`; moderators manage the catalog (`CatalogPolicy`).

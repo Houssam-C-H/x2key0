@@ -1,8 +1,11 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+declare(strict_types=1);
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+use Illuminate\Support\Facades\Schedule;
+
+/*
+| Scheduled jobs (spec Part 19). Each milestone adds its own.
+*/
+
+Schedule::command('catalog:recount')->everyTenMinutes()->withoutOverlapping()->onOneServer();

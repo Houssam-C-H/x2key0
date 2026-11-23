@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Domains\Catalog\Enums\CategoryTypeCode;
+use App\Domains\Catalog\Support\CatalogReader;
 use App\Domains\Identity\Models\User;
 use App\Shared\Navigation\DashboardMenuPresenter;
 use Illuminate\Http\Request;
@@ -49,6 +50,8 @@ final class HandleInertiaRequests extends Middleware
                     'isStaff' => $user->isStaff(),
                 ] : null,
             ],
+            // Mega menu columns (spec 1.1), cached per locale and flushed on catalog edits.
+            'megaMenu' => fn (): array => app(CatalogReader::class)->megaMenu($locale),
             // Dashboard sidebar for signed-in, non-localized (dashboard) pages; evaluated lazily.
             'menu' => fn (): ?array => $user instanceof User && $request->route('locale') === null
                 ? app(DashboardMenuPresenter::class)->present($request)

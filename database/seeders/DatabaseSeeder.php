@@ -13,7 +13,7 @@ final class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([UserLevelSeeder::class, RoleSeeder::class]);
+        $this->call([UserLevelSeeder::class, RoleSeeder::class, CatalogSeeder::class]);
 
         if (! app()->environment('local', 'testing')) {
             return;

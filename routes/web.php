@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Domains\Catalog\Models\Game;
 use App\Http\Controllers\Auth\AuthPageController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\PreferencesController;
+use App\Http\Controllers\Public\CatalogController;
 use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Settings\AccountController;
 use App\Http\Controllers\Settings\CertificationController;
 use App\Http\Controllers\Settings\SecurityController;
@@ -38,7 +41,22 @@ Route::prefix('{locale}')
             Route::get('/forgot-password', [AuthPageController::class, 'forgotPassword'])->name('password.request');
             Route::get('/reset-password/{token}', [AuthPageController::class, 'resetPassword'])->name('password.reset');
         });
+
+        // Catalog (spec 1.4, Part 20). Fixed paths first; game/category/product slugs last.
+        Route::get('/games', [CatalogController::class, 'games'])->name('catalog.games');
+        Route::get('/catalog/{type}', [CatalogController::class, 'categoryHub'])->where('type', '[a-z-]+')->name('catalog.type');
+        Route::get('/search', [CatalogController::class, 'search'])->name('catalog.search');
+
+        $gameSlug = '(?!(?:'.implode('|', array_map('preg_quote', Game::RESERVED_SLUGS)).')$)[a-z0-9][a-z0-9-]*';
+        $slug = '[a-z0-9][a-z0-9-]*';
+
+        Route::get('/{game}', [CatalogController::class, 'game'])->where('game', $gameSlug)->name('catalog.game');
+        Route::get('/{game}/{category}', [CatalogController::class, 'listing'])->where(['game' => $gameSlug, 'category' => $slug])->name('catalog.listing');
+        Route::get('/{game}/{category}/{product}', [CatalogController::class, 'product'])->where(['game' => $gameSlug, 'category' => $slug, 'product' => $slug])->name('catalog.product');
     });
+
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/sitemap-{locale}.xml', [SitemapController::class, 'locale'])->where('locale', $locales)->name('sitemap.locale');
 
 Route::get('/two-factor-challenge', [AuthPageController::class, 'twoFactorChallenge'])
     ->middleware('guest')

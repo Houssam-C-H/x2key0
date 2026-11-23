@@ -35,6 +35,7 @@ export interface SharedProps {
     auth: { user: AuthUser | null };
     flash: { success: string | null; error: string | null };
     menu: DashboardMenu | null;
+    megaMenu: { code: string; label: string; href: string; games: { name: string; href: string; count: number }[] }[];
     errors: Record<string, string>;
     [key: string]: unknown;
 }
