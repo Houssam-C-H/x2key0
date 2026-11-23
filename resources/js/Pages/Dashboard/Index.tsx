@@ -2,15 +2,15 @@ import { Head, Link } from '@inertiajs/react';
 import { Header } from '@/Components/Header';
 import { Icon } from '@/Components/Icon';
 import { useShared, useT } from '@/lib/i18n';
-import { isBranch, type DashboardMenu, type MenuNode } from '@/types';
+import { isBranch, type MenuNode } from '@/types';
 
 /**
  * Dashboard home (spec 1.7): no sidebar. Hero with balances (real values from the
  * ledger in M7/M9), then every menu group as a card.
  */
-export default function DashboardIndex({ menu }: { menu: DashboardMenu }) {
+export default function DashboardIndex() {
     const t = useT();
-    const { auth, dir, locale } = useShared();
+    const { auth, dir, locale, menu } = useShared();
     const user = auth.user;
 
     return (
@@ -47,7 +47,7 @@ export default function DashboardIndex({ menu }: { menu: DashboardMenu }) {
             </section>
 
             <div className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:grid-cols-2 lg:grid-cols-4">
-                {menu.groups.map((group) => (
+                {(menu?.groups ?? []).map((group) => (
                     <section key={group.key} className="card p-4">
                         <h2 className="mb-3 flex items-center gap-2 font-bold">
                             <Icon name={group.icon} size={18} className="text-primary" />

@@ -1,25 +1,43 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Domains\Identity\Actions\RegisterUser;
+use App\Domains\Identity\Enums\StaffRole;
+use App\Domains\Identity\Models\User;
 use Illuminate\Database\Seeder;
 
-class DatabaseSeeder extends Seeder
+final class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call([UserLevelSeeder::class, RoleSeeder::class]);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        if (! app()->environment('local', 'testing')) {
+            return;
+        }
+
+        // Local demo accounts (password: "password"). The admin must enable 2FA before /admin opens.
+        $register = app(RegisterUser::class);
+
+        foreach ([['admin', StaffRole::Admin], ['buyer', null]] as [$username, $role]) {
+            if (User::query()->where('username', $username.'_demo')->exists()) {
+                continue;
+            }
+
+            $user = $register->handle([
+                'username' => $username.'_demo',
+                'name' => ucfirst($username),
+                'email' => $username.'@x2key.test',
+                'password' => 'password',
+            ]);
+            $user->forceFill(['email_verified_at' => now()])->save();
+
+            if ($role !== null) {
+                $user->assignRole($role->value);
+            }
+        }
     }
 }

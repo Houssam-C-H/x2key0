@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Models\User;
+use App\Domains\Identity\Models\User;
 use App\Shared\Navigation\DashboardMenu;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('sends guests to the localized login page', function (): void {
-    $this->get('/dashboard')->assertRedirect('/en/login');
+    $this->get('/dashboard', ['Accept-Language' => 'en'])->assertRedirect('/en/login');
     $this->withUnencryptedCookie('locale', 'fr')->get('/buy/orders')->assertRedirect('/fr/login');
 });
 
@@ -27,8 +27,9 @@ it('matches the spec 1.7 group order', function (): void {
     ]);
 });
 
-it('renders every sidebar leaf as a placeholder with that leaf active', function (): void {
+it('renders every sidebar leaf with that leaf active (placeholder until its milestone ships)', function (): void {
     $user = User::factory()->create();
+    $built = ['settings.account', 'settings.security', 'settings.certification'];
 
     foreach (DashboardMenu::leaves() as $leaf) {
         $url = $leaf['path'].(isset($leaf['query']) ? '?'.http_build_query($leaf['query']) : '');
@@ -36,10 +37,13 @@ it('renders every sidebar leaf as a placeholder with that leaf active', function
         $this->actingAs($user)
             ->get($url)
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('Shared/Placeholder')
-                ->where('page.key', $leaf['key'])
-                ->where('page.milestone', $leaf['milestone']));
+            ->assertInertia(function (Assert $page) use ($leaf, $built): void {
+                $page->where('menu.active.key', $leaf['key']);
+
+                if (! in_array($leaf['key'], $built, true)) {
+                    $page->component('Shared/Placeholder')->where('page.milestone', $leaf['milestone']);
+                }
+            });
     }
 });
 
@@ -47,7 +51,7 @@ it('marks query-filtered tabs active and opens their group', function (): void {
     $this->actingAs(User::factory()->create())
         ->get('/tickets?status=closed')
         ->assertInertia(function (Assert $page): void {
-            $page->where('page.key', 'tickets.closed');
+            $page->where('menu.active.key', 'tickets.closed');
             $groups = collect($page->toArray()['props']['menu']['groups'])->keyBy('key');
 
             expect($groups['tickets']['open'])->toBeTrue()
@@ -72,7 +76,7 @@ it('opens nested branches down to the active leaf', function (): void {
 it('falls back to the unfiltered tab for unknown filter values', function (): void {
     $this->actingAs(User::factory()->create())
         ->get('/announcements?filter=bogus')
-        ->assertInertia(fn (Assert $page) => $page->where('page.key', 'announcements.all'));
+        ->assertInertia(fn (Assert $page) => $page->where('menu.active.key', 'announcements.all'));
 });
 
 it('has unique leaf keys and a translation for every label', function (): void {

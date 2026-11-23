@@ -14,8 +14,12 @@ export interface CategoryType {
 
 export interface AuthUser {
     id: number;
+    publicId: string;
+    username: string;
     name: string;
     email: string;
+    emailVerified: boolean;
+    isStaff: boolean;
 }
 
 /** Props shared on every page by HandleInertiaRequests. */
@@ -30,6 +34,8 @@ export interface SharedProps {
     categoryTypes: CategoryType[];
     auth: { user: AuthUser | null };
     flash: { success: string | null; error: string | null };
+    menu: DashboardMenu | null;
+    errors: Record<string, string>;
     [key: string]: unknown;
 }
 

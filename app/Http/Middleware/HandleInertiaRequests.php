@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Domains\Catalog\Enums\CategoryTypeCode;
+use App\Domains\Identity\Models\User;
+use App\Shared\Navigation\DashboardMenuPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Inertia\Middleware;
@@ -37,12 +39,20 @@ final class HandleInertiaRequests extends Middleware
                 CategoryTypeCode::cases(),
             ),
             'auth' => [
-                'user' => $user === null ? null : [
-                    'id' => $user->getAuthIdentifier(),
-                    'name' => $user->getAttribute('name'),
-                    'email' => $user->getAttribute('email'),
-                ],
+                'user' => $user instanceof User ? [
+                    'id' => $user->id,
+                    'publicId' => $user->public_id,
+                    'username' => $user->username,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'emailVerified' => $user->hasVerifiedEmail(),
+                    'isStaff' => $user->isStaff(),
+                ] : null,
             ],
+            // Dashboard sidebar for signed-in, non-localized (dashboard) pages; evaluated lazily.
+            'menu' => fn (): ?array => $user instanceof User && $request->route('locale') === null
+                ? app(DashboardMenuPresenter::class)->present($request)
+                : null,
             'flash' => [
                 'success' => fn (): mixed => $request->session()->get('success'),
                 'error' => fn (): mixed => $request->session()->get('error'),

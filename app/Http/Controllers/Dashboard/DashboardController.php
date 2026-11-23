@@ -9,17 +9,18 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * The `menu` prop is shared for every dashboard page by HandleInertiaRequests.
+ */
 final class DashboardController
 {
     /**
      * Dashboard home (spec 1.7): no sidebar, hero with balances, then the menu as cards.
      * Balances are placeholders until the ledger exists (M7/M9).
      */
-    public function index(Request $request, DashboardMenuPresenter $menu): Response
+    public function index(): Response
     {
-        return Inertia::render('Dashboard/Index', [
-            'menu' => $menu->present($request),
-        ]);
+        return Inertia::render('Dashboard/Index');
     }
 
     /**
@@ -27,12 +28,8 @@ final class DashboardController
      */
     public function placeholder(Request $request, DashboardMenuPresenter $menu): Response
     {
-        $presented = $menu->present($request);
-        $active = $presented['active'];
-
         return Inertia::render('Shared/Placeholder', [
-            'menu' => $presented,
-            'page' => $active,
+            'page' => $menu->present($request)['active'],
         ]);
     }
 }

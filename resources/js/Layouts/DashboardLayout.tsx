@@ -1,40 +1,44 @@
-import { Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { type ReactNode, useState } from 'react';
+import { Flash } from '@/Components/Flash';
 import { Header } from '@/Components/Header';
 import { Icon } from '@/Components/Icon';
 import { Sidebar } from '@/Components/Sidebar';
 import { useShared, useT } from '@/lib/i18n';
-import type { DashboardMenu } from '@/types';
 
 interface Props {
-    menu: DashboardMenu;
     title: string;
     children: ReactNode;
+    /** Render children without the white card (for pages made of several cards). */
+    bare?: boolean;
 }
 
 /**
  * Dashboard shell (spec 1.7 / 21.1): header, 280px sidebar (drawer below lg),
- * breadcrumb, white content card, floating right rail (Home · Announcement · Chat).
+ * breadcrumb, content card, floating right rail (Home · Announcement · Chat).
+ * The `menu` prop is shared by the server on every dashboard page.
  */
-export function DashboardLayout({ menu, title, children }: Props) {
+export function DashboardLayout({ title, children, bare = false }: Props) {
     const t = useT();
-    const { dir, locale } = useShared();
+    const { dir, locale, menu } = useShared();
     const [drawer, setDrawer] = useState(false);
+    const groups = menu?.groups ?? [];
 
     return (
         <div dir={dir} lang={locale} className="min-h-screen bg-canvas">
+            <Head title={title} />
             <Header />
 
             <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6">
                 <aside className="hidden w-[280px] shrink-0 lg:block">
-                    <Sidebar groups={menu.groups} />
+                    <Sidebar groups={groups} />
                 </aside>
 
                 {drawer && (
                     <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true">
                         <button type="button" className="absolute inset-0 bg-black/40" aria-label="Close" onClick={() => setDrawer(false)} />
                         <div className="absolute inset-y-0 start-0 w-[300px] max-w-[85vw] overflow-y-auto bg-canvas p-3">
-                            <Sidebar groups={menu.groups} />
+                            <Sidebar groups={groups} />
                         </div>
                     </div>
                 )}
@@ -48,7 +52,7 @@ export function DashboardLayout({ menu, title, children }: Props) {
                             <Icon name="home" size={16} />
                             {t('dashboard.home')}
                         </Link>
-                        {menu.active?.group && (
+                        {menu?.active?.group && (
                             <>
                                 <span>/</span>
                                 <span>{menu.active.group}</span>
@@ -58,15 +62,37 @@ export function DashboardLayout({ menu, title, children }: Props) {
                         <span className="text-ink">{title}</span>
                     </div>
 
-                    <section className="card p-6">
-                        <h1 className="mb-4 text-lg font-bold">{title}</h1>
-                        {children}
-                    </section>
+                    <Flash />
+
+                    {bare ? (
+                        <div className="space-y-6">
+                            <h1 className="text-lg font-bold">{title}</h1>
+                            {children}
+                        </div>
+                    ) : (
+                        <section className="card p-6">
+                            <h1 className="mb-4 text-lg font-bold">{title}</h1>
+                            {children}
+                        </section>
+                    )}
                 </div>
             </div>
 
             <FloatingRail />
         </div>
+    );
+}
+
+/** White card section used inside bare dashboard pages. */
+export function Panel({ title, description, children, id }: { title: string; description?: string; children: ReactNode; id?: string }) {
+    return (
+        <section id={id} className="card p-6" aria-labelledby={id ? `${id}-title` : undefined}>
+            <h2 id={id ? `${id}-title` : undefined} className="text-base font-bold">
+                {title}
+            </h2>
+            {description && <p className="mt-1 text-sm text-muted">{description}</p>}
+            <div className="mt-4">{children}</div>
+        </section>
     );
 }
 

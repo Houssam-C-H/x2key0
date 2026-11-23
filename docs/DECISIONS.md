@@ -23,3 +23,16 @@ Public pages use `/{locale}/…` (SEO, hreflang). Dashboard pages (`/buy/…`, `
 
 ## ADR-006 — Brand tokens (2026-11-23)
 Same roles as spec 1.0 with X2KEY's own values: primary violet `#5b3df5` (not red), dark surface `#0b0e1f`, fonts Inter (body) + Sora (display), own line-icon set. To be replaced by the final brand once D12 (trademark clearance) is done.
+
+## ADR-007 — Fortify as a headless auth backend (2026-11-23)
+**Decision:** Laravel Fortify handles the security-critical POST flows (login, 2FA challenge, registration, reset, verification, password change, 2FA enable/confirm/disable). `fortify.views = false`; X2KEY registers its own GET pages with Fortify's route names, localized for public ones (`/{locale}/login`). Fortify's stock actions are replaced by classes in `App\Domains\Identity\Fortify`. Passkeys and `updateProfileInformation` are disabled (not in spec; profile is Settings › Account).
+**Why:** well-tested, rate-limited 2FA and reset flows instead of hand-rolled ones, while keeping our UI and URLs.
+
+## ADR-008 — Driver-independent session registry (2026-11-23)
+Production sessions live in Redis, which cannot be listed per user. `user_sessions` records each authenticated session (id, device, IP, last activity). Revoking sets `revoked_at`; `TrackUserSession` logs that session out on its next request and also enforces account status. Writes are throttled to once a minute per session. Revoking others also clears the remember-me token.
+
+## ADR-009 — One login for buyers, sellers and staff (2026-11-23)
+The Filament panel has no login page; guests are sent to `/{locale}/login`, so staff get the same rate limits, device alerts and 2FA challenge. Panel access requires an active staff role (`canAccessPanel`) and confirmed 2FA (`RequireStaffTwoFactor`, redirects to Settings › Security). Admins pass all policies via `Gate::before`, except `review` of their own certification.
+
+## ADR-010 — Provider seams for SMS and KYC (2026-11-23)
+`SmsSender` (dev: `LogSmsSender` writes to the log) and `KycProvider` (dev: `FakeKycProvider`, staff approve in the admin queue) are bound in `AppServiceProvider`. Real vendors are swapped in once D11 and the SMS vendor are chosen; no other code changes.

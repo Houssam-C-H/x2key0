@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { useLocalePath, useShared, useT } from '@/lib/i18n';
+import { AccountMenu } from './AccountMenu';
 import { Icon } from './Icon';
 import { LocaleModal } from './LocaleModal';
 import { MegaMenu } from './MegaMenu';
@@ -72,18 +73,11 @@ export function Header() {
                                 <Link href="/announcements" className="rounded-md p-2 hover:bg-white/10" aria-label={t('header.announcements')}>
                                     <Icon name="bell" />
                                 </Link>
-                                <Link
-                                    href="/dashboard"
-                                    className="relative flex h-9 w-9 items-center justify-center rounded-full bg-primary font-bold uppercase"
-                                    aria-label={t('header.dashboard')}
-                                >
-                                    {auth.user.name.charAt(0)}
-                                    <span className="absolute -bottom-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-surface-dark bg-success" />
-                                </Link>
+                                <AccountMenu user={auth.user} />
                             </>
                         ) : (
                             <>
-                                <Link href={lp('/')} className="hidden rounded-full border border-white/60 px-4 py-1.5 text-sm font-semibold hover:bg-white/10 sm:inline-flex">
+                                <Link href={lp('/register')} className="hidden rounded-full border border-white/60 px-4 py-1.5 text-sm font-semibold hover:bg-white/10 sm:inline-flex">
                                     {t('header.become_seller')}
                                 </Link>
                                 <Link href={lp('/login')} className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold hover:bg-primary-hover">

@@ -3,7 +3,10 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequirePrivacyPassword;
+use App\Http\Middleware\RequireStaffTwoFactor;
 use App\Http\Middleware\ResolveLocale;
+use App\Http\Middleware\TrackUserSession;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,9 +25,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // `auth` runs before ResolveLocale (middleware priority), so resolve the locale here.
         $middleware->redirectGuestsTo(fn (Request $request): string => '/'.ResolveLocale::preferredLocale($request).'/login');
 
+        $middleware->redirectUsersTo('/dashboard');
+
         $middleware->web(append: [
             ResolveLocale::class,
+            TrackUserSession::class,
             HandleInertiaRequests::class,
+        ]);
+
+        $middleware->alias([
+            'privacy' => RequirePrivacyPassword::class,
+            'staff.2fa' => RequireStaffTwoFactor::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

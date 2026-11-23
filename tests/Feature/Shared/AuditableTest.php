@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Models\User;
+use App\Domains\Identity\Models\User;
 use App\Shared\Audit\Auditable;
 use App\Shared\Audit\AuditLog;
 use App\Shared\Audit\AuditLogger;
