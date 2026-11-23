@@ -13,6 +13,7 @@ use App\Http\Middleware\ResolveLocale;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -28,6 +29,12 @@ final class FortifyServiceProvider extends ServiceProvider
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
+
+        // Fortify's default re-validates with `$user->{Fortify::username()}` ("login"), which is a form field,
+        // not a column. Check the password against the signed-in user directly.
+        Fortify::confirmPasswordsUsing(
+            static fn (mixed $user, ?string $password): bool => $user instanceof User && is_string($password) && Hash::check($password, $user->password),
+        );
 
         // Reset links are built explicitly with the user's locale (no URL defaults outside a request).
         ResetPassword::createUrlUsing(static function (mixed $user, string $token): string {

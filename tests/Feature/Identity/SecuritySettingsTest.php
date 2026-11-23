@@ -7,6 +7,7 @@ use App\Domains\Identity\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
+use PragmaRX\Google2FA\Google2FA;
 
 final class FakeSms implements SmsSender
 {
@@ -126,6 +127,42 @@ it('needs a recent password confirmation before enabling 2FA', function (): void
     $this->get('/settings/security')->assertInertia(fn (Assert $page) => $page
         ->where('twoFactor.pendingConfirmation', true)
         ->where('twoFactor.qrSvg', fn ($svg) => is_string($svg) && str_contains($svg, '<svg')));
+});
+
+it('confirms the password through the real endpoint and rejects a wrong one', function (): void {
+    $this->actingAs(User::factory()->create());
+
+    $this->post('/user/confirm-password', ['password' => 'wrong'])->assertSessionHasErrors('password');
+    expect(session('auth.password_confirmed_at'))->toBeNull();
+
+    $this->get('/user/confirm-password?return=/settings/security%23two-factor');
+    $this->post('/user/confirm-password', ['password' => 'password'])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect('/settings/security#two-factor');
+    expect(session('auth.password_confirmed_at'))->toBeInt();
+});
+
+it('turns on 2FA end to end: confirm password, enable, scan, confirm code, see recovery codes', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $this->post('/user/confirm-password', ['password' => 'password'])->assertSessionHasNoErrors();
+    $this->post('/user/two-factor-authentication')->assertSessionHasNoErrors();
+
+    $secret = decrypt((string) $user->fresh()?->two_factor_secret);
+    $code = app(Google2FA::class)->getCurrentOtp($secret);
+
+    $this->post('/user/confirmed-two-factor-authentication', ['code' => '000000'])
+        ->assertSessionHasErrorsIn('confirmTwoFactorAuthentication', 'code');
+
+    $this->post('/user/confirmed-two-factor-authentication', ['code' => $code])->assertSessionHasNoErrors();
+
+    $this->get('/settings/security')->assertInertia(fn (Assert $page) => $page
+        ->where('twoFactor.enabled', true)
+        ->where('twoFactor.pendingConfirmation', false)
+        ->where('twoFactor.recoveryCodes', fn ($codes) => count($codes) === 8));
+
+    expect($user->fresh()?->hasTwoFactorEnabled())->toBeTrue();
 });
 
 it('sends the confirm-password page back to the page that asked', function (): void {
