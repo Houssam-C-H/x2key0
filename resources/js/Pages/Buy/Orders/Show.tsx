@@ -57,6 +57,11 @@ export default function OrderShow({ order, can }: { order: OrderDetail; can: { c
                 <div className="flex flex-wrap items-center gap-3">
                     <StatusBadge status={order.status} />
                     <span className="text-sm text-muted">{new Date(order.createdAt).toLocaleString(locale)}</span>
+                    {order.status !== 'pending_payment' && (
+                        <button type="button" className="btn-outline-pill ms-auto px-3 py-1 text-sm" onClick={() => router.post(`/chat/order/${order.publicId}`)}>
+                            {t('chat.open_order_chat')}
+                        </button>
+                    )}
                 </div>
                 <p className="mt-3 text-sm">{t(`order.explain.${order.status}`)}</p>
                 {errors.order && <p className="mt-2 text-sm text-danger">{errors.order}</p>}

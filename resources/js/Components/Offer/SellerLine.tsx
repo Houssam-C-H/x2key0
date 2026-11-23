@@ -19,6 +19,7 @@ export function SellerLine({ seller }: { seller: OfferSeller }) {
 
     return (
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+            {seller.online && <span role="img" aria-label={t('chat.online')} title={t('chat.online')} className="inline-block h-2 w-2 shrink-0 rounded-full bg-success" />}
             <a href={seller.href} className="truncate font-semibold hover:text-primary">
                 {seller.name}
             </a>

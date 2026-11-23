@@ -38,6 +38,7 @@ export interface SharedProps {
     menu: DashboardMenu | null;
     stockAlert: { count: number; titles: string[] } | null;
     inbox: { unread: number } | null;
+    chat: { unread: number } | null;
     megaMenu: { code: string; label: string; href: string; games: { name: string; href: string; count: number }[] }[];
     errors: Record<string, string>;
     [key: string]: unknown;

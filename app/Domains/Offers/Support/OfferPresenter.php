@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Offers\Support;
 
 use App\Domains\Catalog\Support\CatalogPresenter;
+use App\Domains\Messaging\Support\Presence;
 use App\Domains\Offers\Enums\Fulfillment;
 use App\Domains\Offers\Models\Offer;
 use App\Shared\Support\Translations;
@@ -25,7 +26,7 @@ final class OfferPresenter
      */
     public static function publicRelations(): array
     {
-        return ['seller.level', 'seller.stats', 'storageGroup', 'gameCategory.game', 'gameCategory.type', 'product'];
+        return ['seller.level', 'seller.stats', 'seller.user:id,last_seen_at', 'storageGroup', 'gameCategory.game', 'gameCategory.type', 'product'];
     }
 
     /**
@@ -172,6 +173,8 @@ final class OfferPresenter
             'levelName' => $seller->level?->translate('name', $locale),
             'positiveRateBps' => $seller->stats?->positive_rate_bps,
             'logoUrl' => $seller->logoUrl(),
+            // Green dot (spec 12.1); only where the seller's user was loaded with the offer.
+            'online' => $seller->relationLoaded('user') && app(Presence::class)->online($seller->user->last_seen_at),
         ];
     }
 }

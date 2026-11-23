@@ -61,6 +61,14 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-021 — Chat storage, redaction and live delivery (2026-11-23)
+- **Both bodies are stored:** `body` (what the sender typed, kept for staff and disputes) and `body_redacted` (only when something was hidden). The counterparty is only ever sent `body_redacted ?? body`; the sender sees their own original with a notice. Redaction is a mask (`••••`), not a refusal, so a buyer's honest question is never lost.
+- **Repeat offenders:** redacted messages within 24 h reach 3 → one open `chat_contact_info` risk flag per day for staff; no automatic punishment yet (violations arrive with M17).
+- **Conversations:** one per order (unique `order_id`, created by the `OrderPaid` listener) and one pre-sale per buyer × store. Read state is a per-participant marker (`last_read_message_id`); unread = messages by others after it. System lines are stored as translation keys + params and translated for each reader.
+- **Presence = `last_seen_at`** (touched by any authenticated request at most once a minute) compared with `online_threshold_seconds`; no separate presence service until Reverb is wired.
+- **Live delivery is polling for now** (`GET /chat/{id}/poll`, 5 s, throttled). Reverb is installed but not configured on dev machines; swapping the poll for an Echo subscription needs only a `MessageSent` broadcast event and a channel authorisation (participants), so the data model does not change.
+- **Auto-reply** uses the seller's Store Management settings: first message once, off-hours message at most once per 12 h per conversation; working hours use the platform time zone until sellers get a time zone setting.
+
 ## ADR-020 — Settlement, holds and the inbox (2026-11-23)
 - **Settlement is computed from what was kept, not what was ordered:** base = unit price × (quantity − refunded units); commission uses the seller level's current rate (the quote at checkout is only an estimate and is overwritten). Buyer fees stay platform revenue (REV_BUYER_FEE) from capture on.
 - **One hold mechanism for everything:** the seller net becomes one `settlement` hold, or N `insurance` holds for insured offers (spec 7.1's `SELLER_INSURED_PENDING` is not used: installments are separate holds on SELLER_PENDING, which keeps the money in one account and the schedule in data). The rolling reserve is withheld when a hold is released and becomes its own `reserve` hold. All three kinds are released by the same idempotent job.

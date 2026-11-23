@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { Breadcrumbs } from '@/Components/Catalog/Breadcrumbs';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
 import { OfferCard } from '@/Components/Offer/OfferCard';
@@ -20,6 +20,7 @@ interface Props {
         country: string | null;
         level: SellerLevel | null;
         memberSince: string | null;
+        online: boolean;
         onVacation: boolean;
         vacationUntil: string | null;
         languages: { code: string; name: string; level: string }[];
@@ -36,7 +37,7 @@ interface Props {
 /** Public store page (spec 1.8 My Store). Offers, reviews and coupons join with M5 / M14 / M16. */
 export default function Store({ store, services, featured, offers, isOwner, breadcrumbs, seo }: Props) {
     const t = useT();
-    const { locale } = useShared();
+    const { locale, auth } = useShared();
     const rate = (bps: number | null) => (bps === null ? '—' : bpsToPercent(bps));
 
     return (
@@ -62,8 +63,25 @@ export default function Store({ store, services, featured, offers, isOwner, brea
                                 {store.level && <LevelBadge level={store.level} light />}
                                 {store.memberSince && <span>{t('seller.public.member_since', { date: new Date(store.memberSince).toLocaleDateString(locale) })}</span>}
                                 {store.country && <span>· {store.country}</span>}
+                                <span className="inline-flex items-center gap-1">
+                                    <span aria-hidden className={`inline-block h-2 w-2 rounded-full ${store.online ? 'bg-success' : 'bg-white/40'}`} />
+                                    {store.online ? t('chat.online') : t('chat.offline')}
+                                </span>
                             </div>
                         </div>
+                        {!isOwner && (
+                            <div className="ms-auto">
+                                {auth.user ? (
+                                    <button type="button" className="btn-outline-pill border-white text-white" onClick={() => router.post(`/chat/store/${store.slug}`)}>
+                                        {t('chat.contact_seller')}
+                                    </button>
+                                ) : (
+                                    <Link href={`/${locale}/login`} className="btn-outline-pill border-white text-white">
+                                        {t('chat.contact_seller')}
+                                    </Link>
+                                )}
+                            </div>
+                        )}
                         {isOwner && (
                             <div className="ms-auto flex gap-2">
                                 <Link href="/seller/info" className="btn-outline-pill border-white text-white">

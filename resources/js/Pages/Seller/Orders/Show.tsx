@@ -29,6 +29,9 @@ export default function SoldOrderShow({ order, can }: Props) {
             <Panel title={order.number}>
                 <div className="flex flex-wrap items-center gap-3">
                     <StatusBadge status={order.status} substatus={order.substatus} />
+                    <button type="button" className="btn-outline-pill order-last ms-auto px-3 py-1 text-sm" onClick={() => router.post(`/chat/order/${order.publicId}`)}>
+                        {t('chat.open_order_chat')}
+                    </button>
                     <span className="text-sm text-muted">
                         {t('order.buyer')}: <span className="font-semibold text-ink">{order.buyer}</span>
                     </span>

@@ -8,6 +8,7 @@ use App\Domains\Announcements\Support\AnnouncementCenter;
 use App\Domains\Catalog\Enums\CategoryTypeCode;
 use App\Domains\Catalog\Support\CatalogReader;
 use App\Domains\Identity\Models\User;
+use App\Domains\Messaging\Support\ChatPresenter;
 use App\Domains\Storage\Support\StockAlerts;
 use App\Shared\Navigation\DashboardMenuPresenter;
 use Illuminate\Http\Request;
@@ -69,6 +70,8 @@ final class HandleInertiaRequests extends Middleware
                 : null,
             // Announcement bell (spec 12.2): unread notifications + announcements.
             'inbox' => fn (): ?array => $user instanceof User ? ['unread' => app(AnnouncementCenter::class)->unreadCount($user)] : null,
+            // Chat badge (spec 12.1): conversations with unread messages.
+            'chat' => fn (): ?array => $user instanceof User ? ['unread' => app(ChatPresenter::class)->unreadConversations($user)] : null,
             // Seller stock bar (spec 1.1 / 8.1): open, undismissed low-stock alerts, on dashboard pages.
             'stockAlert' => fn (): ?array => $user instanceof User && $request->route('locale') === null && $user->sellerProfile?->status->opensSellerCenter() === true
                 ? StockAlerts::bar($user->sellerProfile->id)

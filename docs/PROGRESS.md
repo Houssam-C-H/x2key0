@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M10 — Chat, presence, redaction, auto-reply (next). M1–M9 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M11 — Disputes (next). M1–M10 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -14,8 +14,24 @@
 | M7 | Ledger + points | ✅ code done | See checklist below |
 | M8 | Delivery, Sold Orders, refunds | ✅ code done | See checklist below |
 | M9 | Completion, settlement, notifications | ✅ code done | See checklist below |
-| M10 | Chat | next | |
-| M11–M19 | — | not started | |
+| M10 | Chat | ✅ code done | See checklist below; Reverb live delivery pending |
+| M11 | Disputes | next | |
+| M12–M19 | — | not started | |
+
+## M10 checklist
+- [x] Tables: conversations (order | pre_sale), participants (read marker, mute), messages (original `body` + `body_redacted`, flags, kind text | system | auto_reply | auto_hours)
+- [x] **Order chat** created when the order is `paid` (idempotent, system message); **pre-sale chat** from "Contact seller" on the public store page (one per buyer × store; not for yourself or non-public stores); "Chat about this order" on both order pages
+- [x] `/chat` (spec Part 20): conversation list with All · Unread · Read, search, last message, unread counts, thread, safety banner, online dot, mute; participants only (anyone else gets 404)
+- [x] **Contact-info redaction** (`ContactInfo::redact`): e-mails (also spelled out), links/domains, messenger invites and handles, phone numbers in any digit script; English, French and Arabic cases tested. The counterparty reads `body_redacted`; the sender sees the original with a "hidden" notice; flagged `contact_info`
+- [x] 3 redacted messages in 24 h → open risk flag `chat_contact_info` (once per day)
+- [x] **Presence:** `users.last_seen_at` heartbeat (≤ 60 s) + `online_threshold_seconds` (120); green dot in chat, on the store page and on offer rows (`seller.online`)
+- [x] **Auto-reply** (Store Management): first message of a conversation; off-hours message (window may wrap past midnight, platform time zone) at most once per 12 h per conversation
+- [x] Header chat badge = conversations with unread messages (shared prop `chat.unread`)
+- [x] Message length ≤ 2000, rate limits (send 30/min, poll 120/min, start 20/min)
+- [x] 30 new tests (`tests/Feature/Messaging`); Larastan max 0 errors; Pint; TS strict
+- [ ] **Live delivery over Reverb** (private/presence channels, Echo): the page polls every 5 s for now — see ADR-021
+- [ ] Attachments (images/PDF, scan, signed URLs 5 min), support chat, staff chat access with audit, staff view of the transcript in the Filament order timeline
+- [ ] "Online sellers" catalog filter; e-mail copy of notifications and notification preferences; seller sound/toast on new order
 
 ## M9 checklist
 - [x] Tables: holds (settlement / insurance / reserve, release time, source hold), announcements, user_inbox
@@ -197,6 +213,7 @@
 - 2026-11-23 — M2 identity built: Fortify auth + 2FA, sessions/devices, settings pages, certification center, staff roles, admin panel. 147 tests green. Bug found by tests and fixed: Fortify's 2FA QR label read a non-existent `login` attribute.
 - 2026-11-23 — Fix: password confirmation crashed for the same reason (Fortify reads `$user->login`); custom confirm callback + end-to-end 2FA test.
 - 2026-11-23 — M4 sellers built: activation via certification, store state machine, store management screens, public store page, seller admin. Bug found by tests and fixed: saving Seller Information without the description field wiped the stored description.
+- 2026-11-23 — M10 chat built (branch `m10-chat`, on top of M9): order + pre-sale conversations, redaction in en/fr/ar with risk flag on repeats, presence dots, auto-reply, unread badge, `/chat` page (polling). Dev server note: Sail now loads `docker/opcache.ini` (20 s → ~2 s requests on a Windows bind mount).
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.

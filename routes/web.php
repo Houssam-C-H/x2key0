@@ -7,6 +7,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\AuthPageController;
 use App\Http\Controllers\Buy\FinanceController;
 use App\Http\Controllers\Buy\PurchaseOrderController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\EngagementController;
@@ -203,6 +204,15 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/announcements/read-all', [AnnouncementController::class, 'readAll'])->name('announcements.read-all');
     Route::post('/announcements/{id}/read', [AnnouncementController::class, 'read'])->where('id', '[na][0-9]+')->name('announcements.read');
     Route::post('/announcements/{id}/star', [AnnouncementController::class, 'star'])->where('id', '[na][0-9]+')->name('announcements.star');
+
+    // Chat (spec 12.1): conversation list/thread, pre-sale "Contact seller", order chat, polling
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/{publicId}', [ChatController::class, 'index'])->where('publicId', '[0-9a-z]{26}')->name('chat.show');
+    Route::get('/chat/{publicId}/poll', [ChatController::class, 'poll'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:120,1')->name('chat.poll');
+    Route::post('/chat/{publicId}/messages', [ChatController::class, 'send'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:30,1')->name('chat.send');
+    Route::post('/chat/{publicId}/mute', [ChatController::class, 'mute'])->where('publicId', '[0-9a-z]{26}')->name('chat.mute');
+    Route::post('/chat/store/{slug}', [ChatController::class, 'startPreSale'])->middleware('throttle:20,1')->name('chat.start');
+    Route::post('/chat/order/{publicId}', [ChatController::class, 'forOrder'])->where('publicId', '[0-9a-z]{26}')->name('chat.order');
 
     // Favorites (spec Part 20: POST /api/favorites toggle)
     Route::post('/favorites', [EngagementController::class, 'toggleFavorite'])->middleware('throttle:60,1')->name('favorites.toggle');

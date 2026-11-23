@@ -10,7 +10,7 @@ import { MegaMenu } from './MegaMenu';
 export function Header() {
     const t = useT();
     const lp = useLocalePath();
-    const { auth, locale, currency, categoryTypes, app, inbox } = useShared();
+    const { auth, locale, currency, categoryTypes, app, inbox, chat } = useShared();
     const [menuOpen, setMenuOpen] = useState(false);
     const [localeOpen, setLocaleOpen] = useState(false);
 
@@ -67,9 +67,14 @@ export function Header() {
 
                         {auth.user ? (
                             <>
-                                <a href="/chat" className="rounded-md p-2 hover:bg-white/10" aria-label={t('header.chat')}>
+                                <Link href="/chat" className="relative rounded-md p-2 hover:bg-white/10" aria-label={t('header.chat')}>
                                     <Icon name="chat" />
-                                </a>
+                                    {chat && chat.unread > 0 && (
+                                        <span className="absolute -end-0.5 -top-0.5 min-w-[1.1rem] rounded-full bg-success px-1 text-center text-[10px] font-bold leading-[1.1rem] text-white" aria-label={t('chat.unread_count', { count: chat.unread })}>
+                                            {chat.unread > 99 ? '99+' : chat.unread}
+                                        </span>
+                                    )}
+                                </Link>
                                 <Link href="/announcements" className="relative rounded-md p-2 hover:bg-white/10" aria-label={t('header.announcements')}>
                                     <Icon name="bell" />
                                     {inbox && inbox.unread > 0 && (

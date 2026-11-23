@@ -35,6 +35,7 @@ use App\Domains\Ledger\Models\LedgerAccount;
 use App\Domains\Ledger\Models\LedgerJournal;
 use App\Domains\Ledger\Policies\LedgerPolicy;
 use App\Domains\Ledger\Support\LedgerCreditsWallet;
+use App\Domains\Messaging\Listeners\OpenOrderConversation;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\Policies\OfferPolicy;
 use App\Domains\Orders\Events\OrderCancelled;
@@ -135,6 +136,7 @@ final class AppServiceProvider extends ServiceProvider
 
         // Notification matrix (spec 12.3): order and money events → inbox.
         Event::listen(OrderPaid::class, [SendOrderNotifications::class, 'paid']);
+        Event::listen(OrderPaid::class, OpenOrderConversation::class);
         Event::listen(OrderDelivered::class, [SendOrderNotifications::class, 'delivered']);
         Event::listen(OrderCompleted::class, [SendOrderNotifications::class, 'completed']);
         Event::listen(OrderCancelled::class, [SendOrderNotifications::class, 'cancelled']);

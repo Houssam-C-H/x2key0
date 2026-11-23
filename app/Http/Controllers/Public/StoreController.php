@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Messaging\Support\Presence;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\Support\OfferPresenter;
 use App\Domains\Sellers\Enums\SellerStatus;
@@ -55,6 +56,7 @@ final class StoreController
                 'country' => $profile->country,
                 'level' => SellerPresenter::level($profile->level, $locale),
                 'memberSince' => $profile->user->created_at->toIso8601String(),
+                'online' => app(Presence::class)->online($profile->user->last_seen_at),
                 'onVacation' => $profile->status === SellerStatus::Vacation,
                 'vacationUntil' => $profile->vacation_until?->toDateString(),
                 'languages' => array_map(static fn (array $l): array => [

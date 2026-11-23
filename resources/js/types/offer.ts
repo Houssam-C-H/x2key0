@@ -5,6 +5,7 @@ export interface OfferSeller {
     levelName: string | null;
     positiveRateBps: number | null;
     logoUrl: string | null;
+    online: boolean;
 }
 
 /** Buy box / "Other sellers" row (spec 1.5). */
