@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Models\UserSecurity;
 use App\Http\Middleware\RequirePrivacyPassword;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -28,3 +29,9 @@ function unlockPrivacy(User $user): void
 
     test()->withSession([RequirePrivacyPassword::SESSION_KEY => now()->getTimestamp()]);
 }
+
+// Race tests need committed rows so a second connection can hold locks: truncation instead of a wrapping
+// transaction. They run on PostgreSQL only (CI and local Postgres) and skip elsewhere.
+pest()->extend(TestCase::class)
+    ->use(DatabaseTruncation::class)
+    ->in('Concurrency');

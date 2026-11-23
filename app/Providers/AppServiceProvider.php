@@ -29,6 +29,13 @@ use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\Identity\Support\LogSmsSender;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\Policies\OfferPolicy;
+use App\Domains\Orders\Models\Order;
+use App\Domains\Orders\Policies\OrderPolicy;
+use App\Domains\Payments\Contracts\CreditsWallet;
+use App\Domains\Payments\Providers\FakePaymentProvider;
+use App\Domains\Payments\Support\UnfundedCreditsWallet;
+use App\Domains\Risk\Models\BlocklistEntry;
+use App\Domains\Risk\Models\RiskFlag;
 use App\Domains\Sellers\Models\MerchantContact;
 use App\Domains\Sellers\Models\SellerLevel;
 use App\Domains\Sellers\Models\SellerProfile;
@@ -59,6 +66,20 @@ final class AppServiceProvider extends ServiceProvider
 
         // Provider drivers: real ones are chosen with founder decisions (D11 KYC, SMS provider).
         $this->app->bind(KycProvider::class, FakeKycProvider::class);
+
+        // Credits Balance as a payment source: empty until the ledger (M7) backs it — ADR-016.
+        $this->app->bind(CreditsWallet::class, UnfundedCreditsWallet::class);
+
+        // Fake PSP (D2 until M6b): refused in production; webhook secret from config or derived from APP_KEY.
+        $this->app->bind(FakePaymentProvider::class, function (): FakePaymentProvider {
+            $secret = config('x2key.payments.fake.webhook_secret');
+
+            return new FakePaymentProvider(
+                cache()->store(),
+                is_string($secret) && $secret !== '' ? $secret : hash_hmac('sha256', 'x2key-fake-psp-webhook', config()->string('app.key')),
+                $this->app->isProduction(),
+            );
+        });
         $this->app->bind(SmsSender::class, LogSmsSender::class);
 
         // Storage vault (ADR-014): production must provide its own keys; dev derives them from APP_KEY.
@@ -113,6 +134,10 @@ final class AppServiceProvider extends ServiceProvider
         Gate::policy(Offer::class, OfferPolicy::class);
         Gate::policy(StorageGroup::class, OfferPolicy::class);
 
+        foreach ([Order::class, RiskFlag::class, BlocklistEntry::class] as $riskModel) {
+            Gate::policy($riskModel, OrderPolicy::class);
+        }
+
         foreach ([CategoryType::class, Game::class, GameCategory::class, Product::class, Platform::class, Region::class] as $catalogModel) {
             Gate::policy($catalogModel, CatalogPolicy::class);
             // Navigation caches (mega menu, Game Index) follow catalog edits immediately.
@@ -135,6 +160,11 @@ final class AppServiceProvider extends ServiceProvider
 
             // …nor on their own store's offers.
             if ($ability === 'moderate' && ($arguments[0] ?? null) instanceof Offer && $arguments[0]->seller->user_id === $user->id) {
+                return false;
+            }
+
+            // …nor on a payment review of an order they bought or sold.
+            if ($ability === 'review' && ($arguments[0] ?? null) instanceof Order && OrderPolicy::involved($user, $arguments[0])) {
                 return false;
             }
 

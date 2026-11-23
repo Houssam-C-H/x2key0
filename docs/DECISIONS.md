@@ -13,7 +13,7 @@ Ziggy is not used: the server passes resolved URLs (e.g. menu hrefs), which also
 ## ADR-003 — Local tests on SQLite until Docker runs; CI on PostgreSQL (2026-11-23)
 **Context:** The dev PC has no Docker/WSL2 yet (needs admin install). The spec targets PostgreSQL 16+.
 **Decision:** `phpunit.xml` defaults to SQLite in-memory so the suite runs anywhere; CI overrides `DB_CONNECTION=pgsql` (Postgres 17 service). Migrations use portable Schema types (`json` → `jsonb` on Postgres). Postgres-only features (deferred zero-sum trigger for the ledger, `SKIP LOCKED`) arrive in M6/M7 and their tests will be marked Postgres-only.
-**Consequence:** From M6 on, Docker (Sail) is required locally.
+**Consequence:** From M6 on, PostgreSQL is required locally for the race tests. Update (M6): a portable PostgreSQL 17 (`C:\dev\tools\pgsql`, no admin rights) runs them until Docker/Sail works.
 
 ## ADR-004 — Dashboard menu is data, routes are generated from it (2026-11-23)
 `App\Shared\Navigation\DashboardMenu` is the single source for the sidebar tree (spec 1.7 structure, Part 20 URLs). Routes for every leaf are registered from it, the presenter marks the active leaf (including query-string tabs like `/tickets?status=closed`), and a test walks every leaf. When a milestone builds a real screen, it replaces the placeholder route for that path; the menu entry stays.
@@ -60,6 +60,20 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Levels with `auto_approve` also pass service applications immediately (no reviewer); others wait for a merchant manager. Nobody reviews their own store's application.
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
+
+## ADR-016 — Credits Balance behind a wallet seam until the ledger (2026-11-23)
+**Context:** Spec M6 needs credits as a payment source, but credits balances only exist once the ledger lands (M7: PostJournal, CREDITS_SPENT wiring), and D8 rules out top-ups.
+**Decision:** Checkout talks to `Payments\Contracts\CreditsWallet` (`available`, `spend`, `restore`, idempotent per key `CREDITS_SPENT:order:{id}` / `CREDITS_RESTORED:order:{id}`). M6 binds `UnfundedCreditsWallet` (always 0, so the credits toggle never shows); tests bind an in-memory wallet to cover credits-only, mixed and restore paths. M7 replaces the binding with a ledger-backed wallet that posts the journals under row locks. `OrderPaid`, `OrderCancelled` and `PaymentCaptured` are dispatched after commit so M7 can post PAYMENT_CAPTURED / REFUND without touching checkout code.
+
+## ADR-017 — Checkout & payment conventions (2026-11-23)
+- **Fees:** buyer service charge = max(3 %, $0.30) on the whole order after discounts, whatever pays for it (spec 7.2 example); category add-on fee from `policy_override.addon_fee_bps`; payment-method surcharge (`fee_bps` + `fee_fixed`) on the PSP part only, so credits are never surcharged. All half-up on integer cents.
+- **One payment per source:** a `credits` payment (captured at checkout) and at most one PSP payment for the rest. The order is paid when the PSP part is captured (or immediately when credits cover everything); capture-time risk then decides `paid` vs `payment_review`.
+- **Webhooks:** the signature is the authentication (CSRF-exempt `/webhooks/{provider}`); verified events are stored with a normalised copy and applied by a queued job that locks the event row, so processing is exactly-once. Return URLs never change state; the order page polls.
+- **The PSP is the truth for money:** a capture arriving for a payment we already cancelled (expired order) is recorded as captured and flagged `late_capture`; the order stays closed. Refunds are executed in M8 from `refund_required` / `late_capture` flags.
+- **Fake PSP:** dev/test only (`FakePaymentProvider`, refused in production, hosted page at `/fake-psp/{id}`), HMAC-signed webhooks with `FAKE_PSP_WEBHOOK_SECRET` (derived from APP_KEY when empty). Test methods `fake_card` / `fake_wallet` are seeded outside production only.
+- **Reservations:** manual stock is taken from `offers.manual_stock_qty` under the offer row lock and remembered on the order item; storage items are reserved with `SKIP LOCKED` on PostgreSQL. Expiry releases both; paid orders keep storage items (no deadline) for delivery in M8.
+- **Buyer inputs** are sealed with SecretVault (ADR-014), never flashed, never serialised; the seller sees them after `paid` (M8).
+- **Race tests** live in `tests/Concurrency` (DatabaseTruncation, PostgreSQL only, a second connection holds locks).
 
 ## ADR-014 — Storage vault: envelope encryption, peppered fingerprints, portable columns (2026-11-23)
 **Decision:** `SecretVault` (bound in `AppServiceProvider`) seals every storage secret with its own random 256-bit data key (AES-256-GCM, 96-bit IV), and wraps that key with the master key using the key id (`v1`) as associated data. Duplicates are detected with `HMAC-SHA256(pepper, normalised value)` — keys/codes ignore case, spaces and dashes; accounts are keyed by lower-cased login. Keys come from `STORAGE_MASTER_KEY` / `STORAGE_HMAC_PEPPER` (base64, 32 bytes); the app refuses to start the vault in production without them; in dev/test they are derived from `APP_KEY` with HKDF (separate info strings), never `Crypt` directly.

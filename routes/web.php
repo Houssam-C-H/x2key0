@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 use App\Domains\Catalog\Models\Game;
 use App\Http\Controllers\Auth\AuthPageController;
+use App\Http\Controllers\Buy\PurchaseOrderController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\EngagementController;
+use App\Http\Controllers\FakePspController;
+use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PreferencesController;
 use App\Http\Controllers\Public\CatalogController;
 use App\Http\Controllers\Public\HomeController;
@@ -34,6 +38,13 @@ Route::get('/', fn (Request $request) => redirect('/'.ResolveLocale::preferredLo
     ->name('root');
 
 Route::post('/preferences', PreferencesController::class)->name('preferences');
+
+// PSP webhooks (spec 9.3): signature-authenticated, CSRF-exempt (bootstrap/app.php).
+Route::post('/webhooks/{provider}', PaymentWebhookController::class)->where('provider', '[a-z0-9_]+')->middleware('throttle:600,1')->name('webhooks.payments');
+
+// Fake PSP hosted page (dev/test only; the controller returns 404 in production).
+Route::get('/fake-psp/{id}', [FakePspController::class, 'show'])->where('id', 'fake_[a-z0-9]{26}')->name('fake-psp.show');
+Route::post('/fake-psp/{id}/{outcome}', [FakePspController::class, 'complete'])->where(['id' => 'fake_[a-z0-9]{26}', 'outcome' => 'pay|fail|cancel'])->name('fake-psp.complete');
 
 // Browsing history removal works for signed-in users and guests (cookie token) — spec Part 20.
 Route::delete('/history', [EngagementController::class, 'clear'])->name('history.clear');
@@ -98,6 +109,7 @@ Route::middleware('auth')->group(function (): void {
         '/seller/contacts' => fn () => Route::get('/seller/contacts', MerchantContactsController::class)->name('dash.seller.contacts'),
         '/seller/offers' => fn () => Route::get('/seller/offers', [OfferController::class, 'index'])->name('dash.seller.offers'),
         '/seller/offers/create' => fn () => Route::get('/seller/offers/create', [OfferController::class, 'create'])->name('dash.seller.offers.create'),
+        '/buy/orders' => fn () => Route::get('/buy/orders', [PurchaseOrderController::class, 'index'])->name('dash.buy.orders'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
         // Storage pages get the Privacy Password gate below (spec 1.7).
         '/seller/storage' => fn () => Route::get('/seller/storage', [StorageController::class, 'groups'])->name('dash.storage.groups'),
@@ -150,6 +162,13 @@ Route::middleware('auth')->group(function (): void {
             Route::post('/seller/storage/items/manage', [StorageController::class, 'manage'])->middleware('throttle:30,1')->name('seller.storage.manage');
         });
     });
+
+    // Checkout (spec 1.6, 9, Part 20): verified e-mail required.
+    Route::middleware('verified')->group(function (): void {
+        Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+        Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:20,1')->name('checkout.store');
+    });
+    Route::get('/buy/orders/{publicId}', [PurchaseOrderController::class, 'show'])->where('publicId', '[0-9a-z]{26}')->name('buy.orders.show');
 
     // Favorites (spec Part 20: POST /api/favorites toggle)
     Route::post('/favorites', [EngagementController::class, 'toggleFavorite'])->middleware('throttle:60,1')->name('favorites.toggle');

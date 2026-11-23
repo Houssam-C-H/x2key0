@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M6 — Checkout & payments (next). M1–M5 code complete (M5 follow-ups listed below); Docker/Postgres local run still pending (WSL2 admin install).
+**Current milestone:** M7 — Ledger & points (next). M1–M6 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -10,8 +10,30 @@
 | M3 | Catalog, listing, facets, Meilisearch, sitemaps | ✅ done | See checklist below |
 | M4 | Sellers: activation, store, store management | ✅ done | See checklist below |
 | M5 | Offers, storage vault, uploads | ✅ code done · uploads open | See checklist below |
-| M6 | Checkout & payments | next | Gate: founder decisions (§2.3) before real PSPs |
-| M7–M19 | — | not started | |
+| M6 | Checkout & payments (fake PSP + credits seam) | ✅ code done | See checklist below; M6b (real PSPs) waits for D2 |
+| M7 | Ledger + points | next | |
+| M8–M19 | — | not started | |
+
+## M6 checklist
+- [x] Tables: orders (number `X2K{yyMMdd}{seq}` from a locked per-day counter, money lines, paid credits/PSP split, commission and seller net, sealed buyer inputs, risk score/decision, unique (buyer, idempotency key)), order_items (offer snapshot, reserved manual qty), order_status_history (append-only), order_timers (unique per type), payment_methods_catalog, payments, payment_events (unique provider + event id), risk_flags, blocklist; PostgreSQL CHECKs on stock ≥ 0, delivered + refunded ≤ qty, paid ≤ total
+- [x] Quote (spec 1.6 / 7.2): quantity tiers, buyer service charge 3 % min $0.30 half-up on the whole order, category add-on fee, credits first, method surcharge on the PSP part only, commission by seller level; integer money only
+- [x] Checkout `/checkout` → `POST /checkout`: live offer, not your own, quantity rules (min/max/multiple/stock), buyer inputs validated against the game×category schema and sealed with SecretVault, first-order cap (`max_order_amount_new_buyer`), payment methods filtered by country/currency/amount, idempotency key per page (double submit → same order)
+- [x] Reservations: manual stock decremented under the offer row lock; storage items reserved with `FOR UPDATE SKIP LOCKED` on PostgreSQL until the payment deadline, held for delivery once paid
+- [x] `OrderStateMachine` (spec 6.1 up to `paid`): opened → pending_payment → paid | payment_review | cancelled; payment_review → paid | cancelled; side effects in the same transaction (timers accept/delivery/auto-cancel, substatus `new`, release stock, restore credits, cancel open payments), history row per transition, `OrderPaid` / `OrderCancelled` / `PaymentCaptured` dispatched after commit for M7 journals
+- [x] Payments: `PaymentProvider` contract + `PaymentRouter` (catalog → driver); `FakePaymentProvider` with a hosted test page and HMAC-signed webhooks (refused in production); webhook → verify → store once → 200 → `ProcessPaymentEvent` job → `ApplyPaymentEvent` (locks the event, idempotent)
+- [x] **Mismatch:** amount/currency different from the payment → `payment_mismatch` flag, no transition. **Duplicate:** replayed webhook stored and processed once. **Late capture:** a capture after expiry/cancellation is recorded and flagged `late_capture` for refund; the order stays closed. Bad signature → 400, recorded, never processed
+- [x] **Expiry:** `orders:expire-unpaid` (1 min) cancels unpaid orders and gives stock/credits back; `storage:release-expired-reservations` (1 min) safety net; `payments:sync-pending` (5 min) recovers lost webhooks as `sync:` events — all idempotent (each run twice in tests)
+- [x] Credits as a payment source through `CreditsWallet` (credits-only orders skip the PSP and take the same capture path; mixed orders; credits restored on cancellation); production binding is empty until the M7 ledger (ADR-016)
+- [x] Risk v1 (spec 17.1): blocklist (e-mail domain, IP) → block; orders per hour review > 3 / block > 5; failed payments per IP per hour block > 5; new account (< 24 h) over $50 → review; gift cards/accounts for new buyers → review; credits right after a password/e-mail change → review; card-country mismatch adds score; review at capture → `payment_review`
+- [x] Admin (`Orders & risk`): orders with payment-review queue (finance approves → paid, rejects → cancelled + `refund_required` flag; nobody reviews their own purchase or sale), risk flags (resolve), blocklist (audited)
+- [x] Buyer: Buy Now → checkout page (quantity, buyer inputs, methods, credits toggle, price lines), fake PSP page, order detail (status, price lines, snapshot, payment, timeline, auto-refresh while unpaid), Purchase Orders with the spec 6.1 tabs
+- [x] **Race tests on PostgreSQL** (`tests/Concurrency`, DatabaseTruncation + a second connection): SKIP LOCKED never hands the last storage item to two checkouts; manual stock checkouts serialise on the offer row; event ids are unique at the database level
+- [x] 409 tests on PostgreSQL 17 (399 passed, 10 Meilisearch skipped) and SQLite (396 passed, race tests skipped there); Larastan max 0 errors; Pint; TS strict; live HTTP purchase (buyer login → checkout → double submit → fake PSP → paid → Purchase Orders)
+- [ ] Refund execution (PSP refunds, `refunds` table) for rejected reviews and late captures — M8 (flags record what to refund)
+- [ ] Ledger journals for CREDITS_SPENT / PAYMENT_CAPTURED and a funded Credits Balance — M7 (events and wallet seam are in place)
+- [ ] Real PSP drivers, payment methods admin and footer strip — M6b (needs D2)
+- [ ] Seller notification on `paid` (inbox + chat + e-mail) — M9/M10; Sold Orders — M8
+- [ ] Risk rules needing outside data: proxy/VPN/datacenter IP, card velocity across PSPs, 3-D Secure enforcement — with real PSPs (M6b) / M18
 
 ## M5 checklist
 - [x] Tables: offers (ULID, attribute_values + attributes_hash, USD unit price, tiers, insurance, listing period, version, soft deletes; CHECK price > 0 on PostgreSQL), offer_status_changes (append-only), offer_price_history (append-only), storage_groups, storage_items (sealed payload, HMAC, freeze flag), storage_import_batches, low_stock_alerts, favorites, browsing_history
@@ -37,7 +59,7 @@
 - [ ] Batch Release (Upload/Download offer list template, spec 1.8 #4) — not started
 - [ ] Low-stock inbox notification — with the notification matrix (M9/M10)
 - [ ] KMS-backed `SecretVault` driver for production — same stored format (ADR-014)
-- [ ] PostgreSQL run of the new migrations/tests (CI covers it; locally blocked on Docker/WSL2)
+- [x] PostgreSQL run of the new migrations/tests — done locally on portable PostgreSQL 17 during M6
 
 ## M4 checklist
 - [x] Tables: seller_levels (6 seeded tiers: commission, hold days, reserve, offer limit, auto-approve, rank boost, recompute thresholds), seller_profiles, seller_status_changes (append-only history), seller_stats, seller_service_applications, seller_store_media, merchant_contacts
@@ -118,5 +140,6 @@
 - 2026-11-23 — M2 identity built: Fortify auth + 2FA, sessions/devices, settings pages, certification center, staff roles, admin panel. 147 tests green. Bug found by tests and fixed: Fortify's 2FA QR label read a non-existent `login` attribute.
 - 2026-11-23 — Fix: password confirmation crashed for the same reason (Fortify reads `$user->login`); custom confirm callback + end-to-end 2FA test.
 - 2026-11-23 — M4 sellers built: activation via certification, store state machine, store management screens, public store page, seller admin. Bug found by tests and fixed: saving Seller Information without the description field wiped the stored description.
+- 2026-11-23 — M6 checkout & payments built (branch `m6-checkout-payments`, on top of M5): quotes, checkout, reservations, order state machine up to paid, fake PSP + webhooks, expiry/sync jobs, credits seam, risk v1, payment review admin. Portable PostgreSQL 17.12 set up in C:\dev\tools\pgsql (data C:\dev\tools\pgsql-data, port 5433); M1–M5 suite also verified on it. Bug found by tests and fixed: a capture arriving after we cancelled the payment locally was dropped as stale — it is now recorded and flagged for refund.
 - 2026-11-23 — M5 offers & storage built (branch `m5-offers-storage`): offer state machine, create/edit/Active Offers, moderation, encrypted storage vault with HMAC duplicate detection, low-stock alerts + bar, product/offer/store pages with offers, favorites, browsing history. New dev machine: portable PHP 8.4.28 + Composer set up in C:\dev\tools again; repo cloned to C:\Users\Stjg0\x2key0.
 - 2026-11-23 — M3 catalog built. Portable Meilisearch 1.57 in C:\dev\tools\meilisearch for local parity tests. SQLite dev DB switched to WAL + busy timeout (concurrent dev server no longer locks seeding).

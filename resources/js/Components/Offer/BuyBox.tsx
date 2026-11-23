@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { useShared, useT } from '@/lib/i18n';
 import { formatUsd } from '@/lib/money';
@@ -16,11 +17,11 @@ interface Props {
 
 /**
  * Buy box (spec 1.5): seller, stock label, quantity − / +, unit price, total, MSRP, Buy Now, fee note.
- * Checkout opens with M6, so Buy Now is shown but disabled.
+ * Buy Now opens checkout with the chosen quantity; guests sign in first.
  */
 export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents = null, recommended = false }: Props) {
     const t = useT();
-    const { locale } = useShared();
+    const { locale, auth } = useShared();
     const step = offer.integerMultiple ? offer.minQty : 1;
     const max = Math.max(offer.minQty, Math.min(offer.maxQty ?? offer.stock, offer.stock));
     const [qty, setQty] = useState(offer.minQty);
@@ -80,10 +81,14 @@ export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents
                 <p className="text-xs text-muted">{t('catalog.product.fees_note')}</p>
             </div>
 
-            <button type="button" className="btn-primary h-12 w-full" disabled title={t('offer.checkout_soon')}>
+            <button
+                type="button"
+                className="btn-primary h-12 w-full"
+                disabled={soldOut}
+                onClick={() => router.visit(auth.user ? `/checkout?offer=${offer.id}&qty=${qty}` : `/${locale}/login`)}
+            >
                 {t('catalog.product.buy_now')}
             </button>
-            <p className="text-center text-xs text-muted">{t('offer.checkout_soon')}</p>
 
             {otherCount > 0 && otherFromCents !== null && (
                 <a href="#other-sellers" className="block text-sm font-semibold text-primary hover:underline">

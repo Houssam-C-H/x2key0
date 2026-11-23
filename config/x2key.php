@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Domains\Payments\Providers\FakePaymentProvider;
 
 /*
  * X2KEY platform configuration.
@@ -43,6 +44,18 @@ return [
         'master_key' => env('STORAGE_MASTER_KEY'),
         'hmac_pepper' => env('STORAGE_HMAC_PEPPER'),
         'key_id' => env('STORAGE_KEY_ID', 'v1'),
+    ],
+
+    // Payment providers by code (spec 9.1). Real PSP drivers join in M6b (D2). The fake PSP is refused in
+    // production whatever this says.
+    'payments' => [
+        'providers' => [
+            'fake' => FakePaymentProvider::class,
+        ],
+        'fake' => [
+            // Signs fake webhooks; derived from APP_KEY when empty.
+            'webhook_secret' => env('FAKE_PSP_WEBHOOK_SECRET'),
+        ],
     ],
 
     // Display currencies only (D5): checkout and ledger always settle in USD.
@@ -97,6 +110,12 @@ return [
         'manual_adjustment_dual_approval_amount' => 10000,
         'max_order_amount_new_buyer' => 5000,
         'risk_review_new_account_amount' => 5000,
+        'risk_orders_per_hour_review' => 3,
+        'risk_orders_per_hour_block' => 5,
+        'risk_failed_payments_per_ip_block' => 5,
+        'risk_new_buyer_days' => 7,
+        'risk_review_score' => 50,
+        'payment_sync_after_minutes' => 5,
         'online_threshold_seconds' => 120,
         'low_stock_default_threshold' => 5,
         'ticket_autoclose_hours' => 72,

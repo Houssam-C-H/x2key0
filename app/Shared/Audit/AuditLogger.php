@@ -16,7 +16,7 @@ final class AuditLogger
         'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes',
         'privacy_password_hash', 'mfa_secret', 'payload_ciphertext', 'payload_dek_wrapped',
         'details_encrypted', 'data_encrypted', 'tax_id_encrypted', 'buyer_inputs_encrypted',
-        'ciphertext', 'dek_wrapped',
+        'ciphertext', 'dek_wrapped', 'buyer_inputs', 'buyer_inputs_ciphertext', 'buyer_inputs_dek_wrapped',
     ];
 
     public function __construct(

@@ -34,6 +34,9 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
         ]);
 
+        // PSP webhooks authenticate with their signature, not a CSRF token.
+        $middleware->validateCsrfTokens(except: ['webhooks/*']);
+
         $middleware->alias([
             'privacy' => RequirePrivacyPassword::class,
             'staff.2fa' => RequireStaffTwoFactor::class,
@@ -42,7 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Storage imports and account forms carry secrets: never flash them back into the session.
-        $exceptions->dontFlash(['items', 'account', 'payload', 'privacy_password', 'current_password', 'password', 'password_confirmation']);
+        $exceptions->dontFlash(['items', 'account', 'payload', 'buyer_inputs', 'privacy_password', 'current_password', 'password', 'password_confirmation']);
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

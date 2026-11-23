@@ -19,6 +19,7 @@ Multi-vendor digital game goods marketplace, IA modelled on Z2U. Full spec: docs
 - Local `.env` uses SQLite until Docker works; `.env.example` is the Sail/PostgreSQL config.
 - Commands: `composer test` · `composer stan` · `composer lint` / `composer fix` · `npm run typecheck` · `npm run build` (client + SSR) · `php artisan inertia:start-ssr`.
 - Sail (once Docker Desktop + WSL2 run): `cp .env.example .env && php artisan key:generate && ./vendor/bin/sail up -d`.
+- Local PostgreSQL 17 (portable, for the race tests in `tests/Concurrency` and CI parity): start with `C:\dev\tools\pgsql\bin\pg_ctl -D C:\dev\tools\pgsql-data -l C:\dev\tools\pgsql-data\server.log -o "-p 5433 -c listen_addresses=localhost" start`; run tests with `DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5433 DB_DATABASE=x2key_test DB_USERNAME=sail DB_PASSWORD=password php vendor/bin/pest`. On SQLite the race tests skip.
 - Local Meilisearch (portable, for the parity test or `CATALOG_SEARCH_DRIVER=meilisearch`): `C:\dev\tools\meilisearch\meilisearch.exe --db-path C:\dev\tools\meilisearch\data\ms --http-addr 127.0.0.1:7700 --no-analytics`. Without it, `MeilisearchParityTest` is skipped.
 
 ## Where things are
@@ -38,3 +39,5 @@ Multi-vendor digital game goods marketplace, IA modelled on Z2U. Full spec: docs
 - Offers: `App\Domains\Offers` — status only via `StateMachines\OfferStateMachine` (ADR-015), create/edit in `Actions\SaveOffer`, batch/inline in `Actions\BulkUpdateOffers`, product price caches via `Actions\RefreshProductOffers`, props in `Support\OfferPresenter`. Tests: `Tests\Support\OfferFixture`.
 - Storage vault: `App\Domains\Storage` — secrets only through `Contracts\SecretVault` (ADR-014); never log, flash or put payloads in Inertia props; reveals are audited JSON. Stock/alerts via `Actions\RefreshStorageStock`. Tests unlock Storage pages with `unlockPrivacy($user)` (tests/Pest.php).
 - Favorites / browsing history: `App\Domains\Engagement`.
+- Checkout & orders: `App\Domains\Checkout` (`Actions\CreateOrder`, `Support\QuoteCalculator`), `App\Domains\Orders` — status only via `StateMachines\OrderStateMachine`, stock holds in `Support\StockReservations`. Payments: `App\Domains\Payments` — drivers behind `Contracts\PaymentProvider` + `Support\PaymentRouter`; webhook events applied only by `Actions\ApplyPaymentEvent`; credits only through `Contracts\CreditsWallet` (ADR-016). Risk: `App\Domains\Risk\Support\RiskEvaluator`. Tests: `Tests\Support\CheckoutFixture`, `InMemoryCreditsWallet`.
+- Dev payments: fake PSP page `/fake-psp/{id}` (Pay / Decline / Cancel); `buyer_demo` can buy any demo offer.

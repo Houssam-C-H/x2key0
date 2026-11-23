@@ -29,7 +29,7 @@ final class DashboardMenu
     {
         return [
             self::group('buy', 'menu.buy', 'cart', 'all', [
-                self::leaf('buy.orders', 'menu.buy.orders', '/buy/orders', 'M8'),
+                self::leaf('buy.orders', 'menu.buy.orders', '/buy/orders', 'M6'),
                 self::leaf('buy.comments', 'menu.buy.comments', '/buy/comments', 'M16'),
                 self::leaf('buy.credits', 'menu.buy.credits', '/buy/credits', 'M9'),
                 self::leaf('buy.points', 'menu.buy.points', '/buy/points', 'M9'),
