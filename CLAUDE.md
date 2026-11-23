@@ -13,3 +13,15 @@ Multi-vendor digital game goods marketplace, IA modelled on Z2U. Full spec: docs
 - Every milestone ships with Pest tests; `composer test` and `composer stan` must pass.
 - Current milestone: docs/PROGRESS.md
 - Matching Z2U's architecture ≠ copying: never reuse Z2U's name, logo, artwork, copy, policies or catalog content.
+
+## Dev environment (Windows)
+- Portable PHP 8.4 + Composer live in `C:\dev\tools` (not on PATH by default). In Git Bash: `export PATH="/c/dev/tools/php:/c/dev/tools:$PATH"`.
+- Local `.env` uses SQLite until Docker works; `.env.example` is the Sail/PostgreSQL config.
+- Commands: `composer test` · `composer stan` · `composer lint` / `composer fix` · `npm run typecheck` · `npm run build` (client + SSR) · `php artisan inertia:start-ssr`.
+- Sail (once Docker Desktop + WSL2 run): `cp .env.example .env && php artisan key:generate && ./vendor/bin/sail up -d`.
+
+## Where things are
+- Policy defaults (Part 27): `config/x2key.php`, read via `App\Shared\Support\Settings`.
+- Money: `App\Shared\Money\Amount` + `MoneyCast`. Audit: `App\Shared\Audit\{Auditable,AuditLogger}`.
+- Dashboard sidebar + routes: `App\Shared\Navigation\DashboardMenu` (single source, see ADR-004).
+- UI strings: `lang/{en,fr,ar}.json` (a test enforces identical keys). Pages: `resources/js/Pages/{Public,Dashboard,Shared,...}`.

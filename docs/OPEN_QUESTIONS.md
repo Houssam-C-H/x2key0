@@ -13,4 +13,4 @@ D1 entity country · D2 PSPs · D3 launch categories · D4 languages · D5 settl
 7. **Section numbering:** Part 6 orders 6.9 before 6.7; milestones are Part 25, not Part 22 as §0.2 says. Cosmetic.
 
 ## Environment
-- Repo moved out of OneDrive to C:devkey (2026-11-22).
+- Repo moved out of OneDrive to `C:/dev/x2key` (2026-11-22).

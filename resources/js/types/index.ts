@@ -1,0 +1,75 @@
+export type Dir = 'ltr' | 'rtl';
+
+export interface LocaleOption {
+    code: string;
+    name: string;
+    dir: Dir;
+}
+
+export interface CategoryType {
+    code: string;
+    label: string;
+    hero: boolean;
+}
+
+export interface AuthUser {
+    id: number;
+    name: string;
+    email: string;
+}
+
+/** Props shared on every page by HandleInertiaRequests. */
+export interface SharedProps {
+    app: { name: string };
+    locale: string;
+    dir: Dir;
+    locales: LocaleOption[];
+    currency: string;
+    currencies: string[];
+    translations: Record<string, string>;
+    categoryTypes: CategoryType[];
+    auth: { user: AuthUser | null };
+    flash: { success: string | null; error: string | null };
+    [key: string]: unknown;
+}
+
+export interface MenuLeaf {
+    key: string;
+    label: string;
+    href: string;
+    active: boolean;
+}
+
+export interface MenuBranch {
+    key: string;
+    label: string;
+    open: boolean;
+    children: MenuNode[];
+}
+
+export type MenuNode = MenuLeaf | MenuBranch;
+
+export interface MenuGroup {
+    key: string;
+    label: string;
+    icon: string;
+    audience: 'all' | 'seller';
+    open: boolean;
+    children: MenuNode[];
+}
+
+export interface ActivePage {
+    key: string;
+    label: string;
+    milestone: string;
+    group: string | null;
+}
+
+export interface DashboardMenu {
+    groups: MenuGroup[];
+    active: ActivePage | null;
+}
+
+export function isBranch(node: MenuNode): node is MenuBranch {
+    return 'children' in node;
+}

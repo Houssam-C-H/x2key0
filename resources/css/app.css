@@ -1,9 +1,100 @@
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
+@source '../js/**/*.tsx';
+@source '../views/**/*.blade.php';
 
+/*
+ * X2KEY design tokens (spec 1.0 roles, X2KEY brand values).
+ * Use logical utilities (ms-/me-/ps-/pe-/start-/end-) everywhere so RTL works.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Sora', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+    --color-primary: #5b3df5;
+    --color-primary-hover: #4a2ee0;
+    --color-primary-soft: #eeeaff;
+
+    --color-ink: #12121a;
+    --color-muted: #6b6f80;
+    --color-line: rgb(18 18 26 / 0.12);
+    --color-canvas: #f4f5fa;
+    --color-surface-dark: #0b0e1f;
+    --color-surface-dark-2: #151a33;
+
+    --color-success: #16a34a;
+    --color-danger: #e11d48;
+    --color-warning: #f59e0b;
+    --color-warning-soft: #fff7e6;
+
+    /* One colour per category type (Hot Game cards, chips). */
+    --color-cat-currency: #f97316;
+    --color-cat-items: #7c3aed;
+    --color-cat-accounts: #334155;
+    --color-cat-gift: #0284c7;
+    --color-cat-topup: #db2777;
+    --color-cat-games: #059669;
+
+    --radius-card: 6px;
+    --radius-btn: 6px;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+@layer base {
+    html {
+        font-size: 14px;
+    }
+
+    body {
+        @apply bg-white font-sans text-ink antialiased;
+    }
+
+    h1,
+    h2,
+    h3 {
+        @apply font-display;
+    }
+
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-primary;
+    }
+}
+
+@utility card {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-line);
+    background: #fff;
+    box-shadow: var(--shadow-card);
+}
+
+@utility btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-btn);
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 150ms, color 150ms;
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+}
+
+@utility btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-hover;
+}
+
+@utility btn-outline-pill {
+    @apply btn rounded-full border border-primary text-primary hover:bg-primary-soft;
+}
+
+@utility btn-ghost {
+    @apply btn text-ink hover:bg-canvas;
+}
+
+@utility field {
+    @apply w-full rounded-[var(--radius-btn)] border border-line bg-white px-3 py-2 outline-none focus:border-primary;
 }

@@ -1,0 +1,14 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: max
+    paths:
+        - app
+        - routes
+        - database
+        - config/x2key.php
+    excludePaths:
+        # Published by vendor packages; not our code.
+        - database/migrations/*_create_permission_tables.php
+    tmpDir: storage/phpstan
