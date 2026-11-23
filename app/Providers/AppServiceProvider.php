@@ -32,6 +32,7 @@ use App\Domains\Identity\Listeners\RecordSuccessfulLogin;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\Identity\Support\LogSmsSender;
+use App\Domains\Invoices\Models\Invoice;
 use App\Domains\Ledger\Events\HoldReleased;
 use App\Domains\Ledger\Models\LedgerAccount;
 use App\Domains\Ledger\Models\LedgerJournal;
@@ -50,6 +51,9 @@ use App\Domains\Payments\Contracts\CreditsWallet;
 use App\Domains\Payments\Models\Chargeback;
 use App\Domains\Payments\Policies\ChargebackPolicy;
 use App\Domains\Payments\Providers\FakePaymentProvider;
+use App\Domains\Payouts\Models\PayoutMethodType;
+use App\Domains\Payouts\Models\WithdrawalRequest;
+use App\Domains\Payouts\Policies\PayoutPolicy;
 use App\Domains\Risk\Models\BlocklistEntry;
 use App\Domains\Risk\Models\RiskFlag;
 use App\Domains\Sellers\Models\MerchantContact;
@@ -189,6 +193,10 @@ final class AppServiceProvider extends ServiceProvider
         Product::observe(SyncProductSearch::class);
 
         Gate::policy(Ticket::class, TicketPolicy::class);
+
+        foreach ([WithdrawalRequest::class, PayoutMethodType::class, Invoice::class] as $payoutModel) {
+            Gate::policy($payoutModel, PayoutPolicy::class);
+        }
         Gate::policy(CannedReply::class, TicketPolicy::class);
 
         // Admins can do everything, except abilities that must hold for everyone (self-review).

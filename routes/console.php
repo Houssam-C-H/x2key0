@@ -21,3 +21,4 @@ Schedule::command('holds:release')->everyFifteenMinutes()->withoutOverlapping()-
 Schedule::command('disputes:escalate-overdue')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('violations:process')->hourly()->withoutOverlapping()->onOneServer();
 Schedule::command('tickets:autoclose')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('invoices:issue-monthly')->monthlyOn(1, '04:00')->onOneServer();

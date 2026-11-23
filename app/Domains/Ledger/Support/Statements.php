@@ -148,7 +148,7 @@ final class Statements
     /**
      * Seller balances shown in the Seller Center: pending (held), available, reserve — what the platform owes.
      *
-     * @return array{pending: int, available: int, reserve: int, currency: string}
+     * @return array{pending: int, available: int, reserve: int, frozen: int, deposit: int, in_transit: int, currency: string}
      */
     public function sellerBalances(User $user, string $currency): array
     {
@@ -156,6 +156,9 @@ final class Statements
             'pending' => Accounts::owed(AccountRef::user(AccountCode::SellerPending, $user->id, $currency)),
             'available' => Accounts::owed(AccountRef::user(AccountCode::SellerAvailable, $user->id, $currency)),
             'reserve' => Accounts::owed(AccountRef::user(AccountCode::SellerReserve, $user->id, $currency)),
+            'frozen' => Accounts::owed(AccountRef::user(AccountCode::SellerFrozen, $user->id, $currency)),
+            'deposit' => Accounts::owed(AccountRef::user(AccountCode::SellerDeposit, $user->id, $currency)),
+            'in_transit' => Accounts::owed(AccountRef::user(AccountCode::PayoutInTransit, $user->id, $currency)),
             'currency' => $currency,
         ];
     }

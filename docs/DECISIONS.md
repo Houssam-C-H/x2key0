@@ -61,6 +61,12 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-024 — Withdrawals and invoices (2026-11-23)
+- **Money leaves Available at request time** (into the user's PAYOUT_IN_TRANSIT), not at approval: the no-overdraw check then runs under the balance row lock and concurrent requests cannot overspend; rejection, cancellation and failure post the reverse journal.
+- **Fee = max(platform minimum, method fee)** — Part 27's `withdrawal_fee_amount` is a floor, not an extra charge on top of the method fee. Payouts are in USD until FX exists.
+- **Paying is manual for now** (finance marks paid with the provider reference after sending); PSP payout APIs can call the same state machine later. BANK is credited at payment (platform cash out).
+- **Invoices are immutable rows** with a copy of the Invoice info at issue time; numbers `X2S-` / `X2W-{year}-{seq}` come from a locked counter row (no gaps, no duplicates). Documents are printable HTML (browser PDF) until background PDF rendering is added.
+
 ## ADR-023 — Service tickets (2026-11-23)
 - **Statuses follow the observed tabs** (spec 6.5): `pending` = staff to answer, `awaiting_reply` = waiting for the user, `closed`. Only staff replies move pending → awaiting_reply; internal notes never change the status.
 - **SLA = first response target**, set when the ticket waits for staff (open, user reply, reopen) from the priority's hours, cleared when staff answer. Priority comes from the topic and whether an order is attached; staff can change it (the target moves with it until the first answer).

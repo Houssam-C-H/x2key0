@@ -13,6 +13,7 @@ use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\EngagementController;
 use App\Http\Controllers\FakePspController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PreferencesController;
 use App\Http\Controllers\Public\CatalogController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Seller\StockAlertController;
 use App\Http\Controllers\Seller\StorageController;
 use App\Http\Controllers\Seller\StoreSettingsController;
 use App\Http\Controllers\Seller\ViolationController;
+use App\Http\Controllers\Seller\WithdrawalController;
 use App\Http\Controllers\Settings\AccountController;
 use App\Http\Controllers\Settings\CertificationController;
 use App\Http\Controllers\Settings\SecurityController;
@@ -124,6 +126,11 @@ Route::middleware('auth')->group(function (): void {
         '/buy/funding' => fn () => Route::get('/buy/funding', [FinanceController::class, 'funding'])->name('dash.buy.funding'),
         '/announcements' => fn () => Route::get('/announcements', [AnnouncementController::class, 'index'])->name('dash.announcements.all'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
+        '/seller/withdrawals' => fn () => Route::get('/seller/withdrawals', [WithdrawalController::class, 'index'])->name('dash.seller.withdrawals.records'),
+        '/seller/withdrawals/methods' => fn () => Route::get('/seller/withdrawals/methods', [WithdrawalController::class, 'methods'])->name('dash.seller.withdrawals.methods'),
+        '/invoices/service' => fn () => Route::get('/invoices/service', [InvoiceController::class, 'service'])->name('dash.invoices.service'),
+        '/invoices/vouchers' => fn () => Route::get('/invoices/vouchers', [InvoiceController::class, 'vouchers'])->name('dash.invoices.vouchers'),
+        '/invoices/info' => fn () => Route::get('/invoices/info', [InvoiceController::class, 'info'])->name('dash.invoices.info'),
         '/tickets' => fn () => Route::get('/tickets', [TicketController::class, 'index'])->name('dash.tickets.all'),
         '/disputes' => fn () => Route::get('/disputes', [DisputeController::class, 'index'])->name('dash.disputes.index'),
         '/disputes/stats' => fn () => Route::get('/disputes/stats', [DisputeController::class, 'stats'])->name('dash.disputes.stats'),
@@ -179,6 +186,12 @@ Route::middleware('auth')->group(function (): void {
             Route::get('/evidence/{evidence}', [SoldOrderController::class, 'evidence'])->whereNumber('evidence')->name('seller.orders.evidence');
         });
         Route::post('/seller/stock-alerts/dismiss', [StockAlertController::class, 'dismiss'])->name('seller.stock-alerts.dismiss');
+        // Withdrawal Management (spec 1.8 / 6.6): requesting needs a recently confirmed password.
+        Route::post('/seller/withdrawals', [WithdrawalController::class, 'store'])->middleware(['recent.password', 'throttle:10,1'])->name('seller.withdrawals.store');
+        Route::post('/seller/withdrawals/{publicId}/cancel', [WithdrawalController::class, 'cancel'])->where('publicId', '[0-9a-z]{26}')->name('seller.withdrawals.cancel');
+        Route::post('/seller/withdrawals/methods', [WithdrawalController::class, 'storeMethod'])->middleware(['recent.password', 'throttle:10,1'])->name('seller.withdrawals.methods.store');
+        Route::post('/seller/withdrawals/methods/{method}/default', [WithdrawalController::class, 'defaultMethod'])->whereNumber('method')->name('seller.withdrawals.methods.default');
+        Route::delete('/seller/withdrawals/methods/{method}', [WithdrawalController::class, 'removeMethod'])->whereNumber('method')->name('seller.withdrawals.methods.remove');
         // Violation Center (spec 17.2)
         Route::post('/seller/violations/{publicId}/appeal', [ViolationController::class, 'appeal'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:10,1')->name('seller.violations.appeal');
 
@@ -213,6 +226,10 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/announcements/read-all', [AnnouncementController::class, 'readAll'])->name('announcements.read-all');
     Route::post('/announcements/{id}/read', [AnnouncementController::class, 'read'])->where('id', '[na][0-9]+')->name('announcements.read');
     Route::post('/announcements/{id}/star', [AnnouncementController::class, 'star'])->where('id', '[na][0-9]+')->name('announcements.star');
+
+    // Invoices (Part 16)
+    Route::put('/invoices/info', [InvoiceController::class, 'saveInfo'])->name('invoices.info.save');
+    Route::get('/invoices/view/{number}', [InvoiceController::class, 'show'])->where('number', '[A-Z0-9-]{8,24}')->name('invoices.show');
 
     // Service tickets (spec Part 11 / Part 20)
     Route::get('/tickets/new', [TicketController::class, 'create'])->name('tickets.create');

@@ -28,4 +28,9 @@ enum JournalType: string
     case ChargebackOpened = 'CHARGEBACK';
     case ChargebackRecovered = 'CHARGEBACK_RECOVERY';
     case ChargebackReversed = 'CHARGEBACK_REVERSAL';
+    // M13: withdrawals (spec 7.2 WITHDRAWAL_*, 6.6).
+    case WithdrawalRequested = 'WITHDRAWAL_REQUESTED';
+    case WithdrawalReleased = 'WITHDRAWAL_RELEASED';
+    case WithdrawalPaid = 'WITHDRAWAL_PAID';
+    case WithdrawalFailed = 'WITHDRAWAL_FAILED';
 }

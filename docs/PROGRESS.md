@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M13 — Withdrawals & invoices (next). M1–M12 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M14 — Coupons & campaigns (next). M1–M13 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -17,8 +17,22 @@
 | M10 | Chat | ✅ code done | See checklist below; Reverb live delivery pending |
 | M11 | Disputes, chargebacks, violations | ✅ code done | See checklist below; chargeback webhooks wait for real PSPs (M6b) |
 | M12 | Service Tickets | ✅ code done | See checklist below |
-| M13 | Withdrawals, payout methods, invoices | next | |
-| M14–M19 | — | not started | |
+| M13 | Withdrawals, payout methods, invoices | ✅ code done | See checklist below |
+| M14 | Coupons & campaigns | next | |
+| M15–M19 | — | not started | |
+
+## M13 checklist
+- [x] Tables: payout_method_catalog (PayPal, Payoneer, USDT-TRC20, bank transfer: fee bps + fixed, minimum, fields), payout_methods (details encrypted, masked label, default, soft removal), withdrawal_requests (amount, fee, payout, masked destination, idempotency key), withdrawal_status_history (append-only), invoice_profiles (tax id encrypted), invoice_sequences, invoices (immutable)
+- [x] `WithdrawalStateMachine` (spec 6.6): requested → approved → processing → paid | failed; requested → rejected | cancelled; history per transition; staff never act on their own withdrawal
+- [x] Money (spec 7.2): WITHDRAWAL_REQUESTED (Available → PAYOUT_IN_TRANSIT at request), WITHDRAWAL_RELEASED (reject / cancel), WITHDRAWAL_PAID (in transit → BANK − payout, REV_PAYOUT_FEE − fee), WITHDRAWAL_FAILED (back to Available)
+- [x] **Concurrent withdrawals are safe**: the request posts under the balance row lock with a no-overdraw guard (spec 7.4), so the total withdrawn never exceeds Available; idempotency key per user (double submit → same request); PostgreSQL race tests in `tests/Concurrency/WithdrawalRaceTest.php`
+- [x] Rules: open store + payouts enabled (finance) + identity verified + 2FA (spec 6.3); amount ≥ max(`withdrawal_min_amount`, method minimum); fee = max(`withdrawal_fee_amount`, method bps + fixed); requesting and adding an account need a recently confirmed password
+- [x] Withdrawal Management (spec 1.8): balance breakdown (Available, Pending, Revenue Reserve, Not Available, Store Deposit, being withdrawn), wizard with fee/payout preview and confirmation, records (last 3 months / all) with remarks and cancel; Withdrawal Account (add with per-method fields, default, remove)
+- [x] Invoices (Part 16): withdrawal voucher per paid withdrawal (`X2W-{year}-{seq}`), monthly service invoice per seller for commission + payout fees (`X2S-{year}-{seq}`, `invoices:issue-monthly`, idempotent), gap-free numbering from a locked counter, Invoice info snapshot; printable page (save as PDF); Invoice menu pages
+- [x] Admin (finance): withdrawal queue (approve, reject, processing, paid with reference, failed; payout details decrypted on demand and audited), payout method fees, invoices
+- [x] 574 tests (556 passed, 18 skipped on SQLite); Larastan max 0 errors; Pint; TS strict
+- [ ] Payouts in other currencies (FX), PSP payout APIs (automatic paid/failed), PDF files generated in the background
+- [ ] Affiliate withdrawals (source = affiliate) — M15
 
 ## M12 checklist
 - [x] Tables: tickets (ULID, topic, subject, topic form answers, optional order, dispute link, priority, status, assignee, SLA target, first response, last replies, close info, CSAT), ticket_messages (internal notes, system lines; append-only), ticket_attachments (private disk + SHA-256), ticket_status_history (append-only), canned_replies (en/fr/ar)
@@ -253,6 +267,7 @@
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
+- 2026-11-23 — M13 withdrawals, payout methods and invoices built (branch `m13-withdrawals`, from `main`).
 - 2026-11-23 — M12 service tickets built (branch `m12-tickets`, on top of `m11-disputes`).
 - 2026-11-23 — M11 disputes, chargebacks and violations built (branch `m11-disputes`, on top of `m10-chat`). Bugs found by tests and fixed: a seller could clear the ISSUE sub-status of an order under dispute; resetting the confirmation timer after a dispute used a mass assignment the strict models refuse.
 - 2026-11-23 — M6 checkout & payments built (branch `m6-checkout-payments`, on top of M5): quotes, checkout, reservations, order state machine up to paid, fake PSP + webhooks, expiry/sync jobs, credits seam, risk v1, payment review admin. Portable PostgreSQL 17.12 set up in C:\dev\tools\pgsql (data C:\dev\tools\pgsql-data, port 5433); M1–M5 suite also verified on it. Bug found by tests and fixed: a capture arriving after we cancelled the payment locally was dropped as stale — it is now recorded and flagged for refund.
