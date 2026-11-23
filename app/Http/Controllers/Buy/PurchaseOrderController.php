@@ -84,6 +84,7 @@ final class PurchaseOrderController
                 'cancel' => OrderRules::buyerCanCancel($order),
                 'cancelRemainder' => OrderRules::buyerCanCancelRemainder($order),
                 'reveal' => OrderRules::buyerCanReveal($order),
+                'confirm' => $order->status === OrderStatus::Delivered,
             ],
         ]);
     }
@@ -97,6 +98,23 @@ final class PurchaseOrderController
         $secrets = $reveal->handle($order, self::user($request), $request->ip(), $request->userAgent());
 
         return response()->json(['secrets' => $secrets])->header('Cache-Control', 'no-store, max-age=0')->header('Pragma', 'no-cache');
+    }
+
+    public function confirm(Request $request, OrderStateMachine $machine, string $publicId): RedirectResponse
+    {
+        $order = $this->own($request, $publicId);
+
+        if ($order->status !== OrderStatus::Delivered) {
+            return back()->withErrors(['order' => __('order.error.cannot_confirm')]);
+        }
+
+        try {
+            $machine->complete($order, ActorType::Buyer, self::user($request));
+        } catch (CheckoutException $e) {
+            return back()->withErrors(['order' => $e->getMessage()]);
+        }
+
+        return back()->with('success', __('order.confirmed'));
     }
 
     public function cancel(Request $request, OrderStateMachine $machine, string $publicId): RedirectResponse

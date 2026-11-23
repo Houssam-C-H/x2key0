@@ -8,6 +8,7 @@ use App\Domains\Catalog\Enums\CategoryTypeCode;
 use App\Domains\Catalog\Models\Game;
 use App\Domains\Delivery\Actions\DeliverOrder;
 use App\Domains\Identity\Models\User;
+use App\Domains\Ledger\Support\Statements;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Orders\Enums\ActorType;
 use App\Domains\Orders\Enums\SellerSubstatus;
@@ -115,6 +116,7 @@ final class SoldOrderController
                 'lastPage' => $page->lastPage(),
             ],
             'counts' => $counts,
+            'balances' => app(Statements::class)->sellerBalances(self::user($request), 'USD'),
             'tab' => $tab,
             'tabs' => array_keys(self::TABS),
             'filters' => $f,

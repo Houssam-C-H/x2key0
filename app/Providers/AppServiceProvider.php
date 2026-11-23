@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domains\Announcements\Listeners\SendOrderNotifications;
+use App\Domains\Announcements\Models\Announcement;
+use App\Domains\Announcements\Policies\AnnouncementPolicy;
 use App\Domains\Catalog\Listeners\SyncProductSearch;
 use App\Domains\Catalog\Models\CategoryType;
 use App\Domains\Catalog\Models\Game;
@@ -27,12 +30,17 @@ use App\Domains\Identity\Listeners\RecordSuccessfulLogin;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\Identity\Support\LogSmsSender;
+use App\Domains\Ledger\Events\HoldReleased;
 use App\Domains\Ledger\Models\LedgerAccount;
 use App\Domains\Ledger\Models\LedgerJournal;
 use App\Domains\Ledger\Policies\LedgerPolicy;
 use App\Domains\Ledger\Support\LedgerCreditsWallet;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\Policies\OfferPolicy;
+use App\Domains\Orders\Events\OrderCancelled;
+use App\Domains\Orders\Events\OrderCompleted;
+use App\Domains\Orders\Events\OrderDelivered;
+use App\Domains\Orders\Events\OrderPaid;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\Policies\OrderPolicy;
 use App\Domains\Payments\Contracts\CreditsWallet;
@@ -124,6 +132,13 @@ final class AppServiceProvider extends ServiceProvider
         Model::shouldBeStrict(! $this->app->isProduction());
 
         Event::listen(Login::class, RecordSuccessfulLogin::class);
+
+        // Notification matrix (spec 12.3): order and money events → inbox.
+        Event::listen(OrderPaid::class, [SendOrderNotifications::class, 'paid']);
+        Event::listen(OrderDelivered::class, [SendOrderNotifications::class, 'delivered']);
+        Event::listen(OrderCompleted::class, [SendOrderNotifications::class, 'completed']);
+        Event::listen(OrderCancelled::class, [SendOrderNotifications::class, 'cancelled']);
+        Event::listen(HoldReleased::class, [SendOrderNotifications::class, 'holdReleased']);
         Event::listen(Failed::class, RecordFailedLogin::class);
 
         Gate::policy(User::class, UserPolicy::class);
@@ -137,6 +152,7 @@ final class AppServiceProvider extends ServiceProvider
         Gate::policy(Offer::class, OfferPolicy::class);
         Gate::policy(StorageGroup::class, OfferPolicy::class);
 
+        Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(LedgerJournal::class, LedgerPolicy::class);
         Gate::policy(LedgerAccount::class, LedgerPolicy::class);
 

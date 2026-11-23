@@ -19,6 +19,7 @@ enum JournalType: string
     case OrderSettlement = 'ORDER_SETTLEMENT';
     case AffiliateAccrual = 'AFFILIATE_ACCRUAL';
     case HoldRelease = 'HOLD_RELEASE';
+    case ReserveRelease = 'RESERVE_RELEASE';
     case Refund = 'REFUND';
     case ManualAdjustment = 'MANUAL_ADJUSTMENT';
 }

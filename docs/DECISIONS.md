@@ -61,6 +61,14 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-020 — Settlement, holds and the inbox (2026-11-23)
+- **Settlement is computed from what was kept, not what was ordered:** base = unit price × (quantity − refunded units); commission uses the seller level's current rate (the quote at checkout is only an estimate and is overwritten). Buyer fees stay platform revenue (REV_BUYER_FEE) from capture on.
+- **One hold mechanism for everything:** the seller net becomes one `settlement` hold, or N `insurance` holds for insured offers (spec 7.1's `SELLER_INSURED_PENDING` is not used: installments are separate holds on SELLER_PENDING, which keeps the money in one account and the schedule in data). The rolling reserve is withheld when a hold is released and becomes its own `reserve` hold. All three kinds are released by the same idempotent job.
+- **Hold length** = max(category default, seller level days) + new-seller extra, because the spec gives both a category table (7.5) and a per-level value (3.3); the stricter wins. Account sales also wait for the recovery-protection window.
+- **Completion needs no open dispute** — the guard arrives with disputes (M11); until then every delivered order can complete.
+- **Inbox:** system notifications are rows with a type and placeholders (translated when read, so each user sees their own language); platform announcements are rows in `announcements` seen through the audience rules, and only gain a `user_inbox` row when a user reads or stars them. Unread count = unread notifications + visible announcements without a read row.
+- **Statements are read straight from postings** (no cached balances in the UI), so the pages cannot drift from the ledger.
+
 ## ADR-019 — Delivery, reveal and refund conventions (2026-11-23)
 - **Auto delivery runs inside the capture transaction** (`CapturePath` and staff approval), after `markPaid`: the order is `paid` then `delivered` in one commit, with two history rows. If the reserved items are missing it logs a failure and the order stays `paid` for manual delivery.
 - **Delivered secrets are never in page data.** Buyer and seller pages show counts only; the buyer fetches them from an audited JSON endpoint that needs a password confirmed within `reveal_requires_reauth_minutes` (session `auth.password_confirmed_at`, 423 + confirm URL otherwise). Sellers cannot read delivered storage items back (they are `assigned`).

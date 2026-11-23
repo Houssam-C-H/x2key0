@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Domains\Announcements\Support\AnnouncementCenter;
 use App\Domains\Catalog\Enums\CategoryTypeCode;
 use App\Domains\Catalog\Support\CatalogReader;
 use App\Domains\Identity\Models\User;
@@ -66,6 +67,8 @@ final class HandleInertiaRequests extends Middleware
             'menu' => fn (): ?array => $user instanceof User && $request->route('locale') === null
                 ? app(DashboardMenuPresenter::class)->present($request)
                 : null,
+            // Announcement bell (spec 12.2): unread notifications + announcements.
+            'inbox' => fn (): ?array => $user instanceof User ? ['unread' => app(AnnouncementCenter::class)->unreadCount($user)] : null,
             // Seller stock bar (spec 1.1 / 8.1): open, undismissed low-stock alerts, on dashboard pages.
             'stockAlert' => fn (): ?array => $user instanceof User && $request->route('locale') === null && $user->sellerProfile?->status->opensSellerCenter() === true
                 ? StockAlerts::bar($user->sellerProfile->id)

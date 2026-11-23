@@ -5,14 +5,17 @@ declare(strict_types=1);
 use App\Domains\Identity\Models\User;
 use App\Domains\Ledger\Actions\VerifyLedger;
 use App\Domains\Offers\Models\Offer;
+use App\Domains\Orders\Enums\ActorType;
 use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Orders\Models\Order;
+use App\Domains\Orders\StateMachines\OrderStateMachine;
 use App\Domains\Payments\Enums\PaymentStatus;
 use App\Domains\Payments\Models\Payment;
 use App\Domains\Payments\Models\Refund;
 use App\Domains\Points\Actions\AwardOrderPoints;
 use App\Domains\Points\Support\Points;
 use Database\Seeders\PointsRuleSeeder;
+use Database\Seeders\UserLevelSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Tests\Support\CheckoutFixture;
 use Tests\Support\Ledger;
@@ -121,3 +124,71 @@ it('keeps the points ledger zero-sum through random earns and reversals', functi
             ->and(Points::balance($fx['buyer']->id))->toBe($expected);
     }
 })->with([5, 99]);
+
+it('settlement conserves money: after completion, releases and reserve returns every cent is with the seller, the platform or refunded', function (int $seed): void {
+    mt_srand($seed);
+    (new UserLevelSeeder)->run();
+    $fx = CheckoutFixture::build();
+    $fx['manual']->forceFill(['manual_stock_qty' => 500])->save();
+    $seller = $fx['seller']->user;
+    $net = 0;
+    $commission = 0;
+    $paidTotal = 0;
+    $refundedTotal = 0;
+
+    foreach (range(1, 14) as $step) {
+        $this->travel(2)->hours(); // stay under the orders-per-hour risk limit
+        $this->actingAs($fx['buyer']);
+        $quantity = mt_rand(1, 3);
+
+        if (mt_rand(0, 3) === 0) {
+            // Paid but cancelled by the seller before delivery: refunded in full.
+            $this->post('/checkout', CheckoutFixture::form($fx['manual'], ['quantity' => $quantity]));
+            $order = CheckoutFixture::lastOrder($fx['buyer']);
+            CheckoutFixture::webhook($order, PaymentStatus::Captured);
+            $paidTotal += $order->refresh()->total_amount;
+            app(OrderStateMachine::class)->cancel($order, 'seller_cancel: test', ActorType::Seller, $seller);
+            $refundedTotal += $order->refresh()->total_amount;
+        } else {
+            $order = CheckoutFixture::deliveredOrder($fx, 'manual', ['quantity' => $quantity]);
+            $paidTotal += $order->total_amount;
+
+            if (mt_rand(0, 1) === 1) {
+                $this->post("/buy/orders/{$order->public_id}/confirm")->assertSessionHasNoErrors();
+            } // the others complete through the confirmation timer below
+        }
+
+        if (mt_rand(0, 2) === 0) {
+            $this->travel(mt_rand(1, 30))->days();
+            Artisan::call('orders:process-timers');
+            Artisan::call('holds:release');
+        }
+
+        expect(app(VerifyLedger::class)->handle())->toBe([], "seed {$seed}, step {$step}");
+    }
+
+    // Time passes: unconfirmed orders auto-confirm, every hold and reserve is released.
+    $this->travel(100)->days();
+    Artisan::call('orders:process-timers');
+    $this->travel(100)->days();
+    Artisan::call('holds:release');   // earnings out of the hold; reserves start their own 60 days
+    $this->travel(61)->days();
+    Artisan::call('holds:release');
+    Artisan::call('holds:release');
+
+    foreach (Order::query()->where('status', OrderStatus::Completed)->get() as $o) {
+        $net += $o->seller_net_amount;
+        $commission += $o->commission_amount;
+    }
+
+    expect(Order::query()->whereNotIn('status', [OrderStatus::Completed->value, OrderStatus::Cancelled->value])->count())->toBe(0)
+        ->and(Ledger::owedBy($seller, 'SELLER_PENDING'))->toBe(0)
+        ->and(Ledger::owedBy($seller, 'SELLER_RESERVE'))->toBe(0)
+        ->and(Ledger::owedBy($seller, 'SELLER_AVAILABLE'))->toBe($net)
+        ->and(Ledger::revenue('REV_COMMISSION'))->toBe($commission)
+        ->and(Ledger::escrow())->toBe(0)
+        // Everything the buyer paid and did not get back is the seller's net, our commission and our fees.
+        ->and(Ledger::clearing())->toBe($paidTotal - $refundedTotal)
+        ->and(Ledger::clearing())->toBe($net + $commission + Ledger::feeRevenue())
+        ->and(app(VerifyLedger::class)->handle())->toBe([]);
+})->with([3, 17, 58]);

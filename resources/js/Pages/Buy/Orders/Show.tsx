@@ -16,7 +16,7 @@ interface Secret {
  * Order detail (spec 1.6 / 8.3): status, deliveries with an audited reveal, cancel after a missed deadline,
  * cancel remainder, refunds, timeline. While payment is pending the page refreshes itself.
  */
-export default function OrderShow({ order, can }: { order: OrderDetail; can: { cancel: boolean; cancelRemainder: boolean; reveal: boolean } }) {
+export default function OrderShow({ order, can }: { order: OrderDetail; can: { cancel: boolean; cancelRemainder: boolean; reveal: boolean; confirm: boolean } }) {
     const t = useT();
     const { locale, errors } = useShared();
     const [secrets, setSecrets] = useState<Secret[] | null>(null);
@@ -73,6 +73,15 @@ export default function OrderShow({ order, can }: { order: OrderDetail; can: { c
                 )}
                 {order.confirmDueAt && order.status === 'delivered' && <p className="mt-2 text-sm text-muted">{t('order.confirm_due', { time: new Date(order.confirmDueAt).toLocaleString(locale) })}</p>}
                 {order.cancelReason && <p className="mt-2 text-sm text-muted">{t(`order.cancel_reason.${order.cancelReason.split(':')[0]}`)}</p>}
+
+                {can.confirm && (
+                    <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md bg-primary-soft p-3 text-sm">
+                        <span className="flex-1">{t('order.confirm_help')}</span>
+                        <button type="button" className="btn-primary px-4 py-1.5" onClick={() => router.post(`/buy/orders/${order.publicId}/confirm`, {}, { preserveScroll: true })}>
+                            {t('order.confirm')}
+                        </button>
+                    </div>
+                )}
 
                 {(can.cancel || can.cancelRemainder) && (
                     <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md bg-canvas p-3 text-sm">

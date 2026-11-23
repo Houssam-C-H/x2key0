@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Domains\Catalog\Models\Game;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\AuthPageController;
+use App\Http\Controllers\Buy\FinanceController;
 use App\Http\Controllers\Buy\PurchaseOrderController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Dashboard\DashboardController;
@@ -113,6 +115,10 @@ Route::middleware('auth')->group(function (): void {
         '/buy/orders' => fn () => Route::get('/buy/orders', [PurchaseOrderController::class, 'index'])->name('dash.buy.orders'),
         '/seller/orders' => fn () => Route::get('/seller/orders', [SoldOrderController::class, 'index'])->name('dash.seller.orders'),
         '/seller/storage/logs' => fn () => Route::get('/seller/storage/logs', [StorageController::class, 'logs'])->name('dash.storage.logs'),
+        '/buy/credits' => fn () => Route::get('/buy/credits', [FinanceController::class, 'credits'])->name('dash.buy.credits'),
+        '/buy/points' => fn () => Route::get('/buy/points', [FinanceController::class, 'points'])->name('dash.buy.points'),
+        '/buy/funding' => fn () => Route::get('/buy/funding', [FinanceController::class, 'funding'])->name('dash.buy.funding'),
+        '/announcements' => fn () => Route::get('/announcements', [AnnouncementController::class, 'index'])->name('dash.announcements.all'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
         // Storage pages get the Privacy Password gate below (spec 1.7).
         '/seller/storage' => fn () => Route::get('/seller/storage', [StorageController::class, 'groups'])->name('dash.storage.groups'),
@@ -184,11 +190,19 @@ Route::middleware('auth')->group(function (): void {
     // Purchase Orders (spec 6.1 / 8.3)
     Route::prefix('/buy/orders/{publicId}')->where(['publicId' => '[0-9a-z]{26}'])->group(function (): void {
         Route::get('/', [PurchaseOrderController::class, 'show'])->name('buy.orders.show');
+        Route::post('/confirm', [PurchaseOrderController::class, 'confirm'])->middleware('throttle:20,1')->name('buy.orders.confirm');
         Route::post('/reveal', [PurchaseOrderController::class, 'reveal'])->middleware(['recent.password', 'throttle:30,1'])->name('buy.orders.reveal');
         Route::post('/cancel', [PurchaseOrderController::class, 'cancel'])->middleware('throttle:10,1')->name('buy.orders.cancel');
         Route::post('/cancel-remainder', [PurchaseOrderController::class, 'cancelRemainder'])->middleware('throttle:10,1')->name('buy.orders.cancel-remainder');
         Route::get('/evidence/{evidence}', [PurchaseOrderController::class, 'evidence'])->whereNumber('evidence')->name('buy.orders.evidence');
     });
+
+    Route::get('/buy/funding/export', [FinanceController::class, 'fundingCsv'])->middleware('throttle:20,1')->name('buy.funding.export');
+
+    // Announcement centre (spec 12.2)
+    Route::post('/announcements/read-all', [AnnouncementController::class, 'readAll'])->name('announcements.read-all');
+    Route::post('/announcements/{id}/read', [AnnouncementController::class, 'read'])->where('id', '[na][0-9]+')->name('announcements.read');
+    Route::post('/announcements/{id}/star', [AnnouncementController::class, 'star'])->where('id', '[na][0-9]+')->name('announcements.star');
 
     // Favorites (spec Part 20: POST /api/favorites toggle)
     Route::post('/favorites', [EngagementController::class, 'toggleFavorite'])->middleware('throttle:60,1')->name('favorites.toggle');

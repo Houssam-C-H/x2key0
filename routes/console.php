@@ -17,3 +17,4 @@ Schedule::command('payments:sync-pending')->everyFiveMinutes()->withoutOverlappi
 Schedule::command('ledger:verify')->dailyAt('02:30')->onOneServer();
 Schedule::command('ledger:reconcile fake')->dailyAt('03:00')->onOneServer()->environments(['local', 'staging']);
 Schedule::command('orders:process-timers')->everyMinute()->withoutOverlapping()->onOneServer();
+Schedule::command('holds:release')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();

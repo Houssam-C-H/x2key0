@@ -40,10 +40,11 @@ interface Props {
     filters: Filters;
     games: { id: number; name: string }[];
     types: string[];
+    balances: { pending: number; available: number; reserve: number; currency: string };
 }
 
 /** Seller Center › Sold Orders (spec 1.8): tabs with counts, filters, sub-status chips, remarks, acquisition cost. */
-export default function SoldOrders({ orders, counts, tab, tabs, filters, games, types }: Props) {
+export default function SoldOrders({ orders, counts, tab, tabs, filters, games, types, balances }: Props) {
     const t = useT();
     const { locale } = useShared();
     const [f, setF] = useState<Filters>(filters);
@@ -58,6 +59,15 @@ export default function SoldOrders({ orders, counts, tab, tabs, filters, games, 
 
     return (
         <DashboardLayout title={t('menu.seller.orders')} bare>
+            <section className="grid gap-4 sm:grid-cols-3" aria-label={t('seller.balances.title')}>
+                {(['available', 'pending', 'reserve'] as const).map((k) => (
+                    <div key={k} className="card p-4">
+                        <p className="text-xs text-muted">{t(`seller.balances.${k}`)}</p>
+                        <p className="text-2xl font-extrabold">{money(balances[k])}</p>
+                        <p className="text-xs text-muted">{t(`seller.balances.${k}_help`)}</p>
+                    </div>
+                ))}
+            </section>
             <section className="card p-0">
                 <nav className="flex gap-1 overflow-x-auto border-b border-line px-3" aria-label={t('menu.seller.orders')}>
                     {tabs.map((name) => (

@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M9 — Completion, holds, settlement, points, announcements, Funding Details (next). M1–M8 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M10 — Chat, presence, redaction, auto-reply (next). M1–M9 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -13,8 +13,27 @@
 | M6 | Checkout & payments (fake PSP + credits seam) | ✅ code done | See checklist below; M6b (real PSPs) waits for D2 |
 | M7 | Ledger + points | ✅ code done | See checklist below |
 | M8 | Delivery, Sold Orders, refunds | ✅ code done | See checklist below |
-| M9 | Completion, settlement, notifications | next | |
-| M10–M19 | — | not started | |
+| M9 | Completion, settlement, notifications | ✅ code done | See checklist below |
+| M10 | Chat | next | |
+| M11–M19 | — | not started | |
+
+## M9 checklist
+- [x] Tables: holds (settlement / insurance / reserve, release time, source hold), announcements, user_inbox
+- [x] **Completion** (spec 6.1): the buyer confirms (`POST /buy/orders/{id}/confirm`) or the confirmation window ends (`orders:process-timers` completes the order as "The system auto confirm"); `delivered → completed` in one transaction with settlement, points and seller stats; `OrderDelivered` / `OrderCompleted` events
+- [x] **ORDER_SETTLEMENT** (spec 7.2): ORDER_ESCROW + base, SELLER_PENDING − net, REV_COMMISSION − commission; base = unit price × units kept (a partly refunded order settles only the delivered units); commission = the seller level's rate; order amounts updated to the real figures
+- [x] **Holds** (spec 7.5): net held for max(category days, seller level days) + new-seller extra (7 days while < 20 completed orders); accounts also wait for the recovery-protection window; **insured offers release in 3 equal installments** over the insurance period (exact split, never before the hold ends)
+- [x] `holds:release` (15 min, idempotent per hold): HOLD_RELEASE moves pending → available minus the level's **rolling reserve**; the reserve comes back after `reserve_release_days` (RESERVE_RELEASE). Seller balances (Available · Pending · Revenue Reserve) on Sold Orders equal the ledger
+- [x] **Points on completion:** `AwardOrderPoints` runs in the completion transaction (floor(USD × 10 × level multiplier), once per order)
+- [x] **Announcement centre** (spec 12.2): `/announcements?filter=all|unread|read|starred` + category chips; platform announcements by audience (everyone / buyers / sellers), schedule and expiry, with read/star state created on first interaction; system notifications from order and money events (new order, delivered, completed, cancelled, earnings and reserve released, low stock — the M5 follow-up) translated at display time; mark read/unread, star, mark all read; **header bell badge** with the unread count on every page
+- [x] Staff compose announcements in the admin (support, merchant managers, admins)
+- [x] **Credits Balance**, **Points Record**, **Funding Details** (spec 1.7 / 7.3) read from the ledgers: month selector, running balance, inflow/outflow totals, type filter, **CSV export** (formula-injection guard); every figure equals the ledger
+- [x] **Property test:** random orders (delivered / confirmed / auto-confirmed / cancelled and refunded) with time passing, 3 seeds: the ledger verifies after every step; at the end holds and reserves are released and PSP clearing = seller net + commission + fees, escrow 0
+- [x] Bug found by tests and fixed: first read or star of an announcement crashed (mass assignment of `user_id` on a guarded model)
+- [x] 491 tests (PostgreSQL 481 passed, SQLite 475 passed; the rest skip where they cannot run); Larastan max 0 errors; Pint; TS strict
+- [ ] E-mail and live (Reverb) delivery of notifications — with chat (M10); notification preferences UI
+- [ ] Disputes can block completion and hold funds (`SELLER_FROZEN`) — M11 (the hook is marked in `OrderStateMachine::complete`)
+- [ ] Withdrawals from the Available Balance — M13; coupons spending points — M14; affiliate accrual on completion — M15; purchase-order comments — M16
+- [ ] Segment targeting of announcements and a Redis-cached unread count — later
 
 ## M8 checklist
 - [x] Tables: deliveries, delivery_storage_items (unique storage item), delivery_secrets (sealed), delivery_evidence (private disk + SHA-256), service_milestones, secret_reveals (append-only), refunds, auto_delivery_logs; orders gain refunded credits / card / fee columns
@@ -95,7 +114,7 @@
 - [x] 359 tests green (10 Meilisearch parity skipped without a server); Larastan max 0 errors; Pint; TS strict; live HTTP smoke test (seller login → offers → storage with Privacy Password → reveal) and SSR check of product, listing, store and offer pages
 - [ ] Image uploads for games/products, store video, and ClamAV/MIME scanning of uploads — not started; to do with the first evidence uploads (M8) or as a follow-up to M5
 - [ ] Batch Release (Upload/Download offer list template, spec 1.8 #4) — not started
-- [ ] Low-stock inbox notification — with the notification matrix (M9/M10)
+- [x] Low-stock inbox notification — done in M9
 - [ ] KMS-backed `SecretVault` driver for production — same stored format (ADR-014)
 - [x] PostgreSQL run of the new migrations/tests — done locally on portable PostgreSQL 17 during M6
 
@@ -178,6 +197,7 @@
 - 2026-11-23 — M2 identity built: Fortify auth + 2FA, sessions/devices, settings pages, certification center, staff roles, admin panel. 147 tests green. Bug found by tests and fixed: Fortify's 2FA QR label read a non-existent `login` attribute.
 - 2026-11-23 — Fix: password confirmation crashed for the same reason (Fortify reads `$user->login`); custom confirm callback + end-to-end 2FA test.
 - 2026-11-23 — M4 sellers built: activation via certification, store state machine, store management screens, public store page, seller admin. Bug found by tests and fixed: saving Seller Information without the description field wiped the stored description.
+- 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
 - 2026-11-23 — M6 checkout & payments built (branch `m6-checkout-payments`, on top of M5): quotes, checkout, reservations, order state machine up to paid, fake PSP + webhooks, expiry/sync jobs, credits seam, risk v1, payment review admin. Portable PostgreSQL 17.12 set up in C:\dev\tools\pgsql (data C:\dev\tools\pgsql-data, port 5433); M1–M5 suite also verified on it. Bug found by tests and fixed: a capture arriving after we cancelled the payment locally was dropped as stale — it is now recorded and flagged for refund.

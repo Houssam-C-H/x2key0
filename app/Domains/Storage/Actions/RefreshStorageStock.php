@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Storage\Actions;
 
+use App\Domains\Announcements\Support\Notifier;
 use App\Domains\Offers\Enums\Fulfillment;
 use App\Domains\Offers\Exceptions\OfferException;
 use App\Domains\Offers\Models\Offer;
@@ -68,6 +69,8 @@ final class RefreshStorageStock
                         'storage_group_id' => $group->id,
                         'triggered_at' => now(),
                     ]);
+                    $group->loadMissing('seller');
+                    Notifier::notify($group->seller->user_id, 'low_stock', 'merchant', ['title' => $offer->title, 'href' => '/seller/storage']);
                 }
             }
         }

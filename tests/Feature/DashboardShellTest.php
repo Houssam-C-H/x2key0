@@ -56,7 +56,7 @@ it('renders every sidebar leaf with that leaf active (placeholder until its mile
     unlockPrivacy($user); // Storage pages sit behind the Privacy Password
     $built = [
         'settings.account', 'settings.security', 'settings.certification', 'seller.store.mine', 'seller.store.services', 'seller.info', 'seller.contacts',
-        'buy.orders', 'buy.favorites', 'seller.orders', 'storage.logs', 'seller.offers.create', 'seller.offers', 'storage.groups', 'storage.items', 'storage.recycle',
+        'buy.orders', 'buy.credits', 'buy.points', 'buy.funding', 'announcements.all', 'announcements.unread', 'announcements.read', 'announcements.starred', 'buy.favorites', 'seller.orders', 'storage.logs', 'seller.offers.create', 'seller.offers', 'storage.groups', 'storage.items', 'storage.recycle',
     ];
 
     foreach (DashboardMenu::leaves() as $leaf) {

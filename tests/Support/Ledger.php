@@ -41,6 +41,18 @@ final class Ledger
         return Accounts::owed(AccountRef::platform(AccountCode::OrderEscrow, $currency));
     }
 
+    /** What the platform owes the user on a user liability account (SELLER_PENDING, SELLER_AVAILABLE, SELLER_RESERVE…). */
+    public static function owedBy(User $user, string $code, string $currency = 'USD'): int
+    {
+        return Accounts::owed(AccountRef::user(AccountCode::from($code), $user->id, $currency));
+    }
+
+    /** Earned by the platform on a revenue account (REV_COMMISSION, REV_BUYER_FEE…), shown positive. */
+    public static function revenue(string $code, string $currency = 'USD'): int
+    {
+        return Accounts::owed(AccountRef::platform(AccountCode::from($code), $currency));
+    }
+
     public static function feeRevenue(string $currency = 'USD'): int
     {
         return Accounts::owed(AccountRef::platform(AccountCode::RevBuyerFee, $currency));

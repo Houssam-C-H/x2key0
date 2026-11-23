@@ -7,6 +7,7 @@ namespace Tests\Support;
 use App\Domains\Catalog\Enums\CategoryTypeCode;
 use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Product;
+use App\Domains\Delivery\Actions\DeliverOrder;
 use App\Domains\Identity\Models\User;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Orders\Models\Order;
@@ -109,6 +110,28 @@ final class CheckoutFixture
             'CONTENT_TYPE' => 'application/json',
             'HTTP_ACCEPT' => 'application/json',
         ], $body);
+    }
+
+    /**
+     * Buys, pays and gets delivered (auto offers deliver themselves; manual ones are delivered by the seller
+     * with a note). Returns the order in `delivered`.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @param  array{buyer: User, seller: SellerProfile, manual: Offer, auto: Offer, group: StorageGroup}  $fx
+     */
+    public static function deliveredOrder(array $fx, string $offer = 'manual', array $overrides = []): Order
+    {
+        test()->actingAs($fx['buyer'])->post('/checkout', self::form($fx[$offer], $overrides));
+        $order = self::lastOrder($fx['buyer']);
+        self::webhook($order, PaymentStatus::Captured);
+        $order->refresh();
+
+        if ($order->status->value === 'paid') {
+            app(DeliverOrder::class)->handle($order, $fx['seller']->user, $order->item->remaining(), $overrides['secrets'] ?? '', 'TX-'.$order->id, null);
+            $order->refresh();
+        }
+
+        return $order;
     }
 
     /** Available (unreserved, unfrozen) items left in the group. */

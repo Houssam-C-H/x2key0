@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Orders\StateMachines;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Ledger\Actions\SettleOrder;
 use App\Domains\Offers\Enums\DeliveryMethod;
 use App\Domains\Offers\Enums\Fulfillment;
 use App\Domains\Offers\Exceptions\OfferException;
@@ -15,6 +16,8 @@ use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Orders\Enums\OrderTimerType;
 use App\Domains\Orders\Enums\SellerSubstatus;
 use App\Domains\Orders\Events\OrderCancelled;
+use App\Domains\Orders\Events\OrderCompleted;
+use App\Domains\Orders\Events\OrderDelivered;
 use App\Domains\Orders\Events\OrderPaid;
 use App\Domains\Orders\Exceptions\CheckoutException;
 use App\Domains\Orders\Models\Order;
@@ -25,6 +28,7 @@ use App\Domains\Payments\Actions\RefundOrder;
 use App\Domains\Payments\Contracts\CreditsWallet;
 use App\Domains\Payments\Enums\PaymentStatus;
 use App\Domains\Payments\Models\Payment;
+use App\Domains\Points\Actions\AwardOrderPoints;
 use App\Domains\Sellers\Models\SellerStats;
 use App\Domains\Storage\Actions\RefreshStorageStock;
 use App\Domains\Storage\Models\StorageGroup;
@@ -59,6 +63,8 @@ final class OrderStateMachine
         private readonly OfferStateMachine $offers,
         private readonly RefreshStorageStock $storage,
         private readonly RefundOrder $refunds,
+        private readonly SettleOrder $settlement,
+        private readonly AwardOrderPoints $points,
     ) {}
 
     /** First history row of a new order (created directly in pending_payment by CreateOrder). */
@@ -159,8 +165,33 @@ final class OrderStateMachine
                 });
             }
 
-            return $this->transition($locked, OrderStatus::Delivered, $actor, $by, null, $meta, fn (Order $o) => $this->delivered($o));
+            $done = $this->transition($locked, OrderStatus::Delivered, $actor, $by, null, $meta, fn (Order $o) => $this->delivered($o));
+            OrderDelivered::dispatch($done->id);
+
+            return $done;
         });
+    }
+
+    /**
+     * Delivered → completed (spec 6.1): the buyer confirms, or the confirmation window ends. Settles the order
+     * (ORDER_SETTLEMENT, holds, seller stats) and awards the buyer's points in the same transaction. The system
+     * actor is the auto-confirm of the timeline ("The system auto confirm").
+     */
+    public function complete(Order $order, ActorType $actor, ?User $by = null): Order
+    {
+        $done = $this->transition($order, OrderStatus::Completed, $actor, $by, $actor === ActorType::System ? 'auto_confirm' : 'buyer_confirm', [], function (Order $o): void {
+            $o->loadMissing(['item', 'buyer']);
+            // M11: an open dispute will block completion here.
+            $o->completed_at = now();
+            $this->settlement->handle($o);
+            $this->points->earn($o);
+
+            self::closeTimer($o, OrderTimerType::ConfirmDue);
+        });
+
+        OrderCompleted::dispatch($done->id);
+
+        return $done;
     }
 
     /**
@@ -224,6 +255,7 @@ final class OrderStateMachine
         });
 
         $this->refreshStock($done);
+        OrderDelivered::dispatch($done->id);
 
         return $done;
     }
