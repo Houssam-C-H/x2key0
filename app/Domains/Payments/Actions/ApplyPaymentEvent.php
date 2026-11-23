@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  * - Amount or currency different from the payment → risk flag, no transition (9.3 #6).
  * - Captured → payment captured; if the order still awaits payment it goes down the capture path (paid or
  *   payment review, PAYMENT_CAPTURED journal); if it was already closed, a LATE_CAPTURE journal records the
- *   money and a `late_capture` flag asks finance to refund it (M8).
+ *   money, the payment is refunded at once and a `late_capture` flag keeps a trace for finance.
  * - Failed / cancelled → payment closed and the unpaid order cancelled (stock and credits back).
  */
 final class ApplyPaymentEvent
@@ -32,6 +32,7 @@ final class ApplyPaymentEvent
         private readonly CapturePath $capture,
         private readonly OrderStateMachine $machine,
         private readonly PostOrderPayments $ledger,
+        private readonly RefundOrder $refunds,
     ) {}
 
     public function handle(int $eventId): void
@@ -105,6 +106,7 @@ final class ApplyPaymentEvent
             if ($order->status !== OrderStatus::PendingPayment) {
                 RiskFlag::raise('order', $order->id, 'late_capture', 0, ['payment_id' => $payment->id, 'amount' => $payment->amount, 'order_status' => $order->status->value]);
                 $this->ledger->lateCapture($payment, $order);
+                $this->refunds->lateCapture($order, $payment); // owed back in full: refunded at once
 
                 return 'late_capture';
             }

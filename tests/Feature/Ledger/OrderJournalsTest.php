@@ -7,6 +7,7 @@ use App\Domains\Ledger\Enums\JournalType;
 use App\Domains\Ledger\Models\LedgerJournal;
 use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Payments\Enums\PaymentStatus;
+use App\Domains\Payments\Models\Refund;
 use Illuminate\Support\Facades\Artisan;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\CheckoutFixture;
@@ -79,17 +80,18 @@ it('mixed order that succeeds: escrow holds the seller-side price whatever the s
         ->and(Ledger::credits($this->buyer))->toBe(0);
 });
 
-it('an expired order captured late: LATE_CAPTURE keeps the money in escrow until it is refunded', function (): void {
+it('an expired order captured late: LATE_CAPTURE, then the money goes straight back to the card', function (): void {
     $order = ($this->checkout)();
     $this->travel(31)->minutes();
     Artisan::call('orders:expire-unpaid');
 
     CheckoutFixture::webhook($order, PaymentStatus::Captured);
 
-    expect(($this->journals)())->toBe(['LATE_CAPTURE'])
-        ->and(Ledger::clearing())->toBe(1030)
-        ->and(Ledger::escrow())->toBe(1030)
-        ->and(Ledger::feeRevenue())->toBe(0);
+    expect(($this->journals)())->toBe(['LATE_CAPTURE', 'REFUND'])
+        ->and(Ledger::clearing())->toBe(0)
+        ->and(Ledger::escrow())->toBe(0)
+        ->and(Ledger::feeRevenue())->toBe(0)
+        ->and(Refund::query()->sole()->reason)->toBe('late_capture');
 });
 
 it('a replayed capture posts nothing twice', function (): void {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Middleware\EnsureSeller;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequirePrivacyPassword;
+use App\Http\Middleware\RequireRecentPassword;
 use App\Http\Middleware\RequireStaffTwoFactor;
 use App\Http\Middleware\ResolveLocale;
 use App\Http\Middleware\TrackUserSession;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'privacy' => RequirePrivacyPassword::class,
             'staff.2fa' => RequireStaffTwoFactor::class,
             'seller' => EnsureSeller::class,
+            'recent.password' => RequireRecentPassword::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

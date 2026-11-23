@@ -1,71 +1,65 @@
-import { Link, router } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { DeliveriesPanel, ItemPanel, MoneyPanel, type OrderDetail, StatusBadge, Timeline } from '@/Components/Orders/OrderParts';
 import { DashboardLayout, Panel } from '@/Layouts/DashboardLayout';
 import { useShared, useT } from '@/lib/i18n';
-import { formatUsd } from '@/lib/money';
-import { deliveryTime } from '@/lib/offer';
-import { ORDER_STATUS_STYLE } from './Index';
+import { xsrfToken } from '@/lib/offer';
 
-interface Order {
-    publicId: string;
-    number: string;
-    status: string;
-    currency: string;
-    createdAt: string;
-    paymentDueAt: string | null;
-    paidAt: string | null;
-    deliveryDueAt: string | null;
-    cancelReason: string | null;
-    lines: { subtotal: number; discountSeller: number; discountPlatform: number; buyerFee: number; addonFee: number; tax: number; total: number; credits: number; psp: number };
-    item: {
-        title: string;
-        gameCategory: string;
-        deliveryMethod: string;
-        deliveryMinutes: number | null;
-        quantity: number;
-        unitPrice: number;
-        offerHref: string | null;
-        snapshot: { description: string | null; insuranceDays: number; version: number };
-    };
-    seller: { name: string; href: string };
-    payment: { status: string; method: string; redirectUrl: string | null } | null;
-    timeline: { to: string; from: string | null; actor: string; reason: string | null; at: string }[];
+interface Secret {
+    deliveryId: number;
+    kind: string;
+    value: string | null;
+    account: Record<string, string | null> | null;
 }
 
 /**
- * Order detail (spec 1.6): status, price lines, item snapshot, payment, reverse-chronological timeline.
- * While payment is pending the page refreshes itself (the return URL never changes state — spec 9.3 #2).
+ * Order detail (spec 1.6 / 8.3): status, deliveries with an audited reveal, cancel after a missed deadline,
+ * cancel remainder, refunds, timeline. While payment is pending the page refreshes itself.
  */
-export default function OrderShow({ order }: { order: Order }) {
+export default function OrderShow({ order, can }: { order: OrderDetail; can: { cancel: boolean; cancelRemainder: boolean; reveal: boolean } }) {
     const t = useT();
-    const { locale } = useShared();
-    const money = (cents: number) => formatUsd(cents, locale) ?? '';
+    const { locale, errors } = useShared();
+    const [secrets, setSecrets] = useState<Secret[] | null>(null);
+    const [revealError, setRevealError] = useState<string | null>(null);
+    const [toCredits, setToCredits] = useState(false);
     const waiting = order.status === 'pending_payment';
 
     useEffect(() => {
         if (!waiting) return;
-        const timer = window.setInterval(() => router.reload({ only: ['order'] }), 4000);
+        const timer = window.setInterval(() => router.reload({ only: ['order', 'can'] }), 4000);
 
         return () => window.clearInterval(timer);
     }, [waiting]);
 
-    const lines: [string, number][] = [
-        [t('checkout.line.amount'), order.lines.subtotal],
-        ...(order.lines.discountSeller > 0 ? [[t('checkout.line.discount_seller'), -order.lines.discountSeller] as [string, number]] : []),
-        ...(order.lines.discountPlatform > 0 ? [[t('checkout.line.discount_platform'), -order.lines.discountPlatform] as [string, number]] : []),
-        [t('checkout.line.service_charge'), order.lines.buyerFee],
-        ...(order.lines.addonFee > 0 ? [[t('checkout.line.addon_fee'), order.lines.addonFee] as [string, number]] : []),
-        ...(order.lines.tax > 0 ? [[t('checkout.line.tax'), order.lines.tax] as [string, number]] : []),
-    ];
+    const reveal = async () => {
+        setRevealError(null);
+        const response = await fetch(`/buy/orders/${order.publicId}/reveal`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-XSRF-TOKEN': xsrfToken() },
+        });
+        if (response.status === 423) {
+            window.location.href = '/user/confirm-password';
+
+            return;
+        }
+        if (!response.ok) {
+            setRevealError(t('order.reveal.failed'));
+
+            return;
+        }
+        setSecrets(((await response.json()) as { secrets: Secret[] }).secrets);
+    };
 
     return (
         <DashboardLayout title={t('order.detail_title', { number: order.number })} bare>
             <Panel title={order.number}>
                 <div className="flex flex-wrap items-center gap-3">
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ORDER_STATUS_STYLE[order.status] ?? ''}`}>{t(`order.status.${order.status}`)}</span>
+                    <StatusBadge status={order.status} />
                     <span className="text-sm text-muted">{new Date(order.createdAt).toLocaleString(locale)}</span>
                 </div>
                 <p className="mt-3 text-sm">{t(`order.explain.${order.status}`)}</p>
+                {errors.order && <p className="mt-2 text-sm text-danger">{errors.order}</p>}
                 {waiting && order.payment?.redirectUrl && (
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                         <a href={order.payment.redirectUrl} className="btn-primary">
@@ -74,93 +68,78 @@ export default function OrderShow({ order }: { order: Order }) {
                         {order.paymentDueAt && <span className="text-sm text-muted">{t('order.pay_before', { time: new Date(order.paymentDueAt).toLocaleTimeString(locale) })}</span>}
                     </div>
                 )}
-                {order.status === 'paid' && order.deliveryDueAt && <p className="mt-2 text-sm text-muted">{t('order.delivery_due', { time: new Date(order.deliveryDueAt).toLocaleString(locale) })}</p>}
+                {['paid', 'delivering'].includes(order.status) && order.deliveryDueAt && (
+                    <p className="mt-2 text-sm text-muted">{t('order.delivery_due', { time: new Date(order.deliveryDueAt).toLocaleString(locale) })}</p>
+                )}
+                {order.confirmDueAt && order.status === 'delivered' && <p className="mt-2 text-sm text-muted">{t('order.confirm_due', { time: new Date(order.confirmDueAt).toLocaleString(locale) })}</p>}
                 {order.cancelReason && <p className="mt-2 text-sm text-muted">{t(`order.cancel_reason.${order.cancelReason.split(':')[0]}`)}</p>}
+
+                {(can.cancel || can.cancelRemainder) && (
+                    <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md bg-canvas p-3 text-sm">
+                        <span className="flex-1">{t(can.cancel ? 'order.cancel_help' : 'order.cancel_remainder_help')}</span>
+                        <label className="flex items-center gap-2">
+                            <input type="checkbox" checked={toCredits} onChange={(e) => setToCredits(e.target.checked)} />
+                            {t('order.refund_to_credits')}
+                        </label>
+                        <button
+                            type="button"
+                            className="btn-outline-pill px-3 py-1 text-danger"
+                            onClick={() => router.post(`/buy/orders/${order.publicId}/${can.cancel ? 'cancel' : 'cancel-remainder'}`, { to_credits: toCredits }, { preserveScroll: true })}
+                        >
+                            {t(can.cancel ? 'order.cancel' : 'order.cancel_remainder')}
+                        </button>
+                    </div>
+                )}
             </Panel>
 
             <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-                <Panel title={t('order.item')}>
-                    <div className="space-y-2 text-sm">
-                        <p className="font-semibold">
-                            {order.item.offerHref ? (
-                                <Link href={order.item.offerHref} className="hover:text-primary">
-                                    {order.item.title}
-                                </Link>
-                            ) : (
-                                order.item.title
-                            )}
-                        </p>
-                        <p className="text-muted">
-                            {order.item.gameCategory} ·{' '}
-                            <a href={order.seller.href} className="hover:text-primary">
-                                {order.seller.name}
-                            </a>
-                        </p>
-                        <dl className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-4">
-                            <div>
-                                <dt className="text-xs text-muted">{t('offer.quantity')}</dt>
-                                <dd className="font-medium">{order.item.quantity}</dd>
-                            </div>
-                            <div>
-                                <dt className="text-xs text-muted">{t('offer.col.unit_price')}</dt>
-                                <dd className="font-medium">{money(order.item.unitPrice)}</dd>
-                            </div>
-                            <div>
-                                <dt className="text-xs text-muted">{t('offer.delivery_method')}</dt>
-                                <dd className="font-medium">{t(`offer.delivery.${order.item.deliveryMethod}`)}</dd>
-                            </div>
-                            <div>
-                                <dt className="text-xs text-muted">{t('offer.delivery_time')}</dt>
-                                <dd className="font-medium">{order.item.deliveryMinutes ? deliveryTime(order.item.deliveryMinutes, t) : '—'}</dd>
-                            </div>
-                        </dl>
-                        <details className="pt-2">
-                            <summary className="cursor-pointer text-primary">{t('order.snapshot')}</summary>
-                            <p className="mt-2 whitespace-pre-line text-muted">{order.item.snapshot.description ?? '—'}</p>
-                            <p className="mt-1 text-xs text-muted">{t('order.snapshot_note', { version: order.item.snapshot.version })}</p>
-                        </details>
-                    </div>
-                </Panel>
-
-                <Panel title={t('checkout.summary')}>
-                    <dl className="space-y-2 text-sm">
-                        {lines.map(([label, amount]) => (
-                            <div key={label} className="flex justify-between">
-                                <dt>{label}</dt>
-                                <dd>{amount < 0 ? `− ${money(-amount)}` : money(amount)}</dd>
-                            </div>
-                        ))}
-                        <div className="flex justify-between border-t border-line pt-2 text-base font-bold">
-                            <dt>{t('checkout.line.total')}</dt>
-                            <dd>{money(order.lines.total)}</dd>
-                        </div>
-                        {order.lines.credits > 0 && (
-                            <div className="flex justify-between text-muted">
-                                <dt>{t('checkout.line.credits')}</dt>
-                                <dd>{money(order.lines.credits)}</dd>
-                            </div>
-                        )}
-                        {order.payment && (
-                            <div className="flex justify-between text-muted">
-                                <dt>{t('order.payment_status', { method: order.payment.method })}</dt>
-                                <dd>{t(`order.payment.${order.payment.status}`)}</dd>
-                            </div>
-                        )}
-                    </dl>
-                </Panel>
+                <div className="space-y-6">
+                    <ItemPanel order={order} />
+                    <DeliveriesPanel
+                        order={order}
+                        actions={
+                            can.reveal ? (
+                                <div className="mt-4 space-y-3">
+                                    {secrets === null ? (
+                                        <button type="button" className="btn-primary" onClick={() => void reveal()}>
+                                            {t('order.reveal.button')}
+                                        </button>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {secrets.map((s, i) =>
+                                                s.value !== null ? (
+                                                    <code key={i} className="block break-all rounded bg-canvas px-3 py-2 font-mono text-sm">
+                                                        {s.value}
+                                                    </code>
+                                                ) : (
+                                                    <dl key={i} className="grid grid-cols-[auto_1fr] gap-x-3 rounded bg-canvas px-3 py-2 font-mono text-sm">
+                                                        {Object.entries(s.account ?? {})
+                                                            .filter(([, v]) => v)
+                                                            .map(([k, v]) => (
+                                                                <div key={k} className="contents">
+                                                                    <dt className="text-muted">{t(`storage.account.${k}`)}</dt>
+                                                                    <dd className="break-all">{v}</dd>
+                                                                </div>
+                                                            ))}
+                                                    </dl>
+                                                ),
+                                            )}
+                                            <button type="button" className="text-xs text-muted hover:text-ink" onClick={() => setSecrets(null)}>
+                                                {t('storage.items.hide')}
+                                            </button>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-muted">{t('order.reveal.note')}</p>
+                                    {revealError && <p className="text-sm text-danger">{revealError}</p>}
+                                </div>
+                            ) : undefined
+                        }
+                    />
+                </div>
+                <MoneyPanel order={order} />
             </div>
 
-            <Panel title={t('order.timeline')}>
-                <ol className="space-y-3 border-s border-line ps-4 text-sm">
-                    {order.timeline.map((h, i) => (
-                        <li key={i} className="relative">
-                            <span className="absolute -start-[1.3rem] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
-                            <p className="font-medium">{t(`order.timeline.${h.to}`)}</p>
-                            <p className="text-xs text-muted">{new Date(h.at).toLocaleString(locale)}</p>
-                        </li>
-                    ))}
-                </ol>
-            </Panel>
+            <Timeline order={order} />
         </DashboardLayout>
     );
 }

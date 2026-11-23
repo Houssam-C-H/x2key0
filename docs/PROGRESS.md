@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M8 — Delivery, Sold Orders, cancellations & refunds (next). M1–M7 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M9 — Completion, holds, settlement, points, announcements, Funding Details (next). M1–M8 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -12,8 +12,28 @@
 | M5 | Offers, storage vault, uploads | ✅ code done · uploads open | See checklist below |
 | M6 | Checkout & payments (fake PSP + credits seam) | ✅ code done | See checklist below; M6b (real PSPs) waits for D2 |
 | M7 | Ledger + points | ✅ code done | See checklist below |
-| M8 | Delivery, Sold Orders, refunds | next | |
-| M9–M19 | — | not started | |
+| M8 | Delivery, Sold Orders, refunds | ✅ code done | See checklist below |
+| M9 | Completion, settlement, notifications | next | |
+| M10–M19 | — | not started | |
+
+## M8 checklist
+- [x] Tables: deliveries, delivery_storage_items (unique storage item), delivery_secrets (sealed), delivery_evidence (private disk + SHA-256), service_milestones, secret_reveals (append-only), refunds, auto_delivery_logs; orders gain refunded credits / card / fee columns
+- [x] **Auto delivery from Storage** (spec 6.1): the items reserved at checkout are assigned to the order item the moment the order is paid (also after a staff-approved review), logged in Storage › Delivery Logs, and the order goes to `delivered` — all in the capture transaction; a failure is logged and the seller delivers by hand
+- [x] Manual delivery per method (spec 8.2): digital key / code / file (one sealed code per unit), account transfer (one sealed account per unit), manual top-up and send gift (note required, optional screenshot), service (progress milestones, 100 % delivers; longer confirmation window); partial delivery → `delivering`, the timeline shows units
+- [x] Seller sub-status `new → restocking → in_trading` (⇄ `issue`) with timeline lines "Seller changed order status to: …"; accepting closes the `accept_due` timer
+- [x] **Reveal** (spec 8.3): buyer endpoint decrypts what was delivered (storage items + seller-typed secrets), `no-store`, rate-limited, needs a password confirmed in the last `reveal_requires_reauth_minutes`; one `secret_reveals` row per secret with IP and user agent. Order pages (buyer and seller) never carry the secrets
+- [x] Delivered side effects: `confirm_due_at` (72 h, services 168 h) and `confirm_due` timer; accounts also get `recovery_protection_end`
+- [x] **Cancellations & refunds:** seller cancels a paid undelivered order; buyer cancels after the delivery deadline; auto-cancel when the SLA grace ends (`orders:process-timers`, idempotent); buyer stops a partial delivery and gets the rest back ("cancel remainder"). `RefundOrder`: refunded amount = seller-side units + the matching share of buyer fees, returned **proportionally to the sources** (credits part → credits, card part → PSP) or all as credits when the buyer chooses; one REFUND journal, one refund row per destination, PSP refund with an idempotency key; seller cancellations count in `orders_cancelled_by_seller`
+- [x] Payment review rejection and **late captures** now refund through the PSP at once (M6 only flagged them); refund journals keep escrow, fee revenue, PSP clearing and credits exact
+- [x] Sold Orders (spec 1.8): tabs with counts (All · Pending delivery · Pending feedback · Delivered · Canceled), filters (game, category, order number, product title, internal remarks, from/to), sub-status chips, internal remarks and acquisition cost (seller-private); unpaid orders never appear; order page shows buyer inputs only after payment
+- [x] Storage › Delivery Logs page; buyer order page with deliveries, reveal, cancel / cancel remainder, refunds and timeline
+- [x] Suspended sellers are read-only on orders
+- [x] **Bug found by tests and fixed (M5 schema):** `storage_items.assigned_order_item_id` was unique, so no order of two or more keys could be delivered. Replaced by a plain index; "assigned once" is still guaranteed by the column and by `delivery_storage_items.storage_item_id` being unique
+- [x] 460 tests (PostgreSQL 450 passed, SQLite 444 passed; Meilisearch and PostgreSQL-only tests skip where they cannot run); Larastan max 0 errors; Pint; TS strict
+- [ ] Order confirmation by the buyer, completion, settlement, holds, points on completion — M9
+- [ ] Disputes, evidence from the buyer, chargebacks — M11; seller notification on `paid` and delivery reminders — M9/M10
+- [ ] Antivirus scan of evidence files (ClamAV) — `scan_status` is `pending` until the scanner exists; files are served from the private disk with `nosniff`
+- [ ] Real PSP refund flows and refund webhooks (`processing` → `succeeded`) — M6b
 
 ## M7 checklist
 - [x] Tables: ledger_accounts (code × owner × currency, chart of accounts from spec 7.1), ledger_journals (unique idempotency key), ledger_postings, ledger_balances; points_accounts, points_journals, points_postings, points_balances, points_rules
@@ -158,6 +178,7 @@
 - 2026-11-23 — M2 identity built: Fortify auth + 2FA, sessions/devices, settings pages, certification center, staff roles, admin panel. 147 tests green. Bug found by tests and fixed: Fortify's 2FA QR label read a non-existent `login` attribute.
 - 2026-11-23 — Fix: password confirmation crashed for the same reason (Fortify reads `$user->login`); custom confirm callback + end-to-end 2FA test.
 - 2026-11-23 — M4 sellers built: activation via certification, store state machine, store management screens, public store page, seller admin. Bug found by tests and fixed: saving Seller Information without the description field wiped the stored description.
+- 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
 - 2026-11-23 — M6 checkout & payments built (branch `m6-checkout-payments`, on top of M5): quotes, checkout, reservations, order state machine up to paid, fake PSP + webhooks, expiry/sync jobs, credits seam, risk v1, payment review admin. Portable PostgreSQL 17.12 set up in C:\dev\tools\pgsql (data C:\dev\tools\pgsql-data, port 5433); M1–M5 suite also verified on it. Bug found by tests and fixed: a capture arriving after we cancelled the payment locally was dropped as stale — it is now recorded and flagged for refund.
 - 2026-11-23 — M5 offers & storage built (branch `m5-offers-storage`): offer state machine, create/edit/Active Offers, moderation, encrypted storage vault with HMAC duplicate detection, low-stock alerts + bar, product/offer/store pages with offers, favorites, browsing history. New dev machine: portable PHP 8.4.28 + Composer set up in C:\dev\tools again; repo cloned to C:\Users\Stjg0\x2key0.

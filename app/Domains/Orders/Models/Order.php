@@ -8,6 +8,7 @@ use App\Domains\Identity\Models\User;
 use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Orders\Enums\SellerSubstatus;
 use App\Domains\Payments\Models\Payment;
+use App\Domains\Payments\Models\Refund;
 use App\Domains\Risk\Enums\RiskDecision;
 use App\Domains\Sellers\Models\SellerProfile;
 use App\Domains\Storage\Vault\SealedSecret;
@@ -42,6 +43,9 @@ use Illuminate\Support\Carbon;
  * @property int $total_amount
  * @property int $paid_psp_amount
  * @property int $paid_credits_amount
+ * @property int $refunded_credits_amount
+ * @property int $refunded_psp_amount
+ * @property int $refunded_fee_amount
  * @property int $commission_bps
  * @property int $commission_amount
  * @property int $seller_net_amount
@@ -56,6 +60,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $paid_at
  * @property Carbon|null $accepted_at
  * @property Carbon|null $delivery_due_at
+ * @property Carbon|null $delivered_at
+ * @property Carbon|null $confirm_due_at
+ * @property Carbon|null $completed_at
+ * @property string|null $seller_internal_remark
+ * @property int|null $seller_acquisition_cost_amount
  * @property Carbon|null $cancelled_at
  * @property string|null $cancel_reason
  * @property Carbon $created_at
@@ -92,6 +101,10 @@ final class Order extends Model
             'total_amount' => 'integer',
             'paid_psp_amount' => 'integer',
             'paid_credits_amount' => 'integer',
+            'refunded_credits_amount' => 'integer',
+            'refunded_psp_amount' => 'integer',
+            'refunded_fee_amount' => 'integer',
+            'seller_acquisition_cost_amount' => 'integer',
             'commission_bps' => 'integer',
             'commission_amount' => 'integer',
             'seller_net_amount' => 'integer',
@@ -146,6 +159,26 @@ final class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * @return HasMany<Refund, $this>
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
+
+    /** Buyer-paid fees: service charge, category add-on, method surcharge. */
+    public function fees(): int
+    {
+        return $this->buyer_fee_amount + $this->addon_fee_amount + $this->method_fee_amount;
+    }
+
+    /** Total paid by the buyer and not refunded yet. */
+    public function refundable(): int
+    {
+        return $this->paid_credits_amount + $this->paid_psp_amount - $this->refunded_credits_amount - $this->refunded_psp_amount;
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Seller;
 
+use App\Domains\Delivery\Models\AutoDeliveryLog;
 use App\Domains\Identity\Models\User;
 use App\Domains\Offers\Enums\Fulfillment;
 use App\Domains\Offers\Models\Offer;
@@ -226,6 +227,40 @@ final class StorageController
         }
 
         return back()->with('success', __('storage.items.done', ['count' => $count]));
+    }
+
+    /** Storage › Delivery Logs (spec 1.7 / 5.5): what auto delivery sent, and failures. No secrets. */
+    public function logs(Request $request): Response
+    {
+        $profile = $this->seller($request);
+
+        $page = AutoDeliveryLog::query()
+            ->where('auto_delivery_logs.seller_profile_id', $profile->id)
+            ->join('order_items', 'order_items.id', '=', 'auto_delivery_logs.order_item_id')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->leftJoin('storage_items', 'storage_items.id', '=', 'auto_delivery_logs.storage_item_id')
+            ->leftJoin('storage_groups', 'storage_groups.id', '=', 'storage_items.storage_group_id')
+            ->select(['auto_delivery_logs.*', 'orders.number as order_number', 'orders.public_id as order_public_id', 'storage_groups.name as group_name'])
+            ->orderByDesc('auto_delivery_logs.id')
+            ->paginate(self::ITEMS_PER_PAGE);
+
+        return Inertia::render('Storage/Logs', [
+            'logs' => [
+                'items' => array_map(fn (AutoDeliveryLog $l): array => [
+                    'id' => $l->id,
+                    'order' => is_string($n = $l->getAttribute('order_number')) ? $n : '',
+                    'orderHref' => is_string($p = $l->getAttribute('order_public_id')) ? "/seller/orders/{$p}" : null,
+                    'group' => is_string($g = $l->getAttribute('group_name')) ? $g : null,
+                    'item' => $l->storage_item_id,
+                    'result' => $l->result,
+                    'error' => $l->error,
+                    'at' => $l->delivered_at->toIso8601String(),
+                ], $page->items()),
+                'total' => $page->total(),
+                'page' => $page->currentPage(),
+                'lastPage' => $page->lastPage(),
+            ],
+        ]);
     }
 
     private function itemList(Request $request, bool $recycled): Response

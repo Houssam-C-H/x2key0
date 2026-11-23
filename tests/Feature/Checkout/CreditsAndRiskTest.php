@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use App\Domains\Identity\Enums\StaffRole;
 use App\Domains\Identity\Models\User;
+use App\Domains\Ledger\Support\LedgerCreditsWallet;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Payments\Contracts\CreditsWallet;
 use App\Domains\Payments\Enums\PaymentStatus;
 use App\Domains\Payments\Models\Payment;
+use App\Domains\Payments\Models\Refund;
 use App\Domains\Risk\Models\BlocklistEntry;
 use App\Domains\Risk\Models\RiskFlag;
 use App\Filament\Resources\Orders\Pages\ListOrders;
@@ -18,6 +20,7 @@ use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 use Tests\Support\CheckoutFixture;
 use Tests\Support\InMemoryCreditsWallet;
+use Tests\Support\Ledger;
 
 beforeEach(function (): void {
     $this->fx = CheckoutFixture::build();
@@ -137,8 +140,9 @@ it('sends a risky order to payment review once captured; finance approves or rej
         ->and(RiskFlag::query()->where('subject_id', $risky->id)->where('status', 'open')->count())->toBe(0);
 });
 
-it('rejecting a reviewed order cancels it, returns stock and credits, and flags the card part for refund', function (): void {
-    $this->wallet->fund($this->fx['buyer'], 300);
+it('rejecting a reviewed order cancels it, returns stock, and refunds both the credits and the card part', function (): void {
+    app()->instance(CreditsWallet::class, app(LedgerCreditsWallet::class));
+    Ledger::fundCredits($this->fx['buyer'], 300);
     $this->fx['buyer']->forceFill(['password' => 'changed-pass-1'])->save(); // credential change → credits spend reviewed
 
     $this->post('/checkout', CheckoutFixture::form($this->fx['manual'], ['use_credits' => true]));
@@ -151,8 +155,10 @@ it('rejecting a reviewed order cancels it, returns stock and credits, and flags 
 
     expect($order->refresh()->status)->toBe(OrderStatus::Cancelled)
         ->and($this->fx['manual']->refresh()->manual_stock_qty)->toBe(5)
-        ->and($this->wallet->balances[$this->fx['buyer']->id])->toBe(300)
-        ->and(RiskFlag::query()->where('rule', 'refund_required')->sole()->details['amount'])->toBe($order->paid_psp_amount);
+        ->and(Ledger::credits($this->fx['buyer']))->toBe(300)
+        ->and(Refund::query()->where('order_id', $order->id)->where('destination', 'original_method')->sole()->amount)->toBe($order->paid_psp_amount)
+        ->and(Ledger::escrow())->toBe(0)
+        ->and(Ledger::clearing())->toBe(0);
 });
 
 it('never lets staff review their own purchase, and support cannot review at all', function (): void {

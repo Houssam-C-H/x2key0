@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Orders\Models;
 
+use App\Domains\Delivery\Models\Delivery;
+use App\Domains\Delivery\Models\ServiceMilestone;
 use App\Domains\Offers\Models\Offer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -47,6 +50,28 @@ final class OrderItem extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /** Units neither delivered nor refunded yet. */
+    public function remaining(): int
+    {
+        return $this->quantity - $this->delivered_qty - $this->refunded_qty;
+    }
+
+    /**
+     * @return HasMany<Delivery, $this>
+     */
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(Delivery::class, 'order_item_id');
+    }
+
+    /**
+     * @return HasMany<ServiceMilestone, $this>
+     */
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(ServiceMilestone::class, 'order_item_id');
     }
 
     /**

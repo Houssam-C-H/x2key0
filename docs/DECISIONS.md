@@ -61,6 +61,14 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-019 — Delivery, reveal and refund conventions (2026-11-23)
+- **Auto delivery runs inside the capture transaction** (`CapturePath` and staff approval), after `markPaid`: the order is `paid` then `delivered` in one commit, with two history rows. If the reserved items are missing it logs a failure and the order stays `paid` for manual delivery.
+- **Delivered secrets are never in page data.** Buyer and seller pages show counts only; the buyer fetches them from an audited JSON endpoint that needs a password confirmed within `reveal_requires_reauth_minutes` (session `auth.password_confirmed_at`, 423 + confirm URL otherwise). Sellers cannot read delivered storage items back (they are `assigned`).
+- **Refund amount** = unit price × units + a fee share: all remaining fees when a whole undelivered order is refunded, `floor(fees × units / quantity)` otherwise (so the last refund never exceeds what was paid). Sources are refunded proportionally; a card part already refunded is never refunded again (bounded by what each source has left). Refund journal keys are `REFUND:order:{id}:{n}` (n = refund journals of the order, computed under the order lock) and `REFUND:payment:{id}` for late captures.
+- **Who can cancel what:** nothing delivered → seller any time; buyer only after `delivery_due_at`; the system after the SLA grace (`delivery_due` + `auto_cancel_after_sla_hours`). Anything delivered can only be stopped as "cancel remainder" (partial delivery, after the deadline) — the rest goes through disputes (M11).
+- **Sold Orders show paid orders only**; buyer inputs are decrypted for the seller only when `paid_at` is set (spec 8.2).
+- **Evidence files** are stored on the private `local` disk with SHA-256 and served only to the buyer and seller of the order (`nosniff`, inline); virus scanning is a follow-up (`scan_status = pending`).
+
 ## ADR-018 — Ledger conventions (2026-11-23)
 - **Accounts** are (code, owner_type, owner_id, currency); platform accounts use owner_id 0 so the unique index holds. PSP clearing is per provider: `PSP_CLEARING:{provider}`. Debit +, credit −; user liabilities are displayed as owed = −balance.
 - **Posting in the business transaction:** journals are posted by the same transaction that changes the order or payment (no after-commit listeners), so the ledger can never miss or double a movement; idempotency keys make retries harmless. Keys: `CREDITS_SPENT:order:{id}`, `CREDITS_RESTORED:order:{id}`, `PAYMENT_CAPTURED:order:{id}`, `LATE_CAPTURE:payment:{id}`.

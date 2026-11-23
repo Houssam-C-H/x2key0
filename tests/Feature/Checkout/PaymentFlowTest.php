@@ -11,7 +11,6 @@ use App\Domains\Payments\Enums\PaymentStatus;
 use App\Domains\Payments\Models\PaymentEvent;
 use App\Domains\Payments\Providers\FakePaymentProvider;
 use App\Domains\Risk\Models\RiskFlag;
-use App\Domains\Storage\Models\StorageItem;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Tests\Support\CheckoutFixture;
@@ -28,7 +27,7 @@ beforeEach(function (): void {
 
 it('moves the order to paid on a captured webhook: substatus, timers, history, event, items held for delivery', function (): void {
     Event::fake([OrderPaid::class]);
-    $order = ($this->checkout)('auto');
+    $order = ($this->checkout)('manual');
 
     CheckoutFixture::webhook($order, PaymentStatus::Captured)->assertOk()->assertJson(['received' => true, 'duplicate' => false]);
 
@@ -42,7 +41,7 @@ it('moves the order to paid on a captured webhook: substatus, timers, history, e
         ->toBe(['accept_due', 'auto_cancel', 'delivery_due', 'payment_expiry'])
         ->and(OrderTimer::query()->where('order_id', $order->id)->where('type', OrderTimerType::PaymentExpiry)->value('processed_at'))->not->toBeNull()
         ->and($order->history()->orderBy('id')->get()->map(fn ($h) => $h->to_status->value)->all())->toBe(['pending_payment', 'paid'])
-        ->and(StorageItem::query()->where('reserved_for_order_item_id', $order->item->id)->whereNull('reserved_until')->count())->toBe(1);
+        ->and($this->fx['manual']->refresh()->manual_stock_qty)->toBe(4);
 
     Event::assertDispatched(OrderPaid::class, fn (OrderPaid $e) => $e->orderId === $order->id);
 });

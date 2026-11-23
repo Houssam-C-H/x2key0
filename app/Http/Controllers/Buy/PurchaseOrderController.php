@@ -4,19 +4,30 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Buy;
 
+use App\Domains\Delivery\Actions\RevealOrderSecrets;
+use App\Domains\Delivery\Models\Delivery;
+use App\Domains\Delivery\Models\DeliveryEvidence;
 use App\Domains\Identity\Models\User;
+use App\Domains\Orders\Enums\ActorType;
 use App\Domains\Orders\Enums\OrderStatus;
+use App\Domains\Orders\Exceptions\CheckoutException;
 use App\Domains\Orders\Models\Order;
-use App\Domains\Orders\Models\OrderStatusHistory;
-use App\Domains\Payments\Models\Payment;
+use App\Domains\Orders\StateMachines\OrderStateMachine;
+use App\Domains\Orders\Support\OrderPresenter;
+use App\Domains\Orders\Support\OrderRules;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Buy › Purchase Orders and order detail (spec 1.6 / 6.1 buyer tabs). M6 shows payment and status; delivery,
- * reveal, confirmation, chat and disputes join the detail page with M8–M11.
+ * Buy › Purchase Orders and order detail (spec 1.6 / 6.1 / 8.3): status, timeline, deliveries with an
+ * audited reveal, cancellation after a missed deadline, cancel remainder. Confirmation, chat and disputes
+ * join with M9–M11.
  */
 final class PurchaseOrderController
 {
@@ -65,65 +76,85 @@ final class PurchaseOrderController
 
     public function show(Request $request, string $publicId): Response
     {
-        $buyer = self::user($request);
-        $order = Order::query()->where('public_id', $publicId)->where('buyer_id', $buyer->id)->with(['item', 'seller', 'payments', 'history'])->first();
-        abort_if($order === null, 404);
-
-        $snapshot = $order->item->snapshot;
-        $psp = $order->payments->first(fn (Payment $p): bool => $p->provider !== Payment::CREDITS);
-        $locale = app()->getLocale();
+        $order = $this->own($request, $publicId);
 
         return Inertia::render('Buy/Orders/Show', [
-            'order' => [
-                'publicId' => $order->public_id,
-                'number' => $order->number,
-                'status' => $order->status->value,
-                'currency' => $order->currency,
-                'createdAt' => $order->created_at->toIso8601String(),
-                'paymentDueAt' => $order->status === OrderStatus::PendingPayment ? $order->payment_due_at?->toIso8601String() : null,
-                'paidAt' => $order->paid_at?->toIso8601String(),
-                'deliveryDueAt' => $order->delivery_due_at?->toIso8601String(),
-                'cancelReason' => $order->cancel_reason,
-                'lines' => [
-                    'subtotal' => $order->subtotal_amount,
-                    'discountSeller' => $order->discount_seller_amount,
-                    'discountPlatform' => $order->discount_platform_amount,
-                    'buyerFee' => $order->buyer_fee_amount + $order->method_fee_amount,
-                    'addonFee' => $order->addon_fee_amount,
-                    'tax' => $order->tax_amount,
-                    'total' => $order->total_amount,
-                    'credits' => $order->paid_credits_amount,
-                    'psp' => $order->pspDue(),
-                ],
-                'item' => [
-                    'title' => $snapshot['title'] ?? '',
-                    'gameCategory' => $snapshot['game_category'] ?? '',
-                    'deliveryMethod' => $snapshot['delivery_method'] ?? '',
-                    'deliveryMinutes' => $snapshot['delivery_time_minutes'] ?? null,
-                    'quantity' => $order->item->quantity,
-                    'unitPrice' => $order->item->unit_price_amount,
-                    'offerHref' => is_string($snapshot['offer_public_id'] ?? null) ? "/{$locale}/offer/{$snapshot['offer_public_id']}" : null,
-                    'snapshot' => [
-                        'description' => is_array($snapshot['description'] ?? null) ? ($snapshot['description'][$locale] ?? $snapshot['description']['en'] ?? null) : null,
-                        'insuranceDays' => $snapshot['insurance_days'] ?? 0,
-                        'version' => $snapshot['offer_version'] ?? 1,
-                    ],
-                ],
-                'seller' => ['name' => $order->seller->store_name, 'href' => $order->seller->path($locale)],
-                'payment' => $psp === null ? null : [
-                    'status' => $psp->status->value,
-                    'method' => $psp->method_code,
-                    'redirectUrl' => $order->status === OrderStatus::PendingPayment && ! $psp->status->isFinal() ? $psp->redirect_url : null,
-                ],
-                'timeline' => $order->history->sortByDesc('id')->values()->map(static fn (OrderStatusHistory $h): array => [
-                    'to' => $h->to_status->value,
-                    'from' => $h->from_status?->value,
-                    'actor' => $h->actor_type->value,
-                    'reason' => $h->reason,
-                    'at' => $h->created_at->toIso8601String(),
-                ])->all(),
+            'order' => OrderPresenter::detail($order, app()->getLocale(), "/buy/orders/{$order->public_id}/evidence"),
+            'can' => [
+                'cancel' => OrderRules::buyerCanCancel($order),
+                'cancelRemainder' => OrderRules::buyerCanCancelRemainder($order),
+                'reveal' => OrderRules::buyerCanReveal($order),
             ],
         ]);
+    }
+
+    /** Decrypts what was delivered (JSON only, never cached; every secret shown is logged). */
+    public function reveal(Request $request, RevealOrderSecrets $reveal, string $publicId): JsonResponse
+    {
+        $order = $this->own($request, $publicId);
+        abort_unless(OrderRules::buyerCanReveal($order), 404);
+
+        $secrets = $reveal->handle($order, self::user($request), $request->ip(), $request->userAgent());
+
+        return response()->json(['secrets' => $secrets])->header('Cache-Control', 'no-store, max-age=0')->header('Pragma', 'no-cache');
+    }
+
+    public function cancel(Request $request, OrderStateMachine $machine, string $publicId): RedirectResponse
+    {
+        $order = $this->own($request, $publicId);
+        if (! OrderRules::buyerCanCancel($order)) {
+            return back()->withErrors(['order' => __('order.error.cannot_cancel')]);
+        }
+
+        try {
+            $machine->cancel($order, 'buyer_cancel_sla', ActorType::Buyer, self::user($request), $request->boolean('to_credits'));
+        } catch (CheckoutException $e) {
+            return back()->withErrors(['order' => $e->getMessage()]);
+        }
+
+        return back()->with('success', __('order.cancelled_refunded'));
+    }
+
+    public function cancelRemainder(Request $request, OrderStateMachine $machine, string $publicId): RedirectResponse
+    {
+        $order = $this->own($request, $publicId);
+        if (! OrderRules::buyerCanCancelRemainder($order)) {
+            return back()->withErrors(['order' => __('order.error.cannot_cancel')]);
+        }
+
+        try {
+            $machine->cancelRemainder($order, ActorType::Buyer, self::user($request), $request->boolean('to_credits'));
+        } catch (CheckoutException $e) {
+            return back()->withErrors(['order' => $e->getMessage()]);
+        }
+
+        return back()->with('success', __('order.remainder_refunded'));
+    }
+
+    public function evidence(Request $request, string $publicId, int $evidence): StreamedResponse
+    {
+        $order = $this->own($request, $publicId);
+
+        return self::streamEvidence($order, $evidence);
+    }
+
+    /** Streams an evidence file of the order from the private disk (buyer or seller of the order only). */
+    public static function streamEvidence(Order $order, int $evidenceId): StreamedResponse
+    {
+        $file = DeliveryEvidence::query()->whereKey($evidenceId)
+            ->whereIn('delivery_id', Delivery::query()->select('id')->where('order_item_id', $order->item->id))
+            ->first();
+        abort_if($file === null, 404);
+
+        return Storage::disk('local')->response($file->file_path, null, ['Content-Type' => $file->mime, 'X-Content-Type-Options' => 'nosniff', 'Content-Disposition' => 'inline']);
+    }
+
+    private function own(Request $request, string $publicId): Order
+    {
+        $order = Order::query()->where('public_id', $publicId)->where('buyer_id', self::user($request)->id)->with(OrderPresenter::relations())->first();
+        abort_if($order === null, 404);
+
+        return $order;
     }
 
     private static function user(Request $request): User

@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 use App\Domains\Identity\Models\User;
 use App\Domains\Ledger\Actions\VerifyLedger;
-use App\Domains\Ledger\Enums\JournalType;
-use App\Domains\Ledger\Models\LedgerJournal;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Payments\Enums\PaymentStatus;
 use App\Domains\Payments\Models\Payment;
+use App\Domains\Payments\Models\Refund;
 use App\Domains\Points\Actions\AwardOrderPoints;
 use App\Domains\Points\Support\Points;
 use Database\Seeders\PointsRuleSeeder;
@@ -29,13 +28,11 @@ use Tests\Support\Ledger;
  */
 function expectedEscrow(): int
 {
-    $paid = Order::query()->whereIn('status', [OrderStatus::Paid->value, OrderStatus::PaymentReview->value])->get()
+    $paid = Order::query()->whereIn('status', [OrderStatus::Paid->value, OrderStatus::PaymentReview->value, OrderStatus::Delivering->value, OrderStatus::Delivered->value])->get()
         ->sum(fn (Order $o): int => $o->subtotal_amount - $o->discount_seller_amount);
     $pending = (int) Order::query()->where('status', OrderStatus::PendingPayment)->sum('paid_credits_amount');
-    $late = (int) LedgerJournal::query()->where('type', JournalType::LateCapture)->with('postings')->get()
-        ->sum(fn (LedgerJournal $j): int => (int) $j->postings->where('amount', '>', 0)->sum('amount'));
 
-    return $paid + $pending + $late;
+    return $paid + $pending; // late captures are refunded at once, so they net out
 }
 
 it('keeps the money ledger consistent through random checkouts, payments, failures and expiries', function (int $seed): void {
@@ -80,7 +77,7 @@ it('keeps the money ledger consistent through random checkouts, payments, failur
             expect(Ledger::credits($b))->toBeGreaterThanOrEqual(0);
         }
         expect(Ledger::escrow())->toBe(expectedEscrow(), "escrow at seed {$seed}, step {$step}")
-            ->and(Ledger::clearing())->toBe((int) Payment::query()->where('provider', 'fake')->where('status', PaymentStatus::Captured)->sum('amount'))
+            ->and(Ledger::clearing())->toBe((int) Payment::query()->where('provider', 'fake')->where('status', PaymentStatus::Captured)->sum('amount') - (int) Refund::query()->where('destination', 'original_method')->sum('amount'))
             ->and($fx['manual']->refresh()->manual_stock_qty)->toBeGreaterThanOrEqual(0);
     }
 

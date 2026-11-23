@@ -3,18 +3,8 @@ import { Pagination } from '@/Components/Catalog/Pagination';
 import { DashboardLayout } from '@/Layouts/DashboardLayout';
 import { useShared, useT } from '@/lib/i18n';
 import { formatUsd } from '@/lib/money';
+import { ORDER_STATUS_STYLE } from '@/Components/Orders/OrderParts';
 import type { Paged } from '@/types/offer';
-
-export const ORDER_STATUS_STYLE: Record<string, string> = {
-    pending_payment: 'bg-warning/15 text-warning',
-    payment_review: 'bg-warning/15 text-warning',
-    paid: 'bg-primary-soft text-primary',
-    delivering: 'bg-primary-soft text-primary',
-    delivered: 'bg-success/10 text-success',
-    completed: 'bg-success/10 text-success',
-    cancelled: 'bg-canvas text-muted',
-    refunded: 'bg-canvas text-muted',
-};
 
 interface Row {
     publicId: string;

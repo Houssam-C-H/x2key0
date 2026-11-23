@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Payments\Actions;
 
+use App\Domains\Delivery\Actions\AutoDeliver;
 use App\Domains\Identity\Models\User;
 use App\Domains\Orders\Enums\ActorType;
 use App\Domains\Orders\Enums\OrderStatus;
@@ -11,20 +12,24 @@ use App\Domains\Orders\Exceptions\CheckoutException;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\StateMachines\OrderStateMachine;
 use App\Domains\Risk\Models\RiskFlag;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Staff decision on an order in `payment_review` (spec 6.1): approve → paid; reject → cancelled, credits
- * back, the captured PSP part flagged for refund (refund execution arrives with M8). Review flags of the
- * order are resolved by the reviewer.
+ * Staff decision on an order in `payment_review` (spec 6.1): approve → paid (auto-delivered when the offer
+ * delivers from Storage); reject → cancelled with a full refund to the original sources. Review flags of
+ * the order are resolved by the reviewer.
  */
 final class ReviewPayment
 {
-    public function __construct(private readonly OrderStateMachine $machine) {}
+    public function __construct(
+        private readonly OrderStateMachine $machine,
+        private readonly AutoDeliver $autoDeliver,
+    ) {}
 
     public function approve(Order $order, User $staff): Order
     {
         self::assertInReview($order);
-        $paid = $this->machine->markPaid($order, ActorType::Staff, $staff);
+        $paid = DB::transaction(fn (): Order => $this->autoDeliver->handle($this->machine->markPaid($order, ActorType::Staff, $staff)));
         self::resolveFlags($order, $staff);
 
         return $paid;

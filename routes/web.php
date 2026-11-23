@@ -20,6 +20,7 @@ use App\Http\Controllers\Seller\OfferController;
 use App\Http\Controllers\Seller\OnboardingController;
 use App\Http\Controllers\Seller\SellerInfoController;
 use App\Http\Controllers\Seller\ServiceApplicationController;
+use App\Http\Controllers\Seller\SoldOrderController;
 use App\Http\Controllers\Seller\StockAlertController;
 use App\Http\Controllers\Seller\StorageController;
 use App\Http\Controllers\Seller\StoreSettingsController;
@@ -110,6 +111,8 @@ Route::middleware('auth')->group(function (): void {
         '/seller/offers' => fn () => Route::get('/seller/offers', [OfferController::class, 'index'])->name('dash.seller.offers'),
         '/seller/offers/create' => fn () => Route::get('/seller/offers/create', [OfferController::class, 'create'])->name('dash.seller.offers.create'),
         '/buy/orders' => fn () => Route::get('/buy/orders', [PurchaseOrderController::class, 'index'])->name('dash.buy.orders'),
+        '/seller/orders' => fn () => Route::get('/seller/orders', [SoldOrderController::class, 'index'])->name('dash.seller.orders'),
+        '/seller/storage/logs' => fn () => Route::get('/seller/storage/logs', [StorageController::class, 'logs'])->name('dash.storage.logs'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
         // Storage pages get the Privacy Password gate below (spec 1.7).
         '/seller/storage' => fn () => Route::get('/seller/storage', [StorageController::class, 'groups'])->name('dash.storage.groups'),
@@ -151,6 +154,16 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/seller/offers/{offer}', [OfferController::class, 'update'])->whereNumber('offer')->middleware('throttle:60,1')->name('seller.offers.update');
         Route::post('/seller/offers/bulk', [OfferController::class, 'bulk'])->middleware('throttle:30,1')->name('seller.offers.bulk');
         Route::patch('/seller/offers/{offer}/inline', [OfferController::class, 'inline'])->whereNumber('offer')->middleware('throttle:120,1')->name('seller.offers.inline');
+        // Sold Orders (spec 1.8 / 6.1 / 8.2)
+        Route::prefix('/seller/orders/{publicId}')->where(['publicId' => '[0-9a-z]{26}'])->group(function (): void {
+            Route::get('/', [SoldOrderController::class, 'show'])->name('seller.orders.show');
+            Route::post('/substatus', [SoldOrderController::class, 'substatus'])->middleware('throttle:60,1')->name('seller.orders.substatus');
+            Route::post('/deliver', [SoldOrderController::class, 'deliver'])->middleware('throttle:30,1')->name('seller.orders.deliver');
+            Route::post('/milestones', [SoldOrderController::class, 'milestone'])->middleware('throttle:30,1')->name('seller.orders.milestones');
+            Route::put('/notes', [SoldOrderController::class, 'notes'])->middleware('throttle:60,1')->name('seller.orders.notes');
+            Route::post('/cancel', [SoldOrderController::class, 'cancel'])->middleware('throttle:10,1')->name('seller.orders.cancel');
+            Route::get('/evidence/{evidence}', [SoldOrderController::class, 'evidence'])->whereNumber('evidence')->name('seller.orders.evidence');
+        });
         Route::post('/seller/stock-alerts/dismiss', [StockAlertController::class, 'dismiss'])->name('seller.stock-alerts.dismiss');
 
         // Storage writes (spec 8.1), behind the Privacy Password like the pages.
@@ -168,7 +181,14 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
         Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:20,1')->name('checkout.store');
     });
-    Route::get('/buy/orders/{publicId}', [PurchaseOrderController::class, 'show'])->where('publicId', '[0-9a-z]{26}')->name('buy.orders.show');
+    // Purchase Orders (spec 6.1 / 8.3)
+    Route::prefix('/buy/orders/{publicId}')->where(['publicId' => '[0-9a-z]{26}'])->group(function (): void {
+        Route::get('/', [PurchaseOrderController::class, 'show'])->name('buy.orders.show');
+        Route::post('/reveal', [PurchaseOrderController::class, 'reveal'])->middleware(['recent.password', 'throttle:30,1'])->name('buy.orders.reveal');
+        Route::post('/cancel', [PurchaseOrderController::class, 'cancel'])->middleware('throttle:10,1')->name('buy.orders.cancel');
+        Route::post('/cancel-remainder', [PurchaseOrderController::class, 'cancelRemainder'])->middleware('throttle:10,1')->name('buy.orders.cancel-remainder');
+        Route::get('/evidence/{evidence}', [PurchaseOrderController::class, 'evidence'])->whereNumber('evidence')->name('buy.orders.evidence');
+    });
 
     // Favorites (spec Part 20: POST /api/favorites toggle)
     Route::post('/favorites', [EngagementController::class, 'toggleFavorite'])->middleware('throttle:60,1')->name('favorites.toggle');

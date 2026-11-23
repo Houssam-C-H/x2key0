@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Orders\StateMachines;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Offers\Enums\DeliveryMethod;
 use App\Domains\Offers\Enums\Fulfillment;
 use App\Domains\Offers\Exceptions\OfferException;
 use App\Domains\Offers\Models\Offer;
@@ -20,10 +21,11 @@ use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\Models\OrderStatusHistory;
 use App\Domains\Orders\Models\OrderTimer;
 use App\Domains\Orders\Support\StockReservations;
+use App\Domains\Payments\Actions\RefundOrder;
 use App\Domains\Payments\Contracts\CreditsWallet;
 use App\Domains\Payments\Enums\PaymentStatus;
 use App\Domains\Payments\Models\Payment;
-use App\Domains\Risk\Models\RiskFlag;
+use App\Domains\Sellers\Models\SellerStats;
 use App\Domains\Storage\Actions\RefreshStorageStock;
 use App\Domains\Storage\Models\StorageGroup;
 use App\Shared\Support\Settings;
@@ -31,21 +33,32 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The only writer of orders.status / seller_substatus (spec 6.1). Each transition locks the order row,
- * checks the transition table, applies its side effects and writes an order_status_history row in one
- * transaction; domain events dispatch after commit.
+ * The only writer of orders.status / seller_substatus (spec 6.1). Each change locks the order row, checks
+ * the transition table, applies its side effects (stock, credits, refunds, timers) and writes an
+ * order_status_history row in one transaction; domain events dispatch after commit.
  *
- * M6 covers the payment part: opened (→ pending_payment), sendToReview, markPaid, cancel before payment.
- * Cancelling a paid order (refunds) arrives with M8.
+ * Covered: opened → pending_payment; payment_review; paid; seller sub-status new → restocking → in_trading
+ * (⇄ issue); deliveries (paid → delivering → delivered, partial units logged in the timeline); cancellation
+ * before delivery (unpaid: credits back; paid: full refund); cancel remainder (refund of undelivered units →
+ * delivered). Completion and disputes follow in M9 / M11.
  */
 final class OrderStateMachine
 {
+    /** Seller sub-status moves (spec 6.1); `issue` overrides until cleared. */
+    private const array SUBSTATUS_NEXT = [
+        'new' => ['restocking', 'in_trading', 'issue'],
+        'restocking' => ['in_trading', 'issue'],
+        'in_trading' => ['issue'],
+        'issue' => ['restocking', 'in_trading'],
+    ];
+
     public function __construct(
         private readonly StockReservations $reservations,
         private readonly CreditsWallet $wallet,
         private readonly Settings $settings,
         private readonly OfferStateMachine $offers,
         private readonly RefreshStorageStock $storage,
+        private readonly RefundOrder $refunds,
     ) {}
 
     /** First history row of a new order (created directly in pending_payment by CreateOrder). */
@@ -87,42 +100,132 @@ final class OrderStateMachine
         return $paid;
     }
 
-    /**
-     * Cancels an order that is not paid yet: stock and credits go back, open PSP payments are cancelled.
-     * A PSP part already captured (staff rejecting a payment review) is flagged for refund (M8).
-     */
-    public function cancel(Order $order, string $reason, ActorType $actor = ActorType::System, ?User $by = null): Order
+    /** Seller acknowledges and works on the order (spec 6.1 sub-status). */
+    public function setSubstatus(Order $order, SellerSubstatus $to, ActorType $actor, ?User $by): Order
     {
-        if (! in_array($order->status, [OrderStatus::PendingPayment, OrderStatus::PaymentReview], true)) {
+        return DB::transaction(function () use ($order, $to, $actor, $by): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $from = $locked->seller_substatus;
+
+            if (! in_array($locked->status, [OrderStatus::Paid, OrderStatus::Delivering], true) || $from === null
+                || ! in_array($to->value, self::SUBSTATUS_NEXT[$from->value], true)) {
+                throw CheckoutException::because('order.error.substatus');
+            }
+
+            $locked->seller_substatus = $to;
+            if ($to === SellerSubstatus::Restocking || $to === SellerSubstatus::InTrading) {
+                $locked->accepted_at ??= now();
+                self::closeTimer($locked, OrderTimerType::AcceptDue);
+            }
+            $locked->save();
+
+            $this->history($locked, $locked->status, $locked->status, $from, $to, $actor, $by?->id, null);
+
+            return $locked->refresh();
+        });
+    }
+
+    /**
+     * Records `units` delivered (DeliverOrder has stored what was delivered): paid → delivering while some
+     * units are left, → delivered when everything is delivered or refunded. Runs in the caller's transaction.
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    public function recordDelivery(Order $order, int $units, ActorType $actor, ?User $by, array $meta = []): Order
+    {
+        return DB::transaction(function () use ($order, $units, $actor, $by, $meta): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->with('item.offer')->lockForUpdate()->findOrFail($order->id);
+            $item = $locked->item;
+
+            if (! in_array($locked->status, [OrderStatus::Paid, OrderStatus::Delivering], true) || $units <= 0 || $units > $item->remaining()) {
+                throw CheckoutException::because('order.error.deliver_units');
+            }
+
+            $item->forceFill(['delivered_qty' => $item->delivered_qty + $units])->save();
+            $meta = [...$meta, 'units' => $units, 'delivered' => $item->delivered_qty, 'quantity' => $item->quantity];
+
+            if ($item->remaining() > 0) {
+                if ($locked->status === OrderStatus::Delivering) {
+                    $this->history($locked, $locked->status, $locked->status, $locked->seller_substatus, $locked->seller_substatus, $actor, $by?->id, 'partial_delivery', $meta);
+
+                    return $locked->refresh();
+                }
+
+                return $this->transition($locked, OrderStatus::Delivering, $actor, $by, 'partial_delivery', $meta, function (Order $o): void {
+                    $o->seller_substatus = SellerSubstatus::InTrading;
+                    $o->accepted_at ??= now();
+                });
+            }
+
+            return $this->transition($locked, OrderStatus::Delivered, $actor, $by, null, $meta, fn (Order $o) => $this->delivered($o));
+        });
+    }
+
+    /**
+     * Cancels an order nothing was delivered for (spec 6.1): unpaid → stock and credits back, open payments
+     * cancelled; paid or in review → stock back and a full refund to the original sources (or all to credits).
+     */
+    public function cancel(Order $order, string $reason, ActorType $actor = ActorType::System, ?User $by = null, bool $toCredits = false): Order
+    {
+        $order->loadMissing('item');
+        if (! in_array($order->status, [OrderStatus::PendingPayment, OrderStatus::PaymentReview, OrderStatus::Paid], true) || $order->item->delivered_qty > 0) {
             throw CheckoutException::because('order.error.transition', ['from' => $order->status->value, 'to' => OrderStatus::Cancelled->value]);
         }
 
-        $cancelled = $this->transition($order, OrderStatus::Cancelled, $actor, $by, $reason, [], function (Order $o) use ($reason): void {
+        $cancelled = $this->transition($order, OrderStatus::Cancelled, $actor, $by, $reason, $toCredits ? ['refund_to' => 'credits'] : [], function (Order $o, OrderStatus $from) use ($reason, $actor, $by, $toCredits): void {
             $o->loadMissing(['item', 'buyer']);
             $o->cancelled_at = now();
             $o->cancel_reason = mb_substr($reason, 0, 64);
 
             $this->reservations->release($o->item);
 
-            if ($o->paid_credits_amount > 0) {
-                $this->wallet->restore($o->buyer, $o->paid_credits_amount, $o->currency, "CREDITS_RESTORED:order:{$o->id}", $o);
+            if ($from === OrderStatus::PendingPayment) {
+                if ($o->paid_credits_amount > 0) {
+                    $this->wallet->restore($o->buyer, $o->paid_credits_amount, $o->currency, "CREDITS_RESTORED:order:{$o->id}", $o);
+                }
+
+                Payment::query()->where('order_id', $o->id)
+                    ->whereIn('status', [PaymentStatus::Created->value, PaymentStatus::Pending->value, PaymentStatus::RequiresAction->value, PaymentStatus::Authorized->value])
+                    ->update(['status' => PaymentStatus::Cancelled->value, 'updated_at' => now()]);
+            } else {
+                $this->refunds->handle($o, $o->item, $o->item->remaining(), $reason, $actor, $by?->id, $toCredits);
             }
 
-            Payment::query()->where('order_id', $o->id)
-                ->whereIn('status', [PaymentStatus::Created->value, PaymentStatus::Pending->value, PaymentStatus::RequiresAction->value, PaymentStatus::Authorized->value])
-                ->update(['status' => PaymentStatus::Cancelled->value, 'updated_at' => now()]);
-
-            if ($o->paid_psp_amount > 0) {
-                RiskFlag::raise('order', $o->id, 'refund_required', 0, ['amount' => $o->paid_psp_amount, 'currency' => $o->currency, 'reason' => $reason]);
+            if ($actor === ActorType::Seller) {
+                SellerStats::query()->where('seller_profile_id', $o->seller_profile_id)->increment('orders_cancelled_by_seller');
             }
 
-            self::closeTimer($o, OrderTimerType::PaymentExpiry);
+            foreach ([OrderTimerType::PaymentExpiry, OrderTimerType::AcceptDue, OrderTimerType::DeliveryDue, OrderTimerType::AutoCancel] as $type) {
+                self::closeTimer($o, $type);
+            }
         });
 
         $this->refreshStock($cancelled);
         OrderCancelled::dispatch($cancelled->id, $reason);
 
         return $cancelled;
+    }
+
+    /** The buyer stops a partly delivered order: undelivered units are refunded and the order is delivered. */
+    public function cancelRemainder(Order $order, ActorType $actor, ?User $by, bool $toCredits = false): Order
+    {
+        $done = $this->transition($order, OrderStatus::Delivered, $actor, $by, 'cancel_remainder', $toCredits ? ['refund_to' => 'credits'] : [], function (Order $o, OrderStatus $from) use ($actor, $by, $toCredits): void {
+            $o->loadMissing(['item', 'buyer']);
+            if ($from !== OrderStatus::Delivering || $o->item->remaining() === 0) {
+                throw CheckoutException::because('order.error.transition', ['from' => $from->value, 'to' => OrderStatus::Delivered->value]);
+            }
+
+            $units = $o->item->remaining();
+            $this->reservations->release($o->item);
+            $this->refunds->handle($o, $o->item, $units, 'cancel_remainder', $actor, $by?->id, $toCredits);
+            $this->delivered($o);
+        });
+
+        $this->refreshStock($done);
+
+        return $done;
     }
 
     /** Re-evaluates the offer's stock after reservations moved (after commit). */
@@ -153,9 +256,31 @@ final class OrderStateMachine
         });
     }
 
+    /** Side effects of reaching `delivered`: confirmation window and protection timers (spec 6.1 / 7.5). */
+    private function delivered(Order $o): void
+    {
+        $o->loadMissing('item.offer');
+        $now = now();
+        $method = $o->item->offer->delivery_method;
+        $window = $method === DeliveryMethod::Service ? $this->settings->int('confirmation_window_hours_services') : $this->settings->int('confirmation_window_hours');
+
+        $o->delivered_at = $now;
+        $o->confirm_due_at = $now->copy()->addHours($window);
+        $this->timer($o, OrderTimerType::ConfirmDue, $o->confirm_due_at);
+
+        if ($method === DeliveryMethod::AccountTransfer) {
+            $days = $o->item->offer->account_recovery_protection_days ?? $this->settings->int('account_recovery_protection_days');
+            $this->timer($o, OrderTimerType::RecoveryProtectionEnd, $now->copy()->addDays($days));
+        }
+
+        foreach ([OrderTimerType::AcceptDue, OrderTimerType::DeliveryDue, OrderTimerType::AutoCancel] as $type) {
+            self::closeTimer($o, $type);
+        }
+    }
+
     /**
      * @param  array<string, mixed>  $meta
-     * @param  (callable(Order): void)|null  $mutate
+     * @param  (callable(Order, OrderStatus): void)|null  $mutate
      */
     private function transition(Order $order, OrderStatus $to, ActorType $actor, ?User $by, ?string $reason, array $meta = [], ?callable $mutate = null): Order
     {
@@ -171,7 +296,7 @@ final class OrderStateMachine
 
             $locked->status = $to;
             if ($mutate !== null) {
-                $mutate($locked);
+                $mutate($locked, $from);
             }
             if ($to !== OrderStatus::Paid && $to !== OrderStatus::Delivering) {
                 $locked->seller_substatus = null;

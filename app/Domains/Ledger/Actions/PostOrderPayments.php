@@ -59,6 +59,51 @@ final class PostOrderPayments
         ));
     }
 
+    /**
+     * REFUND (spec 7.2): escrow gives back the seller-side part, fee revenue the fee part; the buyer is paid
+     * from the credits part (BUYER_CREDITS −) and the card part (PSP_CLEARING −), or everything as credits.
+     */
+    public function refund(Order $order, string $key, int $sellerPart, int $feePart, int $fromCredits, int $fromPsp, ?string $provider, bool $toCredits): void
+    {
+        $currency = $order->currency;
+        $lines = [
+            [AccountRef::platform(AccountCode::OrderEscrow, $currency), $sellerPart],
+            [AccountRef::platform(AccountCode::RevBuyerFee, $currency), $feePart],
+        ];
+
+        if ($toCredits || $provider === null) {
+            $lines[] = [AccountRef::user(AccountCode::BuyerCredits, $order->buyer_id, $currency), -($fromCredits + $fromPsp)];
+        } else {
+            $lines[] = [AccountRef::user(AccountCode::BuyerCredits, $order->buyer_id, $currency), -$fromCredits];
+            $lines[] = [AccountRef::pspClearing($provider, $currency), -$fromPsp];
+        }
+
+        $this->post->handle(new JournalDraft(
+            type: JournalType::Refund,
+            idempotencyKey: $key,
+            lines: $lines,
+            sourceType: 'order',
+            sourceId: $order->id,
+            description: "Refund order {$order->number}",
+        ));
+    }
+
+    /** Reverses a LATE_CAPTURE: the money goes back to the card. */
+    public function refundLateCapture(Payment $payment, string $key): void
+    {
+        $this->post->handle(new JournalDraft(
+            type: JournalType::Refund,
+            idempotencyKey: $key,
+            lines: [
+                [AccountRef::platform(AccountCode::OrderEscrow, $payment->currency), $payment->amount],
+                [AccountRef::pspClearing($payment->provider, $payment->currency), -$payment->amount],
+            ],
+            sourceType: 'payment',
+            sourceId: $payment->id,
+            description: 'Refund of a late capture',
+        ));
+    }
+
     public function lateCapture(Payment $payment, Order $order): void
     {
         $this->post->handle(new JournalDraft(

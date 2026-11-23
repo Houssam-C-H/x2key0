@@ -9,6 +9,7 @@ use App\Domains\Payments\Data\PaymentContext;
 use App\Domains\Payments\Data\PaymentIntentResult;
 use App\Domains\Payments\Data\ProviderEvent;
 use App\Domains\Payments\Data\ProviderPaymentState;
+use App\Domains\Payments\Data\RefundResult;
 use App\Domains\Payments\Enums\PaymentStatus;
 use App\Domains\Payments\Exceptions\InvalidWebhook;
 use App\Domains\Payments\Models\Payment;
@@ -134,6 +135,16 @@ final class FakePaymentProvider implements PaymentProvider
         }
 
         return new ProviderPaymentState(PaymentStatus::from($state['status']), $state['amount'], $state['currency']);
+    }
+
+    public function refund(Payment $payment, int $amount, string $idempotencyKey): RefundResult
+    {
+        if ($this->production) {
+            throw new LogicException('The fake PSP is disabled in production.');
+        }
+
+        // Refunds settle at once; the id is derived from the key, so a retry returns the same refund.
+        return new RefundResult('fake_rf_'.substr(hash('sha256', $idempotencyKey), 0, 24), 'succeeded');
     }
 
     /**
