@@ -10,6 +10,7 @@ use App\Http\Controllers\Buy\PurchaseOrderController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\EngagementController;
 use App\Http\Controllers\FakePspController;
 use App\Http\Controllers\PaymentWebhookController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\Seller\SoldOrderController;
 use App\Http\Controllers\Seller\StockAlertController;
 use App\Http\Controllers\Seller\StorageController;
 use App\Http\Controllers\Seller\StoreSettingsController;
+use App\Http\Controllers\Seller\ViolationController;
 use App\Http\Controllers\Settings\AccountController;
 use App\Http\Controllers\Settings\CertificationController;
 use App\Http\Controllers\Settings\SecurityController;
@@ -121,6 +123,9 @@ Route::middleware('auth')->group(function (): void {
         '/buy/funding' => fn () => Route::get('/buy/funding', [FinanceController::class, 'funding'])->name('dash.buy.funding'),
         '/announcements' => fn () => Route::get('/announcements', [AnnouncementController::class, 'index'])->name('dash.announcements.all'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
+        '/disputes' => fn () => Route::get('/disputes', [DisputeController::class, 'index'])->name('dash.disputes.index'),
+        '/disputes/stats' => fn () => Route::get('/disputes/stats', [DisputeController::class, 'stats'])->name('dash.disputes.stats'),
+        '/seller/violations' => fn () => Route::get('/seller/violations', [ViolationController::class, 'index'])->name('dash.seller.violations'),
         // Storage pages get the Privacy Password gate below (spec 1.7).
         '/seller/storage' => fn () => Route::get('/seller/storage', [StorageController::class, 'groups'])->name('dash.storage.groups'),
         '/seller/storage/items' => fn () => Route::get('/seller/storage/items', [StorageController::class, 'items'])->name('dash.storage.items'),
@@ -172,6 +177,8 @@ Route::middleware('auth')->group(function (): void {
             Route::get('/evidence/{evidence}', [SoldOrderController::class, 'evidence'])->whereNumber('evidence')->name('seller.orders.evidence');
         });
         Route::post('/seller/stock-alerts/dismiss', [StockAlertController::class, 'dismiss'])->name('seller.stock-alerts.dismiss');
+        // Violation Center (spec 17.2)
+        Route::post('/seller/violations/{publicId}/appeal', [ViolationController::class, 'appeal'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:10,1')->name('seller.violations.appeal');
 
         // Storage writes (spec 8.1), behind the Privacy Password like the pages.
         Route::middleware('privacy')->group(function (): void {
@@ -204,6 +211,19 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/announcements/read-all', [AnnouncementController::class, 'readAll'])->name('announcements.read-all');
     Route::post('/announcements/{id}/read', [AnnouncementController::class, 'read'])->where('id', '[na][0-9]+')->name('announcements.read');
     Route::post('/announcements/{id}/star', [AnnouncementController::class, 'star'])->where('id', '[na][0-9]+')->name('announcements.star');
+
+    // Dispute Center (spec Part 10 / Part 20): open from an order, thread, proposals, escalation
+    Route::get('/orders/{publicId}/disputes/new', [DisputeController::class, 'create'])->where('publicId', '[0-9a-z]{26}')->name('disputes.create');
+    Route::post('/orders/{publicId}/disputes', [DisputeController::class, 'store'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:10,1')->name('disputes.store');
+    Route::prefix('/disputes/{publicId}')->where(['publicId' => '[0-9a-z]{26}'])->group(function (): void {
+        Route::get('/', [DisputeController::class, 'show'])->name('disputes.show');
+        Route::post('/messages', [DisputeController::class, 'reply'])->middleware('throttle:30,1')->name('disputes.reply');
+        Route::post('/propose', [DisputeController::class, 'propose'])->middleware('throttle:20,1')->name('disputes.propose');
+        Route::post('/accept', [DisputeController::class, 'accept'])->middleware('throttle:10,1')->name('disputes.accept');
+        Route::post('/escalate', [DisputeController::class, 'escalate'])->middleware('throttle:10,1')->name('disputes.escalate');
+        Route::post('/withdraw', [DisputeController::class, 'withdraw'])->middleware('throttle:10,1')->name('disputes.withdraw');
+        Route::get('/evidence/{evidence}', [DisputeController::class, 'evidence'])->whereNumber('evidence')->name('disputes.evidence');
+    });
 
     // Chat (spec 12.1): conversation list/thread, pre-sale "Contact seller", order chat, polling
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');

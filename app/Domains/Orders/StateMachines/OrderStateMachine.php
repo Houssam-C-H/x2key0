@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Orders\StateMachines;
 
+use App\Domains\Disputes\Support\OpenCases;
 use App\Domains\Identity\Models\User;
 use App\Domains\Ledger\Actions\SettleOrder;
 use App\Domains\Offers\Enums\DeliveryMethod;
@@ -119,6 +120,11 @@ final class OrderStateMachine
                 throw CheckoutException::because('order.error.substatus');
             }
 
+            // ISSUE set by a dispute stays until the case closes.
+            if ($from === SellerSubstatus::Issue && OpenCases::blocks($locked->id)) {
+                throw CheckoutException::because('order.error.open_dispute');
+            }
+
             $locked->seller_substatus = $to;
             if ($to === SellerSubstatus::Restocking || $to === SellerSubstatus::InTrading) {
                 $locked->accepted_at ??= now();
@@ -181,7 +187,7 @@ final class OrderStateMachine
     {
         $done = $this->transition($order, OrderStatus::Completed, $actor, $by, $actor === ActorType::System ? 'auto_confirm' : 'buyer_confirm', [], function (Order $o): void {
             $o->loadMissing(['item', 'buyer']);
-            // M11: an open dispute will block completion here.
+            self::assertNoOpenCase($o);
             $o->completed_at = now();
             $this->settlement->handle($o);
             $this->points->earn($o);
@@ -207,6 +213,7 @@ final class OrderStateMachine
 
         $cancelled = $this->transition($order, OrderStatus::Cancelled, $actor, $by, $reason, $toCredits ? ['refund_to' => 'credits'] : [], function (Order $o, OrderStatus $from) use ($reason, $actor, $by, $toCredits): void {
             $o->loadMissing(['item', 'buyer']);
+            self::assertNoOpenCase($o);
             $o->cancelled_at = now();
             $o->cancel_reason = mb_substr($reason, 0, 64);
 
@@ -248,6 +255,7 @@ final class OrderStateMachine
                 throw CheckoutException::because('order.error.transition', ['from' => $from->value, 'to' => OrderStatus::Delivered->value]);
             }
 
+            self::assertNoOpenCase($o);
             $units = $o->item->remaining();
             $this->reservations->release($o->item);
             $this->refunds->handle($o, $o->item, $units, 'cancel_remainder', $actor, $by?->id, $toCredits);
@@ -258,6 +266,206 @@ final class OrderStateMachine
         OrderDelivered::dispatch($done->id);
 
         return $done;
+    }
+
+    // ── Disputes (spec 6.4 / Part 10) ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * A dispute opened: a paid/delivering order shows ISSUE to the seller until the case closes. Returns the
+     * sub-status to restore afterwards (null when there is none). Runs in the caller's transaction.
+     */
+    public function markIssue(Order $order, ActorType $actor, ?User $by): ?SellerSubstatus
+    {
+        return DB::transaction(function () use ($order, $actor, $by): ?SellerSubstatus {
+            /** @var Order $locked */
+            $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $from = $locked->seller_substatus;
+
+            if (! in_array($locked->status, [OrderStatus::Paid, OrderStatus::Delivering], true) || $from === null || $from === SellerSubstatus::Issue) {
+                return $from === SellerSubstatus::Issue ? null : $from;
+            }
+
+            $locked->seller_substatus = SellerSubstatus::Issue;
+            $locked->save();
+            $this->history($locked, $locked->status, $locked->status, $from, SellerSubstatus::Issue, $actor, $by?->id, 'dispute_opened');
+
+            return $from;
+        });
+    }
+
+    /**
+     * The case closed without ending the order: ISSUE is cleared (back to the previous sub-status), and a
+     * delivered order gets at least 24 more hours to be checked before it confirms by itself.
+     */
+    public function resumeAfterDispute(Order $order, ?SellerSubstatus $restore, ActorType $actor, ?User $by): Order
+    {
+        return DB::transaction(function () use ($order, $restore, $actor, $by): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $from = $locked->seller_substatus;
+
+            if (in_array($locked->status, [OrderStatus::Paid, OrderStatus::Delivering], true) && $from === SellerSubstatus::Issue) {
+                $locked->seller_substatus = $restore ?? ($locked->status === OrderStatus::Delivering ? SellerSubstatus::InTrading : SellerSubstatus::New);
+                $locked->save();
+                $this->history($locked, $locked->status, $locked->status, $from, $locked->seller_substatus, $actor, $by?->id, 'dispute_closed');
+            }
+
+            if ($locked->status === OrderStatus::Delivered) {
+                $due = now()->addHours(24);
+                if ($locked->confirm_due_at === null || $locked->confirm_due_at->lt($due)) {
+                    $locked->confirm_due_at = $due;
+                    $locked->save();
+                }
+                $this->timer($locked, OrderTimerType::ConfirmDue, $locked->confirm_due_at);
+                OrderTimer::query()->where('order_id', $locked->id)->where('type', OrderTimerType::ConfirmDue)->update(['processed_at' => null]);
+            }
+
+            return $locked->refresh();
+        });
+    }
+
+    /**
+     * Dispute refund before completion (escrow still holds the money): `units` are refunded, undelivered ones
+     * first, then delivered ones (taken back). Everything refunded → `refunded`; a partial delivery with
+     * nothing left to deliver → `delivered`. Runs inside the dispute resolution transaction.
+     */
+    public function disputeRefund(Order $order, int $units, bool $toCredits, ActorType $actor, ?User $by): Order
+    {
+        return DB::transaction(function () use ($order, $units, $toCredits, $actor, $by): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->with(['item.offer', 'buyer'])->lockForUpdate()->findOrFail($order->id);
+            $item = $locked->item;
+
+            if (! in_array($locked->status, [OrderStatus::Paid, OrderStatus::Delivering, OrderStatus::Delivered], true)
+                || $units <= 0 || $units > $item->quantity - $item->refunded_qty) {
+                throw CheckoutException::because('order.error.refund_units');
+            }
+
+            // Delivered units that are refunded are taken back, so delivered + refunded never exceeds quantity.
+            $takenBack = max(0, $units - $item->remaining());
+            if ($takenBack > 0) {
+                $item->forceFill(['delivered_qty' => $item->delivered_qty - $takenBack])->save();
+            }
+
+            $this->refunds->handle($locked, $item, $units, 'dispute_refund', $actor, $by?->id, $toCredits);
+            $item->refresh();
+            $meta = ['units' => $units, 'taken_back' => $takenBack, 'refunded' => $item->refunded_qty, 'quantity' => $item->quantity] + ($toCredits ? ['refund_to' => 'credits'] : []);
+
+            if ($item->refunded_qty === $item->quantity) {
+                $done = $this->transition($locked, OrderStatus::Refunded, $actor, $by, 'dispute_refund', $meta, function (Order $o): void {
+                    $o->loadMissing('item');
+                    $o->cancelled_at = now();
+                    $o->cancel_reason = 'dispute_refund';
+                    $o->confirm_due_at = null;
+                    $this->reservations->release($o->item);
+                    foreach (OrderTimerType::cases() as $type) {
+                        self::closeTimer($o, $type);
+                    }
+                });
+                $this->refreshStock($done);
+
+                return $done;
+            }
+
+            if ($locked->status === OrderStatus::Delivering && $item->remaining() === 0) {
+                $this->reservations->release($item);
+                $done = $this->transition($locked, OrderStatus::Delivered, $actor, $by, 'dispute_refund', $meta, fn (Order $o) => $this->delivered($o));
+                $this->refreshStock($done);
+                OrderDelivered::dispatch($done->id);
+
+                return $done;
+            }
+
+            $this->history($locked, $locked->status, $locked->status, $locked->seller_substatus, $locked->seller_substatus, $actor, $by?->id, 'dispute_refund', $meta);
+
+            return $locked->refresh();
+        });
+    }
+
+    /**
+     * Replacement / redelivery (spec Part 10): `units` delivered units go back to the seller to deliver again
+     * (0 = only a new delivery deadline for an order nothing reached the buyer of). A delivered order returns
+     * to `delivering`; the confirmation window restarts once everything is delivered again.
+     */
+    public function redeliver(Order $order, int $units, ActorType $actor, ?User $by): Order
+    {
+        return DB::transaction(function () use ($order, $units, $actor, $by): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->with('item.offer')->lockForUpdate()->findOrFail($order->id);
+            $item = $locked->item;
+
+            if (! in_array($locked->status, [OrderStatus::Paid, OrderStatus::Delivering, OrderStatus::Delivered], true) || $units < 0 || $units > $item->delivered_qty) {
+                throw CheckoutException::because('order.error.redeliver_units');
+            }
+
+            if ($units > 0) {
+                $item->forceFill(['delivered_qty' => $item->delivered_qty - $units])->save();
+            }
+
+            $meta = ['units' => $units, 'delivered' => $item->delivered_qty, 'quantity' => $item->quantity];
+            $deadline = function (Order $o): void {
+                $minutes = $o->item->offer->delivery_time_minutes;
+                $o->delivery_due_at = now()->addMinutes($minutes);
+                $o->seller_substatus = SellerSubstatus::InTrading;
+                $this->timer($o, OrderTimerType::DeliveryDue, $o->delivery_due_at);
+            };
+
+            if ($locked->status === OrderStatus::Delivered) {
+                if ($units === 0) {
+                    throw CheckoutException::because('order.error.redeliver_units');
+                }
+
+                return $this->transition($locked, OrderStatus::Delivering, $actor, $by, 'dispute_redelivery', $meta, function (Order $o) use ($deadline): void {
+                    $o->loadMissing('item.offer');
+                    $o->confirm_due_at = null;
+                    self::closeTimer($o, OrderTimerType::ConfirmDue);
+                    $deadline($o);
+                });
+            }
+
+            $fromSub = $locked->seller_substatus;
+            $deadline($locked);
+            $locked->save();
+            $this->history($locked, $locked->status, $locked->status, $fromSub, $locked->seller_substatus, $actor, $by?->id, 'dispute_redelivery', $meta);
+
+            return $locked->refresh();
+        });
+    }
+
+    /**
+     * Writes a timeline row without a status change (refunds of completed orders, chargebacks).
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    public function note(Order $order, string $reason, ActorType $actor, ?User $by, array $meta = []): void
+    {
+        $this->history($order, $order->status, $order->status, $order->seller_substatus, $order->seller_substatus, $actor, $by?->id, $reason, $meta);
+    }
+
+    /**
+     * A lost chargeback on an order that was never completed: the bank already returned the money, so the order
+     * closes as `refunded` without a refund of its own (spec 9.4).
+     */
+    public function closeByChargeback(Order $order, ActorType $actor, ?User $by): Order
+    {
+        return $this->transition($order, OrderStatus::Refunded, $actor, $by, 'chargeback_lost', [], function (Order $o): void {
+            $o->loadMissing('item');
+            $o->cancelled_at = now();
+            $o->cancel_reason = 'chargeback_lost';
+            $o->confirm_due_at = null;
+            $this->reservations->release($o->item);
+            $o->item->forceFill(['refunded_qty' => $o->item->quantity, 'delivered_qty' => 0])->save();
+            foreach (OrderTimerType::cases() as $type) {
+                self::closeTimer($o, $type);
+            }
+        });
+    }
+
+    private static function assertNoOpenCase(Order $order): void
+    {
+        if (OpenCases::blocks($order->id)) {
+            throw CheckoutException::because('order.error.open_dispute');
+        }
     }
 
     /** Re-evaluates the offer's stock after reservations moved (after commit). */

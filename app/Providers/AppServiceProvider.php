@@ -23,6 +23,8 @@ use App\Domains\Certification\Contracts\KycProvider;
 use App\Domains\Certification\Models\Certification;
 use App\Domains\Certification\Policies\CertificationPolicy;
 use App\Domains\Certification\Providers\FakeKycProvider;
+use App\Domains\Disputes\Models\Dispute;
+use App\Domains\Disputes\Policies\DisputePolicy;
 use App\Domains\Identity\Contracts\SmsSender;
 use App\Domains\Identity\Enums\StaffRole;
 use App\Domains\Identity\Listeners\RecordFailedLogin;
@@ -45,6 +47,8 @@ use App\Domains\Orders\Events\OrderPaid;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\Policies\OrderPolicy;
 use App\Domains\Payments\Contracts\CreditsWallet;
+use App\Domains\Payments\Models\Chargeback;
+use App\Domains\Payments\Policies\ChargebackPolicy;
 use App\Domains\Payments\Providers\FakePaymentProvider;
 use App\Domains\Risk\Models\BlocklistEntry;
 use App\Domains\Risk\Models\RiskFlag;
@@ -57,6 +61,10 @@ use App\Domains\Sellers\Policies\SellerPolicy;
 use App\Domains\Storage\Contracts\SecretVault;
 use App\Domains\Storage\Models\StorageGroup;
 use App\Domains\Storage\Vault\EnvelopeSecretVault;
+use App\Domains\Violations\Listeners\RecordCancellationViolation;
+use App\Domains\Violations\Models\Violation;
+use App\Domains\Violations\Models\ViolationRule;
+use App\Domains\Violations\Policies\ViolationPolicy;
 use App\Shared\Audit\AuditLogger;
 use App\Shared\Support\Settings;
 use Illuminate\Auth\Events\Failed;
@@ -140,6 +148,7 @@ final class AppServiceProvider extends ServiceProvider
         Event::listen(OrderDelivered::class, [SendOrderNotifications::class, 'delivered']);
         Event::listen(OrderCompleted::class, [SendOrderNotifications::class, 'completed']);
         Event::listen(OrderCancelled::class, [SendOrderNotifications::class, 'cancelled']);
+        Event::listen(OrderCancelled::class, RecordCancellationViolation::class);
         Event::listen(HoldReleased::class, [SendOrderNotifications::class, 'holdReleased']);
         Event::listen(Failed::class, RecordFailedLogin::class);
 
@@ -157,6 +166,11 @@ final class AppServiceProvider extends ServiceProvider
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(LedgerJournal::class, LedgerPolicy::class);
         Gate::policy(LedgerAccount::class, LedgerPolicy::class);
+
+        Gate::policy(Dispute::class, DisputePolicy::class);
+        Gate::policy(Chargeback::class, ChargebackPolicy::class);
+        Gate::policy(Violation::class, ViolationPolicy::class);
+        Gate::policy(ViolationRule::class, ViolationPolicy::class);
 
         foreach ([Order::class, RiskFlag::class, BlocklistEntry::class] as $riskModel) {
             Gate::policy($riskModel, OrderPolicy::class);
@@ -189,6 +203,14 @@ final class AppServiceProvider extends ServiceProvider
 
             // …nor on a payment review of an order they bought or sold.
             if ($ability === 'review' && ($arguments[0] ?? null) instanceof Order && OrderPolicy::involved($user, $arguments[0])) {
+                return false;
+            }
+
+            // …nor on a dispute about their own order, or a violation of their own store.
+            if ($ability === 'decide' && ($arguments[0] ?? null) instanceof Dispute && DisputePolicy::involved($user, $arguments[0])) {
+                return false;
+            }
+            if ($ability === 'decide' && ($arguments[0] ?? null) instanceof Violation && $arguments[0]->seller->user_id === $user->id) {
                 return false;
             }
 

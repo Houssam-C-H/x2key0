@@ -61,6 +61,16 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-022 — Disputes, chargebacks and violations (2026-11-23)
+- **The case closes before the order moves.** `ResolveDispute` / `ApplyChargeback::lost` set the case status first, then call `OrderStateMachine` in the same transaction, so the order's open-case guard (`OpenCases::blocks`) refuses everyone else (buyer confirm, auto-confirm, cancellations, clearing ISSUE) while letting the outcome through.
+- **Refunds of delivered units take them back:** `delivered_qty` is reduced before RefundOrder runs, so delivered + refunded never exceeds quantity (PostgreSQL CHECK) and settlement keeps using units kept = quantity − refunded.
+- **Order transitions added to spec 6.1:** paid|delivering → refunded (dispute full refund) and delivered → delivering (replacement). A refund after completion keeps the order `completed` (the spec has no completed → refunded); its commission and seller net are reduced and the timeline shows the refund.
+- **Money after completion comes back in a fixed order:** the case's frozen money, then the order's unreleased holds (newest first; pending or reserve, hold amounts reduced), then Available, which may go negative (the seller owes the platform). Commission and buyer-fee revenue are reversed in proportion to the units refunded (the last refund takes what is left).
+- **Freezing does not move held money:** unreleased holds get `frozen_by` and are skipped by `holds:release`; only money already in Available moves to SELLER_FROZEN, so hold amounts and pending balances stay consistent.
+- **Chargebacks:** the PSP's debit is a platform loss at once (EXP_CHARGEBACK_LOSS + fee expense); a lost case recovers up to the seller net (completed) or the escrow of the kept units (unfinished; anything above the charged-back amount goes back to the buyer's credits). Commission and fees are not clawed back separately — what is not recovered stays a loss. No violation is raised automatically for chargebacks (fraud is often the buyer's).
+- **Violations count once upheld:** open/appealed violations are shown but carry no points; thresholds and rule penalties apply on uphold (staff or the appeal-window job). Penalties use the existing state machines with a null (system) actor.
+- **Partial refunds are by units** (the spec also mentions amounts); amount-based partial refunds need a different settlement base and wait for a real need.
+
 ## ADR-021 — Chat storage, redaction and live delivery (2026-11-23)
 - **Both bodies are stored:** `body` (what the sender typed, kept for staff and disputes) and `body_redacted` (only when something was hidden). The counterparty is only ever sent `body_redacted ?? body`; the sender sees their own original with a notice. Redaction is a mask (`••••`), not a refusal, so a buyer's honest question is never lost.
 - **Repeat offenders:** redacted messages within 24 h reach 3 → one open `chat_contact_info` risk flag per day for staff; no automatic punishment yet (violations arrive with M17).

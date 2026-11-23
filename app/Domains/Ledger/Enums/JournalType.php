@@ -22,4 +22,10 @@ enum JournalType: string
     case ReserveRelease = 'RESERVE_RELEASE';
     case Refund = 'REFUND';
     case ManualAdjustment = 'MANUAL_ADJUSTMENT';
+    // M11: seller money of a completed order under dispute / chargeback, and chargeback movements (spec 7.2, 9.4).
+    case DisputeFreeze = 'FUNDS_FREEZE';
+    case DisputeUnfreeze = 'FUNDS_UNFREEZE';
+    case ChargebackOpened = 'CHARGEBACK';
+    case ChargebackRecovered = 'CHARGEBACK_RECOVERY';
+    case ChargebackReversed = 'CHARGEBACK_REVERSAL';
 }

@@ -121,6 +121,9 @@ return [
         'ticket_autoclose_hours' => 72,
         'violation_appeal_days' => 7,
         'violation_points_ttl_days' => 90,
+        // Active (upheld, unexpired) violation points that suspend / ban a store (spec 17.2 thresholds).
+        'violation_points_store_suspend' => 30,
+        'violation_points_ban' => 60,
         'account_deletion_cooloff_days' => 14,
         'browsing_history_limit' => 50,
         'reveal_requires_reauth_minutes' => 30,

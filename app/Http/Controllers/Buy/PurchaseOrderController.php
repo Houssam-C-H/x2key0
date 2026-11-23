@@ -7,6 +7,9 @@ namespace App\Http\Controllers\Buy;
 use App\Domains\Delivery\Actions\RevealOrderSecrets;
 use App\Domains\Delivery\Models\Delivery;
 use App\Domains\Delivery\Models\DeliveryEvidence;
+use App\Domains\Disputes\Enums\DisputeRole;
+use App\Domains\Disputes\Support\DisputeRules;
+use App\Domains\Disputes\Support\OpenCases;
 use App\Domains\Identity\Models\User;
 use App\Domains\Orders\Enums\ActorType;
 use App\Domains\Orders\Enums\OrderStatus;
@@ -84,8 +87,9 @@ final class PurchaseOrderController
                 'cancel' => OrderRules::buyerCanCancel($order),
                 'cancelRemainder' => OrderRules::buyerCanCancelRemainder($order),
                 'reveal' => OrderRules::buyerCanReveal($order),
-                'confirm' => $order->status === OrderStatus::Delivered,
+                'confirm' => $order->status === OrderStatus::Delivered && ! OpenCases::blocks($order->id),
             ],
+            'dispute' => app(DisputeRules::class)->forOrder($order, DisputeRole::Buyer),
         ]);
     }
 

@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M11 — Disputes (next). M1–M10 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M12 — Service Tickets (next). M1–M11 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -15,8 +15,30 @@
 | M8 | Delivery, Sold Orders, refunds | ✅ code done | See checklist below |
 | M9 | Completion, settlement, notifications | ✅ code done | See checklist below |
 | M10 | Chat | ✅ code done | See checklist below; Reverb live delivery pending |
-| M11 | Disputes | next | |
-| M12–M19 | — | not started | |
+| M11 | Disputes, chargebacks, violations | ✅ code done | See checklist below; chargeback webhooks wait for real PSPs (M6b) |
+| M12 | Service Tickets | next | |
+| M13–M19 | — | not started | |
+
+## M11 checklist
+- [x] Tables: disputes (ULID, reason, requested resolution/qty, proposal, frozen amount, deadlines), dispute_messages (original + redacted, internal notes, system lines), dispute_evidence (private disk + SHA-256), dispute_decisions (one per case, final), dispute_status_history (append-only), chargebacks, violation_rules, violations; holds gain `frozen_by`
+- [x] `DisputeStateMachine` (spec 6.4): open → awaiting_counterparty (72 h deadline) → negotiating → resolved / escalated → resolved; any open → cancelled (opener withdraws); history row + system line per transition
+- [x] Opening rules (`DisputeRules`): buyer on paid (after the deadline: not received / other), delivering, delivered, completed within `post_completion_dispute_days` (accounts: `account_recovered` until the recovery window ends); "not received" on a delivered order only in the contact → report window (48 h + 48 h); seller only `buyer_unresponsive` on paid/delivering; one open case per order; evidence required for not working / already used / wrong region / account recovered
+- [x] **An open case blocks the order**: completion (buyer or auto-confirm), cancellation, cancel remainder and clearing ISSUE are refused; paid/delivering orders show ISSUE until the case closes
+- [x] Negotiation: reply (first counterparty answer → negotiating), proposals (refund full / partial, replacement, redelivery), accept the request or the other side's proposal (agreement, no fault), escalate from negotiating, withdraw; contact details masked like chat (ADR-021); `disputes:escalate-overdue` (5 min, idempotent, re-checked under lock)
+- [x] **Outcome executor** (`ResolveDispute`), in one transaction with the case close: refund full/partial before completion (escrow; delivered units taken back; all refunded → `refunded`; partial delivery done → `delivered`), replacement/redelivery (units back to the seller, delivered → delivering, new deadline), no refund / withdrawn (resume, at least 24 h left to confirm)
+- [x] **After completion** (`RefundCompletedOrder`): REFUND from the seller (frozen money of the case → unreleased holds, pending/reserve → Available, may go negative) + commission and fee revenue reversed proportionally; order stays completed with reduced commission/net; points reversed when nothing is kept
+- [x] **Seller money of a completed order under a case** (`Ledger\Actions\SellerFunds`): holds stop releasing (`frozen_by`), released money → SELLER_FROZEN ("Not Available"), back on close (FUNDS_FREEZE / FUNDS_UNFREEZE journals)
+- [x] Staff decision (support; admins too, never on their own order): outcome, units, refund destination, seller fault, public rationale, internal notes; seller fault → `disputes_lost` + `dispute_lost` violation; buyer abuse: 3 lost disputes in 90 days → `buyer_dispute_abuse` risk flag
+- [x] **Chargebacks** (`ApplyChargeback`, spec 9.4): open (CHARGEBACK: PSP clearing out, loss + fee expenses; freeze; completion blocked), won (reversal, unfreeze), lost (completed: recovered from the seller up to the net; unfinished: escrow out, the rest to buyer credits, order → refunded); idempotent per provider case id; finance records them in the admin until PSP webhooks exist (M6b)
+- [x] **Violations** (spec 17.2 / 6.7): seeded rules (dispute_lost, seller_cancel, late_delivery automatic; off-platform contact, prohibited listing, fake evidence, fraud by staff); open → appealed → upheld | revoked, open → upheld after `violation_appeal_days` (`violations:process`, hourly); penalties on uphold: rule penalty (listing suspension of the offer, store suspension, ban) and points thresholds (`violation_points_store_suspend` 30, `violation_points_ban` 60); active points mirrored in `seller_stats.violation_points`
+- [x] Dispute Center (spec 1.9): As Buyer / As Seller, Open/Closed counters, quick filters (response required · under review · awaiting other party), search, case page (summary, request, proposal, actions, thread, evidence, decision), open-a-dispute page from the order, "Open a dispute" / case link on both order pages, timeline lines for dispute and chargeback events; Dispute Statistics per game × category (disputes, share, dispute rate, refund resolution rate)
+- [x] Violation Center (spec 1.8): counters, filters, active points vs thresholds, appeal form
+- [x] Admin: dispute queue (escalated first, full thread incl. internal notes, internal note, message parties, decide), chargebacks (record, won, lost), violations (raise, uphold, revoke), violation rules (points, penalty, enabled); inbox notifications for every dispute / violation / chargeback event (en/fr/ar)
+- [x] **Acceptance tests** (`tests/Feature/Disputes`): every outcome before and after completion checked for order state and journals, `ledger:verify` clean after each; chargebacks won/lost on unfinished and completed orders; violations auto / appeal / threshold; HTTP flows
+- [x] 550 tests (534 passed, 16 skipped on SQLite); Larastan max 0 errors; Pint; TS strict
+- [ ] Chargeback webhooks and the auto evidence pack PDF (timeline, IP/device, reveal logs, chat) — with real PSPs (M6b)
+- [ ] Amount-based partial refunds (today: by units); antivirus scan of dispute evidence; staff chat access from the dispute page
+- [ ] Run the new migrations/tests on PostgreSQL (the portable install is not on this machine)
 
 ## M10 checklist
 - [x] Tables: conversations (order | pre_sale), participants (read marker, mute), messages (original `body` + `body_redacted`, flags, kind text | system | auto_reply | auto_hours)
@@ -217,6 +239,7 @@
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
+- 2026-11-23 — M11 disputes, chargebacks and violations built (branch `m11-disputes`, on top of `m10-chat`). Bugs found by tests and fixed: a seller could clear the ISSUE sub-status of an order under dispute; resetting the confirmation timer after a dispute used a mass assignment the strict models refuse.
 - 2026-11-23 — M6 checkout & payments built (branch `m6-checkout-payments`, on top of M5): quotes, checkout, reservations, order state machine up to paid, fake PSP + webhooks, expiry/sync jobs, credits seam, risk v1, payment review admin. Portable PostgreSQL 17.12 set up in C:\dev\tools\pgsql (data C:\dev\tools\pgsql-data, port 5433); M1–M5 suite also verified on it. Bug found by tests and fixed: a capture arriving after we cancelled the payment locally was dropped as stale — it is now recorded and flagged for refund.
 - 2026-11-23 — M5 offers & storage built (branch `m5-offers-storage`): offer state machine, create/edit/Active Offers, moderation, encrypted storage vault with HMAC duplicate detection, low-stock alerts + bar, product/offer/store pages with offers, favorites, browsing history. New dev machine: portable PHP 8.4.28 + Composer set up in C:\dev\tools again; repo cloned to C:\Users\Stjg0\x2key0.
 - 2026-11-23 — M3 catalog built. Portable Meilisearch 1.57 in C:\dev\tools\meilisearch for local parity tests. SQLite dev DB switched to WAL + busy timeout (concurrent dev server no longer locks seeding).

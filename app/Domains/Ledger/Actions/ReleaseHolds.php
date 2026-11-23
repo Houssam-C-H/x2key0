@@ -43,7 +43,7 @@ final class ReleaseHolds
                     /** @var Hold|null $hold */
                     $hold = Hold::query()->lockForUpdate()->find($row->id);
 
-                    if ($hold === null || $hold->released_at !== null || $hold->release_at->isFuture()) {
+                    if ($hold === null || $hold->released_at !== null || $hold->frozen_by !== null || $hold->release_at->isFuture()) {
                         return null;
                     }
 

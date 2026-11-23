@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $released_at
  * @property int|null $journal_id
  * @property int|null $source_hold_id
+ * @property string|null $frozen_by dispute:{id} | chargeback:{id} — not released while set
  * @property Carbon $created_at
  * @property-read Order|null $order
  */
@@ -69,6 +70,6 @@ final class Hold extends Model
      */
     public function scopeDue(Builder $query): void
     {
-        $query->whereNull('released_at')->where('release_at', '<=', now());
+        $query->whereNull('released_at')->whereNull('frozen_by')->where('release_at', '<=', now());
     }
 }

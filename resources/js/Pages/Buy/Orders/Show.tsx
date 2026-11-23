@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { type OrderDispute, OrderDisputeBox } from '@/Components/Disputes/OrderDisputeBox';
 import { DeliveriesPanel, ItemPanel, MoneyPanel, type OrderDetail, StatusBadge, Timeline } from '@/Components/Orders/OrderParts';
 import { DashboardLayout, Panel } from '@/Layouts/DashboardLayout';
 import { useShared, useT } from '@/lib/i18n';
@@ -16,7 +17,7 @@ interface Secret {
  * Order detail (spec 1.6 / 8.3): status, deliveries with an audited reveal, cancel after a missed deadline,
  * cancel remainder, refunds, timeline. While payment is pending the page refreshes itself.
  */
-export default function OrderShow({ order, can }: { order: OrderDetail; can: { cancel: boolean; cancelRemainder: boolean; reveal: boolean; confirm: boolean } }) {
+export default function OrderShow({ order, can, dispute }: { order: OrderDetail; can: { cancel: boolean; cancelRemainder: boolean; reveal: boolean; confirm: boolean }; dispute: OrderDispute }) {
     const t = useT();
     const { locale, errors } = useShared();
     const [secrets, setSecrets] = useState<Secret[] | null>(null);
@@ -87,6 +88,8 @@ export default function OrderShow({ order, can }: { order: OrderDetail; can: { c
                         </button>
                     </div>
                 )}
+
+                <OrderDisputeBox dispute={dispute} />
 
                 {(can.cancel || can.cancelRemainder) && (
                     <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md bg-canvas p-3 text-sm">

@@ -62,7 +62,8 @@ final class SellerProfileStateMachine
         });
     }
 
-    public function suspend(SellerProfile $profile, User $actor, string $reason): SellerProfile
+    /** Staff, or a violation penalty (null actor). */
+    public function suspend(SellerProfile $profile, ?User $actor, string $reason): SellerProfile
     {
         return $this->transition($profile, SellerStatus::Suspended, $actor, $reason);
     }
@@ -76,7 +77,7 @@ final class SellerProfileStateMachine
         return $this->transition($profile, SellerStatus::Active, $actor, null);
     }
 
-    public function ban(SellerProfile $profile, User $actor, string $reason): SellerProfile
+    public function ban(SellerProfile $profile, ?User $actor, string $reason): SellerProfile
     {
         return $this->transition($profile, SellerStatus::Banned, $actor, $reason);
     }

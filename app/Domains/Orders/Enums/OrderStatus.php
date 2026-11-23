@@ -6,8 +6,7 @@ namespace App\Domains\Orders\Enums;
 
 /**
  * Order status (spec 6.1). Transitions only through OrderStateMachine; each writes an order_status_history row.
- * M6 implements the payment part: pending_payment → paid | payment_review | cancelled, payment_review → paid |
- * cancelled. Delivery, completion and refunds follow in M8–M11.
+ * Dispute outcomes (M11) add paid|delivering → refunded and delivered → delivering (replacement).
  */
 enum OrderStatus: string
 {
@@ -28,9 +27,11 @@ enum OrderStatus: string
         return match ($this) {
             self::PendingPayment => [self::Paid, self::PaymentReview, self::Cancelled],
             self::PaymentReview => [self::Paid, self::Cancelled],
-            self::Paid => [self::Delivering, self::Delivered, self::Cancelled],
-            self::Delivering => [self::Delivered],
-            self::Delivered => [self::Completed, self::Refunded],
+            // → refunded: dispute decision refunds everything (M11).
+            self::Paid => [self::Delivering, self::Delivered, self::Cancelled, self::Refunded],
+            self::Delivering => [self::Delivered, self::Refunded],
+            // → delivering: dispute replacement / redelivery sends delivered units back to the seller (M11).
+            self::Delivered => [self::Completed, self::Refunded, self::Delivering],
             self::Completed, self::Cancelled, self::Refunded => [],
         };
     }

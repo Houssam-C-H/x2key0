@@ -1,5 +1,6 @@
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import { type OrderDispute, OrderDisputeBox } from '@/Components/Disputes/OrderDisputeBox';
 import { DeliveriesPanel, ItemPanel, MoneyPanel, type OrderDetail, StatusBadge, Timeline } from '@/Components/Orders/OrderParts';
 import { DashboardLayout, Panel } from '@/Layouts/DashboardLayout';
 import { useShared, useT } from '@/lib/i18n';
@@ -7,12 +8,13 @@ import { useShared, useT } from '@/lib/i18n';
 interface Props {
     order: OrderDetail & { remark: string | null; acquisitionCost: string; buyerInputs: { label: string; value: string }[]; buyer: string };
     can: { accept: boolean; inTrading: boolean; deliver: boolean; cancel: boolean; write: boolean };
+    dispute: OrderDispute;
 }
 
 const SECRET_METHODS = ['digital_key', 'code', 'file', 'account_transfer'];
 
 /** Sold order (spec 1.8 / 6.1 / 8.2): buyer inputs, accept → in trading, deliver per method, milestones, notes, cancel. */
-export default function SoldOrderShow({ order, can }: Props) {
+export default function SoldOrderShow({ order, can, dispute }: Props) {
     const t = useT();
     const { locale, errors } = useShared();
     const method = order.item.deliveryMethod;
@@ -54,6 +56,7 @@ export default function SoldOrderShow({ order, can }: Props) {
                         )}
                     </div>
                 )}
+                <OrderDisputeBox dispute={dispute} />
             </Panel>
 
             {order.buyerInputs.length > 0 && (

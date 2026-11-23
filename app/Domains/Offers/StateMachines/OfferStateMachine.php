@@ -100,8 +100,8 @@ final class OfferStateMachine
         };
     }
 
-    /** Moderator or violation (spec 6.2 `* → system_deactivated`), reason shown to the seller. */
-    public function systemDeactivate(Offer $offer, User $staff, string $reason): Offer
+    /** Moderator or violation (spec 6.2 `* → system_deactivated`; null actor = automatic penalty), reason shown to the seller. */
+    public function systemDeactivate(Offer $offer, ?User $staff, string $reason): Offer
     {
         return $this->transition($offer, OfferStatus::SystemDeactivated, $staff, $reason);
     }

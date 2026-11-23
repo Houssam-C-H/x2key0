@@ -48,16 +48,7 @@ final class RefundOrder
         $sellerPart = $item->unit_price_amount * $units;
         $total = min($sellerPart + $feePart, $order->refundable());
 
-        // Proportional split by payment source, bounded by what each source has left.
-        $creditsLeft = $order->paid_credits_amount - $order->refunded_credits_amount;
-        $pspLeft = $order->paid_psp_amount - $order->refunded_psp_amount;
-        $paid = $order->paid_credits_amount + $order->paid_psp_amount;
-        $fromCredits = $paid === 0 ? 0 : min($creditsLeft, intdiv($total * $order->paid_credits_amount, $paid));
-        $fromPsp = $total - $fromCredits;
-        if ($fromPsp > $pspLeft) {
-            $fromCredits += $fromPsp - $pspLeft;
-            $fromPsp = $pspLeft;
-        }
+        [$fromCredits, $fromPsp] = self::split($order, $total);
 
         // The order row is locked by the caller, so counting this order's refund journals is race-free.
         $seq = LedgerJournal::query()->where('type', JournalType::Refund)->where('source_type', 'order')->where('source_id', $order->id)->count() + 1;
@@ -95,13 +86,33 @@ final class RefundOrder
         });
     }
 
-    private static function pspPayment(Order $order): Payment
+    /**
+     * Proportional split of a refund by payment source, bounded by what each source has left.
+     *
+     * @return array{0: int, 1: int} [from credits, from the PSP]
+     */
+    public static function split(Order $order, int $total): array
+    {
+        $creditsLeft = $order->paid_credits_amount - $order->refunded_credits_amount;
+        $pspLeft = $order->paid_psp_amount - $order->refunded_psp_amount;
+        $paid = $order->paid_credits_amount + $order->paid_psp_amount;
+        $fromCredits = $paid === 0 ? 0 : min($creditsLeft, intdiv($total * $order->paid_credits_amount, $paid));
+        $fromPsp = $total - $fromCredits;
+        if ($fromPsp > $pspLeft) {
+            $fromCredits += $fromPsp - $pspLeft;
+            $fromPsp = $pspLeft;
+        }
+
+        return [$fromCredits, $fromPsp];
+    }
+
+    public static function pspPayment(Order $order): Payment
     {
         return Payment::query()->where('order_id', $order->id)->where('provider', '!=', Payment::CREDITS)
             ->where('status', PaymentStatus::Captured)->orderBy('id')->firstOrFail();
     }
 
-    private static function row(Order $order, ?Payment $payment, string $destination, int $amount, string $reason, string $status, ?string $providerId, ActorType $actor, ?int $actorId): void
+    public static function row(Order $order, ?Payment $payment, string $destination, int $amount, string $reason, string $status, ?string $providerId, ActorType $actor, ?int $actorId): void
     {
         (new Refund)->forceFill([
             'order_id' => $order->id,

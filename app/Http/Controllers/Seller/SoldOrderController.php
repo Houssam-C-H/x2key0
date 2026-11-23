@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Seller;
 use App\Domains\Catalog\Enums\CategoryTypeCode;
 use App\Domains\Catalog\Models\Game;
 use App\Domains\Delivery\Actions\DeliverOrder;
+use App\Domains\Disputes\Enums\DisputeRole;
+use App\Domains\Disputes\Support\DisputeRules;
 use App\Domains\Identity\Models\User;
 use App\Domains\Ledger\Support\Statements;
 use App\Domains\Offers\Models\Offer;
@@ -160,6 +162,7 @@ final class SoldOrderController
                 'cancel' => OrderRules::sellerCanCancel($order),
                 'write' => $profile->status !== SellerStatus::Suspended,
             ],
+            'dispute' => app(DisputeRules::class)->forOrder($order, DisputeRole::Seller),
         ]);
     }
 
