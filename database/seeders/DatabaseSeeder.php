@@ -48,6 +48,7 @@ final class DatabaseSeeder extends Seeder
         }
 
         $this->seedDemoSeller();
+        $this->call(OfferSeeder::class);
     }
 
     /** seller_demo: certified (email, phone, identity), active store, a few passed services. */

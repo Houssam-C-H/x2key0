@@ -11,6 +11,8 @@ D1 entity country · D2 PSPs · D3 launch categories · D4 languages · D5 settl
 5. **Offer `suspended` status** appears in 6.2 but not in the 5.4 enum. *Working assumption: map to `system_deactivated`.*
 6. **Routes:** §1.2 records Z2U URL patterns; Part 20 defines X2KEY's own localized routes. *Working assumption: Part 20.*
 7. **Section numbering:** Part 6 orders 6.9 before 6.7; milestones are Part 25, not Part 22 as §0.2 says. Cosmetic.
+8. **Offer currency:** spec 1.8 lets sellers price in USD/EUR/GBP/CAD/AUD; M5 prices offers in USD only (ADR-015) until FX rates exist. *Confirm whether non-USD listing prices are needed at launch.*
+9. **Offer re-review on edit:** spec does not say whether editing a published offer needs review again. *Working assumption: content edits (title, description, attributes) do for levels without auto-approve; price/stock edits never do.*
 
 ## Environment
 - Repo moved out of OneDrive to `C:/dev/x2key` (2026-11-22).

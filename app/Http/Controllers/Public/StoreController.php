@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Offers\Models\Offer;
+use App\Domains\Offers\Support\OfferPresenter;
 use App\Domains\Sellers\Enums\SellerStatus;
 use App\Domains\Sellers\Models\SellerProfile;
 use App\Domains\Sellers\Support\SellerPresenter;
@@ -15,11 +17,13 @@ use Inertia\Response;
 
 /**
  * Public store page /{locale}/store/{slug} (spec 1.8 My Store, Part 20). Only active and vacation
- * stores are public; inactive, suspended and banned ones return 404. Offers, reviews and coupons
- * join this page with their milestones (M5, M14, M16).
+ * stores are public; inactive, suspended and banned ones return 404. Shows the featured list and live
+ * offers (M5); reviews and coupons join with M16 / M14.
  */
 final class StoreController
 {
+    private const int OFFERS_MAX = 48;
+
     public function show(Request $request, string $locale, string $slug): Response
     {
         $profile = SellerProfile::query()->public()->where('slug', $slug)->with(['level', 'stats', 'media', 'user'])->first();
@@ -32,6 +36,13 @@ final class StoreController
             ['name' => $profile->store_name, 'href' => $profile->path($locale)],
         ];
         $stats = $profile->stats;
+
+        // Featured List (up to featured_offers_max, chosen on My Store) then the rest by the seller's Sort number.
+        $featuredIds = array_values(array_filter($profile->media->featured_offer_ids ?? [], 'is_int'));
+        $live = Offer::query()->live()->where('offers.seller_profile_id', $profile->id)->with(OfferPresenter::publicRelations());
+        $featured = $featuredIds === [] ? [] : (clone $live)->whereIn('offers.id', $featuredIds)->get()
+            ->sortBy(static fn (Offer $o): int|false => array_search($o->id, $featuredIds, true))->values()->all();
+        $offers = (clone $live)->whereNotIn('offers.id', $featuredIds)->orderByDesc('offers.sort_weight')->orderByDesc('offers.id')->limit(self::OFFERS_MAX)->get()->all();
 
         return Inertia::render('Public/Store', [
             'store' => [
@@ -60,6 +71,8 @@ final class StoreController
                 ],
             ],
             'services' => SellerPresenter::passedServices($profile, $locale),
+            'featured' => array_map(static fn (Offer $o): array => OfferPresenter::card($o, $locale), $featured),
+            'offers' => array_map(static fn (Offer $o): array => OfferPresenter::card($o, $locale), $offers),
             'isOwner' => $viewer instanceof User && $viewer->id === $profile->user_id,
             'breadcrumbs' => $crumbs,
             'seo' => Seo::make(

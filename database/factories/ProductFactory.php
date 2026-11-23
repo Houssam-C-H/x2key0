@@ -7,6 +7,8 @@ namespace Database\Factories;
 use App\Domains\Catalog\Enums\ProductStatus;
 use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Product;
+use App\Domains\Offers\Actions\RefreshProductOffers;
+use App\Domains\Offers\Models\Offer;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -50,10 +52,18 @@ final class ProductFactory extends Factory
         return $this->state(['attribute_values' => $values]);
     }
 
+    /**
+     * Gives the product live offers from different sellers: the first at $cents, the others a dollar apart,
+     * then refreshes the product's cached lowest price and offer count from them.
+     */
     public function priced(int $cents, int $offers = 1): static
     {
         return $this->afterCreating(function (Product $product) use ($cents, $offers): void {
-            $product->forceFill(['lowest_price_amount_cached' => $cents, 'offer_count_cached' => $offers])->saveQuietly();
+            for ($i = 0; $i < $offers; $i++) {
+                Offer::factory()->forProduct($product)->price($cents + $i * 100)->create();
+            }
+
+            app(RefreshProductOffers::class)->apply($product);
         });
     }
 }

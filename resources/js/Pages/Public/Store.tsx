@@ -1,10 +1,12 @@
 import { Link } from '@inertiajs/react';
 import { Breadcrumbs } from '@/Components/Catalog/Breadcrumbs';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
+import { OfferCard } from '@/Components/Offer/OfferCard';
 import { bpsToPercent, LevelBadge } from '@/Components/Seller/LevelBadge';
 import { PublicLayout } from '@/Layouts/PublicLayout';
 import { useShared, useT } from '@/lib/i18n';
 import type { Crumb, Seo } from '@/types/catalog';
+import type { OfferCardData } from '@/types/offer';
 import type { SellerLevel, SellerService } from '@/types/seller';
 
 interface Props {
@@ -24,13 +26,15 @@ interface Props {
         stats: { ordersCompleted: number; completionRateBps: number | null; positiveRateBps: number | null; ratingCount: number; disputeRateBps: number | null };
     };
     services: SellerService[];
+    featured: OfferCardData[];
+    offers: OfferCardData[];
     isOwner: boolean;
     breadcrumbs: Crumb[];
     seo: Seo;
 }
 
 /** Public store page (spec 1.8 My Store). Offers, reviews and coupons join with M5 / M14 / M16. */
-export default function Store({ store, services, isOwner, breadcrumbs, seo }: Props) {
+export default function Store({ store, services, featured, offers, isOwner, breadcrumbs, seo }: Props) {
     const t = useT();
     const { locale } = useShared();
     const rate = (bps: number | null) => (bps === null ? '—' : bpsToPercent(bps));
@@ -107,9 +111,35 @@ export default function Store({ store, services, isOwner, breadcrumbs, seo }: Pr
                             </ul>
                         )}
                     </section>
-                    <section className="card p-5">
-                        <h2 className="mb-2 font-bold">{t('seller.public.offers')}</h2>
-                        <p className="text-sm text-muted">{t('seller.public.no_offers')}</p>
+                    {featured.length > 0 && (
+                        <section className="space-y-3" aria-labelledby="featured-title">
+                            <h2 id="featured-title" className="font-bold">
+                                {t('seller.public.featured')}
+                            </h2>
+                            <ul className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                                {featured.map((o) => (
+                                    <li key={o.id}>
+                                        <OfferCard offer={o} />
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
+                    <section className="space-y-3" aria-labelledby="offers-title">
+                        <h2 id="offers-title" className="font-bold">
+                            {t('seller.public.offers')}
+                        </h2>
+                        {offers.length === 0 && featured.length === 0 ? (
+                            <p className="card p-5 text-sm text-muted">{t('seller.public.no_offers')}</p>
+                        ) : (
+                            <ul className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                                {offers.map((o) => (
+                                    <li key={o.id}>
+                                        <OfferCard offer={o} />
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </section>
                 </div>
 

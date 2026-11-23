@@ -53,7 +53,11 @@ it('matches the spec 1.7 group order', function (): void {
 
 it('renders every sidebar leaf with that leaf active (placeholder until its milestone ships)', function (): void {
     $user = SellerProfile::factory()->create()->user;
-    $built = ['settings.account', 'settings.security', 'settings.certification', 'seller.store.mine', 'seller.store.services', 'seller.info', 'seller.contacts'];
+    unlockPrivacy($user); // Storage pages sit behind the Privacy Password
+    $built = [
+        'settings.account', 'settings.security', 'settings.certification', 'seller.store.mine', 'seller.store.services', 'seller.info', 'seller.contacts',
+        'buy.favorites', 'seller.offers.create', 'seller.offers', 'storage.groups', 'storage.items', 'storage.recycle',
+    ];
 
     foreach (DashboardMenu::leaves() as $leaf) {
         $url = $leaf['path'].(isset($leaf['query']) ? '?'.http_build_query($leaf['query']) : '');

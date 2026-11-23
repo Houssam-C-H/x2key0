@@ -37,6 +37,14 @@ return [
         'meilisearch_index' => env('CATALOG_SEARCH_INDEX', 'products'),
     ],
 
+    // Storage vault keys (spec 8.1, ADR-014): base64, 32 bytes each. Empty = derived from APP_KEY (local dev only).
+    // Production sets both (KMS-held master key) and never changes the pepper (it keys the duplicate fingerprints).
+    'storage' => [
+        'master_key' => env('STORAGE_MASTER_KEY'),
+        'hmac_pepper' => env('STORAGE_HMAC_PEPPER'),
+        'key_id' => env('STORAGE_KEY_ID', 'v1'),
+    ],
+
     // Display currencies only (D5): checkout and ledger always settle in USD.
     'display_currencies' => [
         'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'BDT', 'BHD', 'BRL', 'CNY', 'CZK', 'EGP',
@@ -100,6 +108,8 @@ return [
         'not_received_contact_hours' => 48,
         'not_received_report_hours' => 48,
         'listing_duration_days' => 7,
+        'offer_expire_soon_hours' => 48,
+        'storage_import_max_items' => 5000,
         'insurance_installments' => 3,
         // 0.1 cent per email; stored in milli-cents to stay integer.
         'marketing_email_unit_price_millicents' => 100,

@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { type ReactNode, useState } from 'react';
 import { Flash } from '@/Components/Flash';
 import { Header } from '@/Components/Header';
@@ -79,6 +79,7 @@ export function DashboardLayout({ title, children, bare = false }: Props) {
             </div>
 
             <FloatingRail />
+            <StockAlertBar />
         </div>
     );
 }
@@ -93,6 +94,41 @@ export function Panel({ title, description, children, id }: { title: string; des
             {description && <p className="mt-1 text-sm text-muted">{description}</p>}
             <div className="mt-4">{children}</div>
         </section>
+    );
+}
+
+/**
+ * Seller stock bar (spec 1.1): sticky bottom bar listing offers whose storage runs low; × hides it until the
+ * alerts resolve and trigger again.
+ */
+function StockAlertBar() {
+    const t = useT();
+    const { stockAlert } = useShared();
+
+    if (!stockAlert) return null;
+
+    const titles = stockAlert.titles.join(', ') + (stockAlert.count > stockAlert.titles.length ? ` +${stockAlert.count - stockAlert.titles.length}` : '');
+
+    return (
+        <div role="status" className="fixed inset-x-0 bottom-0 z-30 bg-primary px-4 py-3 text-sm text-white shadow-lg">
+            <div className="mx-auto flex max-w-7xl items-center gap-3">
+                <p className="flex-1">
+                    {t('storage.alert_bar', { titles })}{' '}
+                    <Link href="/seller/storage" className="font-semibold underline">
+                        {t('storage.alert_bar_link')}
+                    </Link>
+                </p>
+                <button
+                    type="button"
+                    className="rounded-full bg-danger px-2 py-0.5 font-bold"
+                    aria-label={t('storage.alert_bar_dismiss')}
+                    title={t('storage.alert_bar_dismiss')}
+                    onClick={() => router.post('/seller/stock-alerts/dismiss', {}, { preserveScroll: true, preserveState: true })}
+                >
+                    ×
+                </button>
+            </div>
+        </div>
     );
 }
 

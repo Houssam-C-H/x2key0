@@ -9,3 +9,5 @@ use Illuminate\Support\Facades\Schedule;
 */
 
 Schedule::command('catalog:recount')->everyTenMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('offers:expire')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('storage:check-low-stock')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();

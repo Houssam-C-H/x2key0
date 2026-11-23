@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use App\Domains\Catalog\Enums\CategoryTypeCode;
 use App\Domains\Catalog\Support\CatalogReader;
 use App\Domains\Identity\Models\User;
+use App\Domains\Storage\Support\StockAlerts;
 use App\Shared\Navigation\DashboardMenuPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -64,6 +65,10 @@ final class HandleInertiaRequests extends Middleware
             // Dashboard sidebar for signed-in, non-localized (dashboard) pages; evaluated lazily.
             'menu' => fn (): ?array => $user instanceof User && $request->route('locale') === null
                 ? app(DashboardMenuPresenter::class)->present($request)
+                : null,
+            // Seller stock bar (spec 1.1 / 8.1): open, undismissed low-stock alerts, on dashboard pages.
+            'stockAlert' => fn (): ?array => $user instanceof User && $request->route('locale') === null && $user->sellerProfile?->status->opensSellerCenter() === true
+                ? StockAlerts::bar($user->sellerProfile->id)
                 : null,
             'flash' => [
                 'success' => fn (): mixed => $request->session()->get('success'),

@@ -6,12 +6,14 @@ import { FilterSidebar, type ListingState } from '@/Components/Catalog/FilterSid
 import { NoticeBox } from '@/Components/Catalog/NoticeBox';
 import { Pagination } from '@/Components/Catalog/Pagination';
 import { ProductCard } from '@/Components/Catalog/ProductCard';
+import { OfferCard } from '@/Components/Offer/OfferCard';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
 import { Icon } from '@/Components/Icon';
 import { PublicLayout } from '@/Layouts/PublicLayout';
 import { useShared, useT } from '@/lib/i18n';
 import { formatCount } from '@/lib/money';
 import type { CategoryTab, Crumb, FilterDef, GameCategoryInfo, ProductCardData, Seo } from '@/types/catalog';
+import type { OfferCardData, Paged } from '@/types/offer';
 
 interface Props {
     gameCategory: GameCategoryInfo;
@@ -21,6 +23,8 @@ interface Props {
     query: ListingState;
     sorts: string[];
     results: { items: ProductCardData[]; total: number; page: number; lastPage: number };
+    /** Offer cards for game×categories without catalog products (currency, accounts, boosting…). */
+    offerResults: Paged<OfferCardData> | null;
     seo: Seo;
 }
 
@@ -54,7 +58,7 @@ function toParams(state: ListingState, page = 1): Record<string, unknown> {
     return params;
 }
 
-export default function Listing({ gameCategory, tabs, breadcrumbs, filters, query, sorts, results, seo }: Props) {
+export default function Listing({ gameCategory, tabs, breadcrumbs, filters, query, sorts, results, offerResults, seo }: Props) {
     const t = useT();
     const { locale } = useShared();
     const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -127,7 +131,25 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
                             </div>
                         </div>
 
-                        {results.items.length === 0 ? (
+                        {offerResults !== null ? (
+                            offerResults.items.length === 0 ? (
+                                <div className="card flex flex-col items-center gap-3 py-16 text-center">
+                                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-canvas text-2xl font-bold text-muted">!</span>
+                                    <p className="font-semibold">{t('catalog.empty')}</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="mb-3 text-sm text-muted">{t('offer.listing_count', { count: formatCount(offerResults.total, locale) })}</p>
+                                    <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                                        {offerResults.items.map((o) => (
+                                            <li key={o.id}>
+                                                <OfferCard offer={o} />
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )
+                        ) : results.items.length === 0 ? (
                             <div className="card flex flex-col items-center gap-3 py-16 text-center">
                                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-canvas text-2xl font-bold text-muted">!</span>
                                 <p className="font-semibold">{t('catalog.empty')}</p>
@@ -143,7 +165,11 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
                         )}
 
                         <div className="mt-6">
-                            <Pagination page={results.page} lastPage={results.lastPage} onPage={(p) => visit(query, p)} />
+                            {offerResults !== null ? (
+                                <Pagination page={offerResults.page} lastPage={offerResults.lastPage} onPage={(p) => visit(query, p)} />
+                            ) : (
+                                <Pagination page={results.page} lastPage={results.lastPage} onPage={(p) => visit(query, p)} />
+                            )}
                         </div>
                     </section>
                 </div>

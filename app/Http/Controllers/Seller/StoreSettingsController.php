@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Seller;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Offers\Enums\OfferStatus;
+use App\Domains\Offers\Models\Offer;
+use App\Domains\Sellers\Actions\SetFeaturedOffers;
 use App\Domains\Sellers\Actions\UpdateStoreSettings;
 use App\Domains\Sellers\Enums\LanguageLevel;
 use App\Domains\Sellers\Enums\SellerStatus;
@@ -21,8 +24,8 @@ use Inertia\Response;
 
 /**
  * Store Management › My Store (spec 1.8 / Part 20 /seller/store): public profile link, store status,
- * vacation mode, store notice, chat auto-reply, languages spoken. Featured offers and the store video
- * arrive with offers and file storage (M5).
+ * vacation mode, store notice, chat auto-reply, languages spoken, featured offers (M5). The store video
+ * arrives with file scanning.
  */
 final class StoreSettingsController
 {
@@ -53,7 +56,35 @@ final class StoreSettingsController
             'languageOptions' => SellerPresenter::languageOptions($locale),
             'languageLevels' => LanguageLevel::values(),
             'featuredMax' => $settings->int('featured_offers_max'),
+            'featured' => array_values(array_filter($profile->media->featured_offer_ids ?? [], 'is_int')),
+            'featuredOptions' => Offer::query()
+                ->where('seller_profile_id', $profile->id)
+                ->whereIn('status', [OfferStatus::Active->value, OfferStatus::OutOfStock->value])
+                ->orderByDesc('sort_weight')->orderByDesc('id')->limit(200)
+                ->get(['id', 'title', 'unit_price_amount'])
+                ->map(fn (Offer $o): array => ['id' => $o->id, 'title' => $o->title, 'priceCents' => $o->unit_price_amount])
+                ->all(),
         ]);
+    }
+
+    public function featured(Request $request, SetFeaturedOffers $action): RedirectResponse
+    {
+        $request->validate(['offer_ids' => ['present', 'array'], 'offer_ids.*' => ['integer']]);
+
+        $ids = [];
+        foreach ((array) $request->input('offer_ids') as $id) {
+            if (is_numeric($id)) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        try {
+            $action->handle($this->seller($request), $ids);
+        } catch (SellerException $e) {
+            return back()->withErrors(['featured' => $e->getMessage()]);
+        }
+
+        return back()->with('success', __('seller.store.featured_saved'));
     }
 
     public function update(Request $request, UpdateStoreSettings $action): RedirectResponse

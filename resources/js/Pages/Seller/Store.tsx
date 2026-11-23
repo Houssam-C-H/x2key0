@@ -1,8 +1,10 @@
-import { Link, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import { Field, TextArea } from '@/Components/Field';
 import { bpsToPercent, LevelBadge } from '@/Components/Seller/LevelBadge';
 import { DashboardLayout, Panel } from '@/Layouts/DashboardLayout';
 import { useShared, useT } from '@/lib/i18n';
+import { formatUsd } from '@/lib/money';
 import type { PerLocale, SellerLevel, SellerStatus } from '@/types/seller';
 
 interface Props {
@@ -20,6 +22,8 @@ interface Props {
     languageOptions: { code: string; name: string }[];
     languageLevels: string[];
     featuredMax: number;
+    featured: number[];
+    featuredOptions: { id: number; title: string; priceCents: number }[];
 }
 
 const STATUS_STYLE: Record<SellerStatus, string> = {
@@ -31,7 +35,7 @@ const STATUS_STYLE: Record<SellerStatus, string> = {
 };
 
 /** Store Management › My Store: status, vacation, notice, auto-reply, languages. */
-export default function Store({ store, languageOptions, languageLevels, featuredMax }: Props) {
+export default function Store({ store, languageOptions, languageLevels, featuredMax, featured, featuredOptions }: Props) {
     const t = useT();
     const { locales, errors } = useShared();
     const suspended = store.status === 'suspended';
@@ -178,9 +182,6 @@ export default function Store({ store, languageOptions, languageLevels, featured
                     )}
                 </Panel>
 
-                <Panel title={t('seller.store.featured')}>
-                    <p className="text-sm text-muted">{t('seller.store.featured_soon', { count: featuredMax })}</p>
-                </Panel>
 
                 <div className="flex justify-end">
                     <button type="submit" className="btn-primary" disabled={form.processing || suspended}>
@@ -188,7 +189,60 @@ export default function Store({ store, languageOptions, languageLevels, featured
                     </button>
                 </div>
             </form>
+            <FeaturedPanel max={featuredMax} initial={featured} options={featuredOptions} disabled={suspended} />
         </DashboardLayout>
+    );
+}
+
+/** Featured list (spec 1.8): pick up to `max` listed offers shown first on the public store. */
+function FeaturedPanel({ max, initial, options, disabled }: { max: number; initial: number[]; options: Props['featuredOptions']; disabled: boolean }) {
+    const t = useT();
+    const { locale, errors } = useShared();
+    const [selected, setSelected] = useState<number[]>(initial);
+
+    return (
+        <Panel title={t('seller.store.featured')} description={t('seller.store.featured_help', { count: max })}>
+            {options.length === 0 ? (
+                <p className="text-sm text-muted">
+                    {t('seller.store.featured_none')}{' '}
+                    <Link href="/seller/offers/create" className="font-semibold text-primary hover:underline">
+                        {t('menu.seller.offers_create')}
+                    </Link>
+                </p>
+            ) : (
+                <>
+                    <ul className="grid gap-2 sm:grid-cols-2">
+                        {options.map((o) => {
+                            const checked = selected.includes(o.id);
+
+                            return (
+                                <li key={o.id}>
+                                    <label className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${checked ? 'border-primary bg-primary-soft' : 'border-line'}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={checked}
+                                            disabled={disabled || (!checked && selected.length >= max)}
+                                            onChange={(e) => setSelected(e.target.checked ? [...selected, o.id] : selected.filter((id) => id !== o.id))}
+                                        />
+                                        <span className="min-w-0 flex-1 truncate">{o.title}</span>
+                                        <span className="font-semibold">{formatUsd(o.priceCents, locale)}</span>
+                                    </label>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                    {errors.featured && <p className="mt-2 text-sm text-danger">{errors.featured}</p>}
+                    <div className="mt-3 flex items-center justify-end gap-3">
+                        <span className="text-sm text-muted">
+                            {selected.length}/{max}
+                        </span>
+                        <button type="button" className="btn-primary" disabled={disabled} onClick={() => router.put('/seller/store/featured', { offer_ids: selected }, { preserveScroll: true })}>
+                            {t('seller.store.featured_save')}
+                        </button>
+                    </div>
+                </>
+            )}
+        </Panel>
     );
 }
 

@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M5 — Offers & storage (next). M1–M4 code complete; Docker/Postgres local run still pending (WSL2 admin install).
+**Current milestone:** M6 — Checkout & payments (next). M1–M5 code complete (M5 follow-ups listed below); Docker/Postgres local run still pending (WSL2 admin install).
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -9,8 +9,35 @@
 | M2 | Identity, levels, settings, certification, roles | ✅ done | See checklist below |
 | M3 | Catalog, listing, facets, Meilisearch, sitemaps | ✅ done | See checklist below |
 | M4 | Sellers: activation, store, store management | ✅ done | See checklist below |
-| M5 | Offers, storage vault, uploads | next | |
-| M6–M19 | — | not started | |
+| M5 | Offers, storage vault, uploads | ✅ code done · uploads open | See checklist below |
+| M6 | Checkout & payments | next | Gate: founder decisions (§2.3) before real PSPs |
+| M7–M19 | — | not started | |
+
+## M5 checklist
+- [x] Tables: offers (ULID, attribute_values + attributes_hash, USD unit price, tiers, insurance, listing period, version, soft deletes; CHECK price > 0 on PostgreSQL), offer_status_changes (append-only), offer_price_history (append-only), storage_groups, storage_items (sealed payload, HMAC, freeze flag), storage_import_batches, low_stock_alerts, favorites, browsing_history
+- [x] `OfferStateMachine` (spec 6.2): draft → pending_publish / review / live; approve, reject (reason), deactivate, relist, expire, extend, stock-driven active ⇄ out_of_stock, system-deactivate (reason) and restore; every transition writes a history row; product caches refresh after commit
+- [x] Create New Offer (spec 1.8): passed service required, catalog product or unit offer validated against the game×category schema, allowed delivery methods (per game×category or category-type defaults), manual stock or storage group of a matching item type, quantity tiers, min/max/integer multiple, delivery ETA, insurance (compulsory per `policy_override.compulsory_insurance_days`), listing duration, publish now / pending publish, receivable amount and profit preview; contact info refused; seller level offer limit; auto-approve levels skip review
+- [x] **Duplicates flagged:** same seller + product (or game×category) + delivery method + attributes → `duplicate_of_offer_id`, always sent to review, shown to seller and moderators
+- [x] Edit offer: price edits keep history and bump `version`; content edits send a listed offer back to review (non-auto-approve levels); game×category, product and delivery method are fixed (new offer instead)
+- [x] Active Offers: service chips, 9 status tabs with counts (all, published, expire soon, low stock, deactivated, pending publish, in review, system deactivated, auto delivery), search by title/ID, sort, page size, batch deactivate / relist / extend / delete, inline unit price / sort / stock
+- [x] `offers:expire` (5 min) and `storage:check-low-stock` (15 min), both idempotent
+- [x] Moderation (Filament `/admin/offers`): queue with badge, duplicate filter, approve / reject / system-deactivate / restore, bulk approve; nobody moderates their own store (admins included); `/admin/storage-groups` shows counts only
+- [x] Storage vault: `SecretVault` envelope encryption (AES-256-GCM, per-item data key wrapped by the master key, key id), HMAC-SHA256 fingerprints with a pepper, keys from `STORAGE_MASTER_KEY` / `STORAGE_HMAC_PEPPER` (required in production, derived from APP_KEY in dev) — ADR-014
+- [x] Storage Category: groups (unique names, type locked once filled, low-stock threshold), import by paste / TXT-CSV file / account form, duplicate report (in batch, already in the vault, invalid lines); cross-seller duplicates accepted but frozen on both sides and audited
+- [x] Storage List / Recycle Station: masked items, reveal (JSON, `no-store`, Privacy Password, rate-limited, audit-logged, never for reserved/assigned/revoked items), mark invalid, recycle, restore, purge; every page and write behind the Privacy Password
+- [x] **Secrets never in logs:** sealed columns hidden from serialisation, audit rows carry counts/ids only, log scrubber on file/stderr channels, secret fields never flashed back on validation errors — one test checks DB dump, audit log, session and log file
+- [x] **Low-stock alerts + alert bar:** auto-delivered offers whose group falls below the threshold (or 0) open one alert each; offers flip to out_of_stock at 0 and back on restock; sticky bottom bar on dashboard pages with ×, which hides the bar until the alert resolves and triggers again
+- [x] Product page: buy box (recommended = insured first, then price, then seller level boost), quantity with tiers, "+N offers from", Other sellers table (delivery-method chips, sort, lowest-price tag), AggregateOffer JSON-LD; Buy Now disabled until checkout (M6)
+- [x] Single offer page `/{locale}/offer/{publicId}` (owner preview of non-public offers, noindex); offer cards on listings of game×categories without catalog products; featured list + live offers on the public store; My Store featured-offer picker (up to `featured_offers_max`)
+- [x] Product lowest price / offer counts now come from live offers (`RefreshProductOffers` on every change + `catalog:recount`); suspended/banned stores drop out
+- [x] Favorites (offers, products; toggle, My Favorites page) and browsing history (users and guest cookie token, newest first, capped at `browsing_history_limit`, remove one / all)
+- [x] Demo seed: 4 more demo stores (`nova_keys`, `arcade_depot`, `quest_supply`, `level_up_mart`, password `password`), ~770 offers covering every product and the hot games' unit categories, seller_demo storage with one low group (alert bar shows)
+- [x] 359 tests green (10 Meilisearch parity skipped without a server); Larastan max 0 errors; Pint; TS strict; live HTTP smoke test (seller login → offers → storage with Privacy Password → reveal) and SSR check of product, listing, store and offer pages
+- [ ] Image uploads for games/products, store video, and ClamAV/MIME scanning of uploads — not started; to do with the first evidence uploads (M8) or as a follow-up to M5
+- [ ] Batch Release (Upload/Download offer list template, spec 1.8 #4) — not started
+- [ ] Low-stock inbox notification — with the notification matrix (M9/M10)
+- [ ] KMS-backed `SecretVault` driver for production — same stored format (ADR-014)
+- [ ] PostgreSQL run of the new migrations/tests (CI covers it; locally blocked on Docker/WSL2)
 
 ## M4 checklist
 - [x] Tables: seller_levels (6 seeded tiers: commission, hold days, reserve, offer limit, auto-approve, rank boost, recompute thresholds), seller_profiles, seller_status_changes (append-only history), seller_stats, seller_service_applications, seller_store_media, merchant_contacts
@@ -26,7 +53,8 @@
 - [x] Admin (merchant managers + admins): Stores (level override + lock, manager, payouts flag for finance, suspend/reinstate/ban with reason, contacts, status history), Service applications queue (pass/refuse, never your own), Seller levels (admins edit; managers/finance read)
 - [x] Demo: `seller_demo` / `password` with an open store and 4 approved services
 - [x] 285 tests green (onboarding flow end to end = acceptance test); Larastan max 0 errors; Pint; TS strict; live SSR smoke test
-- [ ] Featured offers and store video — with offers and file storage (M5)
+- [x] Featured offers (M5: My Store picker, public Featured list)
+- [ ] Store video — with upload scanning (see M5 follow-ups)
 - [ ] Seller level recompute job and stats writers — M8/M16 (orders, disputes, reviews feed them)
 - [ ] Notifications to sellers on service decisions / suspension — with the notification matrix (M10)
 
@@ -43,7 +71,7 @@
 - [x] Demo seed: 15 types, 12 platforms, 10 regions, 48 games, 129 game×category pages, 346 products (2.8 s)
 - [x] 224 tests green; Larastan max 0 errors; Pint; TS strict; live SSR smoke test
 - [ ] Image uploads for games/products (paths only for now) — with file storage in M5
-- [ ] Offer cards in listings, buy box, "other sellers" — M5
+- [x] Offer cards in listings, buy box, "other sellers" — done in M5
 
 ## M2 checklist
 - [x] Users rewritten for spec 5.1: ULID `public_id`, username, phone, locale/currency/country/timezone, status, levels, `User` moved to `app/Domains/Identity`
@@ -90,4 +118,5 @@
 - 2026-11-23 — M2 identity built: Fortify auth + 2FA, sessions/devices, settings pages, certification center, staff roles, admin panel. 147 tests green. Bug found by tests and fixed: Fortify's 2FA QR label read a non-existent `login` attribute.
 - 2026-11-23 — Fix: password confirmation crashed for the same reason (Fortify reads `$user->login`); custom confirm callback + end-to-end 2FA test.
 - 2026-11-23 — M4 sellers built: activation via certification, store state machine, store management screens, public store page, seller admin. Bug found by tests and fixed: saving Seller Information without the description field wiped the stored description.
+- 2026-11-23 — M5 offers & storage built (branch `m5-offers-storage`): offer state machine, create/edit/Active Offers, moderation, encrypted storage vault with HMAC duplicate detection, low-stock alerts + bar, product/offer/store pages with offers, favorites, browsing history. New dev machine: portable PHP 8.4.28 + Composer set up in C:\dev\tools again; repo cloned to C:\Users\Stjg0\x2key0.
 - 2026-11-23 — M3 catalog built. Portable Meilisearch 1.57 in C:\dev\tools\meilisearch for local parity tests. SQLite dev DB switched to WAL + busy timeout (concurrent dev server no longer locks seeding).

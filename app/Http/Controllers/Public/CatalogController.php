@@ -16,8 +16,16 @@ use App\Domains\Catalog\Search\CatalogSearch;
 use App\Domains\Catalog\Search\ListingQuery;
 use App\Domains\Catalog\Support\CatalogPresenter;
 use App\Domains\Catalog\Support\CatalogReader;
+use App\Domains\Engagement\Actions\RecordView;
+use App\Domains\Engagement\Models\Favorite;
+use App\Domains\Engagement\Support\EngagementReader;
+use App\Domains\Identity\Models\User;
+use App\Domains\Offers\Models\Offer;
+use App\Domains\Offers\Support\OfferPresenter;
+use App\Http\Controllers\EngagementController;
 use App\Http\Support\Seo;
 use App\Shared\Support\Translations;
+use Brick\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,7 +37,15 @@ use Inertia\Response;
  */
 final class CatalogController
 {
-    public function __construct(private readonly CatalogReader $reader) {}
+    private const int OFFERS_PER_PAGE = 24;
+
+    private const int PRODUCT_OFFERS_MAX = 100;
+
+    public function __construct(
+        private readonly CatalogReader $reader,
+        private readonly EngagementReader $engagement,
+        private readonly RecordView $recordView,
+    ) {}
 
     public function games(Request $request, string $locale): Response
     {
@@ -96,6 +112,23 @@ final class CatalogController
         $query = ListingQuery::fromRequest($request, $gameCategory);
         $result = $search->listing($query);
 
+        // Unit categories (currency, accounts, boosting…) have no catalog products: list offer cards (spec 1.4.1).
+        $offerResults = null;
+        if (! Product::query()->active()->where('game_category_id', $gameCategory->id)->exists()) {
+            $page = Offer::query()->live()->where('offers.game_category_id', $gameCategory->id)
+                ->when($query->text !== '', fn (Builder $q) => $q->where('offers.title', 'like', '%'.str_replace(['%', '_'], ['\\%', '\\_'], $query->text).'%'))
+                ->recommended()
+                ->with(OfferPresenter::publicRelations())
+                ->paginate(self::OFFERS_PER_PAGE)
+                ->withQueryString();
+            $offerResults = [
+                'items' => array_map(fn (Offer $o): array => OfferPresenter::card($o, $locale), $page->items()),
+                'total' => $page->total(),
+                'page' => $page->currentPage(),
+                'lastPage' => $page->lastPage(),
+            ];
+        }
+
         $info = CatalogPresenter::gameCategory($gameCategory, $locale);
         $crumbs = [
             ['name' => __('dashboard.home'), 'href' => "/{$locale}"],
@@ -125,12 +158,13 @@ final class CatalogController
                 'page' => $result->page,
                 'lastPage' => $result->lastPage(),
             ],
+            'offerResults' => $offerResults,
             'seo' => Seo::make(
                 $info['title'],
                 __('catalog.listing.description', ['title' => $info['title'], 'count' => $result->total]),
                 "/{$gameCategory->game->slug}/{$gameCategory->slug}",
                 $locale,
-                noindex: ! $query->isIndexable() || $gameCategory->product_count_cached === 0,
+                noindex: ! $query->isIndexable() || ($gameCategory->product_count_cached === 0 && $gameCategory->offer_count_cached === 0),
                 jsonLd: [Seo::breadcrumbList($crumbs)],
             ),
         ]);
@@ -157,6 +191,22 @@ final class CatalogController
             ['name' => $name, 'href' => $model->path($locale)],
         ];
 
+        $viewer = $request->user();
+        $viewerId = $viewer instanceof User ? $viewer->id : null;
+
+        // Offers table (spec 1.5): recommended order; the first row is the buy box.
+        $offers = Offer::query()->live()->where('offers.product_id', $model->id)
+            ->recommended()
+            ->with(OfferPresenter::publicRelations())
+            ->limit(self::PRODUCT_OFFERS_MAX)
+            ->get();
+        $favorited = $this->engagement->favoritedIds($viewerId, Favorite::OFFER, array_values($offers->map(static fn (Offer $o): int => $o->id)->all()));
+        $rows = $offers->map(fn (Offer $o): array => OfferPresenter::row($o, $locale, $favorited))->values()->all();
+
+        $guest = $viewerId === null ? EngagementController::guestToken($request, true) : null;
+        $history = $this->engagement->history($viewerId, $guest, $locale);
+        $this->recordView->handle($viewerId, $guest, $model->id, null);
+
         $productLd = [
             '@context' => 'https://schema.org',
             '@type' => 'Product',
@@ -166,6 +216,16 @@ final class CatalogController
             'description' => mb_substr(strip_tags($model->translate('description', $locale)), 0, 500),
         ];
 
+        if ($offers->isNotEmpty()) {
+            $productLd['offers'] = [
+                '@type' => 'AggregateOffer',
+                'priceCurrency' => 'USD',
+                'lowPrice' => self::decimal($offers->min('unit_price_amount')),
+                'highPrice' => self::decimal($offers->max('unit_price_amount')),
+                'offerCount' => $offers->count(),
+            ];
+        }
+
         return Inertia::render('Public/Catalog/Product', [
             'product' => [
                 ...CatalogPresenter::productCard($model, $locale),
@@ -174,6 +234,10 @@ final class CatalogController
             ],
             'gameCategory' => $info,
             'gameCategoryHref' => $gameCategory->path($locale),
+            'offers' => $rows,
+            'deliveryMethods' => array_values(array_unique($offers->map(static fn (Offer $o): string => $o->delivery_method->value)->all())),
+            'isFavorite' => $this->engagement->favoritedIds($viewerId, Favorite::PRODUCT, [$model->id]) !== [],
+            'history' => array_values(array_filter($history, static fn (array $h): bool => ($h['id'] ?? null) !== $model->public_id)),
             'breadcrumbs' => $crumbs,
             'seo' => Seo::make(
                 $name,
@@ -183,6 +247,73 @@ final class CatalogController
                 jsonLd: [Seo::breadcrumbList($crumbs), $productLd],
             ),
         ]);
+    }
+
+    /**
+     * Single offer page /{locale}/offer/{publicId} (spec 1.5): buy box without the other-sellers panel.
+     * The owner may preview an offer that is not public (noindex, with a banner).
+     */
+    public function offer(Request $request, string $locale, string $publicId): Response
+    {
+        $model = Offer::query()->where('public_id', $publicId)->with(OfferPresenter::publicRelations())->first();
+        abort_if($model === null, 404);
+
+        $viewer = $request->user();
+        $viewerId = $viewer instanceof User ? $viewer->id : null;
+        $isLive = Offer::query()->live()->whereKey($model->id)->exists();
+        $isOwner = $viewerId !== null && $model->seller->user_id === $viewerId;
+        abort_unless($isLive || $isOwner, 404);
+
+        $gameCategory = $model->gameCategory;
+        $info = CatalogPresenter::gameCategory($gameCategory, $locale);
+        $crumbs = [
+            ['name' => __('dashboard.home'), 'href' => "/{$locale}"],
+            ['name' => $info['title'], 'href' => $gameCategory->path($locale)],
+            ['name' => $model->title, 'href' => $model->path($locale)],
+        ];
+
+        $guest = $viewerId === null ? EngagementController::guestToken($request, true) : null;
+        $history = $this->engagement->history($viewerId, $guest, $locale);
+        if ($isLive) {
+            $this->recordView->handle($viewerId, $guest, null, $model->id);
+        }
+
+        $favorited = $this->engagement->favoritedIds($viewerId, Favorite::OFFER, [$model->id]);
+        $description = $model->descriptionText($locale);
+
+        return Inertia::render('Public/Catalog/Offer', [
+            'offer' => OfferPresenter::detail($model, $locale, $favorited),
+            'preview' => $isLive ? null : $model->status->value,
+            'history' => array_values(array_filter($history, static fn (array $h): bool => ($h['id'] ?? null) !== $model->public_id)),
+            'breadcrumbs' => $crumbs,
+            'seo' => Seo::make(
+                $model->title,
+                $description !== '' ? mb_substr($description, 0, 300) : $model->title,
+                "/offer/{$model->public_id}",
+                $locale,
+                noindex: ! $isLive,
+                jsonLd: [Seo::breadcrumbList($crumbs), [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'Product',
+                    'name' => $model->title,
+                    'sku' => $model->public_id,
+                    'category' => $info['title'],
+                    'offers' => [
+                        '@type' => 'Offer',
+                        'priceCurrency' => 'USD',
+                        'price' => self::decimal($model->unit_price_amount),
+                        'availability' => $model->stock() > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                        'seller' => ['@type' => 'Organization', 'name' => $model->seller->store_name],
+                    ],
+                ]],
+            ),
+        ]);
+    }
+
+    /** Integer cents → "12.34" for structured data, without floats. */
+    private static function decimal(mixed $cents): string
+    {
+        return (string) Money::ofMinor(is_numeric($cents) ? (int) $cents : 0, 'USD')->getAmount();
     }
 
     private function findGame(string $slug): Game
