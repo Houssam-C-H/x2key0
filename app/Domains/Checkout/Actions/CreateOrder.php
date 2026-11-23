@@ -177,7 +177,7 @@ final class CreateOrder
         }
 
         if ($quote->credits > 0) {
-            $this->wallet->spend($buyer, $quote->credits, $quote->currency, "CREDITS_SPENT:order:{$order->id}");
+            $this->wallet->spend($buyer, $quote->credits, $quote->currency, "CREDITS_SPENT:order:{$order->id}", $order);
             $credits = new Payment;
             $credits->forceFill([
                 'order_id' => $order->id,

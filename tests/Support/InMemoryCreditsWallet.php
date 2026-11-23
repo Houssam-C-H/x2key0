@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Tests\Support;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Orders\Models\Order;
 use App\Domains\Payments\Contracts\CreditsWallet;
 use App\Domains\Payments\Exceptions\InsufficientCredits;
 
 /**
- * Credits Balance stand-in until the ledger (M7): per-user balances in memory, idempotent per key.
+ * Credits Balance stand-in for tests that need to simulate wallet behaviour (e.g. a concurrent spend);
+ * per-user balances in memory, idempotent per key. The real wallet is LedgerCreditsWallet.
  */
 final class InMemoryCreditsWallet implements CreditsWallet
 {
@@ -31,7 +33,7 @@ final class InMemoryCreditsWallet implements CreditsWallet
         return $this->balances[$user->id] ?? 0;
     }
 
-    public function spend(User $user, int $amount, string $currency, string $idempotencyKey): void
+    public function spend(User $user, int $amount, string $currency, string $idempotencyKey, ?Order $order = null): void
     {
         if (isset($this->keys[$idempotencyKey])) {
             return;
@@ -43,7 +45,7 @@ final class InMemoryCreditsWallet implements CreditsWallet
         $this->keys[$idempotencyKey] = true;
     }
 
-    public function restore(User $user, int $amount, string $currency, string $idempotencyKey): void
+    public function restore(User $user, int $amount, string $currency, string $idempotencyKey, ?Order $order = null): void
     {
         if (isset($this->keys[$idempotencyKey])) {
             return;

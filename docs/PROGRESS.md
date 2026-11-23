@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M7 — Ledger & points (next). M1–M6 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M8 — Delivery, Sold Orders, cancellations & refunds (next). M1–M7 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -11,8 +11,26 @@
 | M4 | Sellers: activation, store, store management | ✅ done | See checklist below |
 | M5 | Offers, storage vault, uploads | ✅ code done · uploads open | See checklist below |
 | M6 | Checkout & payments (fake PSP + credits seam) | ✅ code done | See checklist below; M6b (real PSPs) waits for D2 |
-| M7 | Ledger + points | next | |
-| M8–M19 | — | not started | |
+| M7 | Ledger + points | ✅ code done | See checklist below |
+| M8 | Delivery, Sold Orders, refunds | next | |
+| M9–M19 | — | not started | |
+
+## M7 checklist
+- [x] Tables: ledger_accounts (code × owner × currency, chart of accounts from spec 7.1), ledger_journals (unique idempotency key), ledger_postings, ledger_balances; points_accounts, points_journals, points_postings, points_balances, points_rules
+- [x] PostgreSQL guards: deferred constraint triggers refuse any money or points journal that does not sum to zero at COMMIT; row triggers make journals and postings append-only; CHECK amount ≠ 0. Same rules in PHP (models refuse update/delete) so SQLite is covered too
+- [x] `PostJournal` — the only writer of postings: idempotent per key (same key + other type refused), zero-sum per currency, repeated accounts merged, balance rows locked in account-id order, no-overdraw guard for user balances (invariant 4.3 #2); nests in the caller's transaction
+- [x] Wiring (in the same transaction as the business change): CREDITS_SPENT at checkout and CREDITS_RESTORED on cancellation (through `LedgerCreditsWallet`, which replaces the M6 placeholder), PAYMENT_CAPTURED when an order is fully paid (PSP part into escrow + service charge/add-on/surcharge to REV_BUYER_FEE, so escrow holds exactly the seller-side price), LATE_CAPTURE for captures of closed orders
+- [x] Points ledger (X2K Score): `PostPointsJournal` (same rules), `AwardOrderPoints` — floor(USD × `points_per_usd` × buyer level multiplier), once per order, exact reversal; rule seeded from Part 27 (10 / USD, × level)
+- [x] `ledger:verify` (nightly): journals balance per currency, postings in their account's currency, stored balances = sum of postings (money and points), no overdrawn user liability — exit 1 + critical log on any problem
+- [x] `ledger:reconcile {provider} {date}` (daily): captured payments vs PSP_CLEARING postings, and captured payments without a journal
+- [x] Admin (finance, read-only): Ledger › Journals (lines per journal) and Accounts (balance, owed)
+- [x] Demo: buyer_demo starts with $25.00 promotional credits (PROMO_CREDIT journal) to try credits at checkout
+- [x] **Property tests:** 3 seeds × 40 random steps (fund credits, checkouts with/without credits and both methods, captures, declines, expiries) checking after every step: ledger verifies clean, no buyer credits below zero, escrow = seller-side price of paid orders + credits of unpaid orders + late captures, PSP clearing = captured payments, credits conserved; points: 2 seeds × 25 random earns/reversals, zero-sum and balance = earned − reversed
+- [x] PostgreSQL tests: unbalanced journal refused at commit, append-only enforced, concurrent credits spends serialised on the balance row (no double spend)
+- [x] 437 tests: PostgreSQL 17 427 passed, SQLite 421 passed (race and trigger tests skip there); Larastan max 0 errors; Pint; TS strict. Bug found by the PostgreSQL run and fixed: trigger functions survive `migrate:fresh`, so they are created with CREATE OR REPLACE
+- [ ] Settlement, holds, HOLD_RELEASE, points earning on completion — M9 (`AwardOrderPoints` is ready to call)
+- [ ] REFUND journals and refund execution — M8; Funding Details / Points Record / Credits pages — M9
+- [ ] Manual adjustments with dual approval — M18; EXP_PSP_FEES with real PSP fee data — M6b
 
 ## M6 checklist
 - [x] Tables: orders (number `X2K{yyMMdd}{seq}` from a locked per-day counter, money lines, paid credits/PSP split, commission and seller net, sealed buyer inputs, risk score/decision, unique (buyer, idempotency key)), order_items (offer snapshot, reserved manual qty), order_status_history (append-only), order_timers (unique per type), payment_methods_catalog, payments, payment_events (unique provider + event id), risk_flags, blocklist; PostgreSQL CHECKs on stock ≥ 0, delivered + refunded ≤ qty, paid ≤ total
@@ -30,7 +48,7 @@
 - [x] **Race tests on PostgreSQL** (`tests/Concurrency`, DatabaseTruncation + a second connection): SKIP LOCKED never hands the last storage item to two checkouts; manual stock checkouts serialise on the offer row; event ids are unique at the database level
 - [x] 409 tests on PostgreSQL 17 (399 passed, 10 Meilisearch skipped) and SQLite (396 passed, race tests skipped there); Larastan max 0 errors; Pint; TS strict; live HTTP purchase (buyer login → checkout → double submit → fake PSP → paid → Purchase Orders)
 - [ ] Refund execution (PSP refunds, `refunds` table) for rejected reviews and late captures — M8 (flags record what to refund)
-- [ ] Ledger journals for CREDITS_SPENT / PAYMENT_CAPTURED and a funded Credits Balance — M7 (events and wallet seam are in place)
+- [x] Ledger journals for CREDITS_SPENT / PAYMENT_CAPTURED and a ledger-backed Credits Balance — done in M7
 - [ ] Real PSP drivers, payment methods admin and footer strip — M6b (needs D2)
 - [ ] Seller notification on `paid` (inbox + chat + e-mail) — M9/M10; Sold Orders — M8
 - [ ] Risk rules needing outside data: proxy/VPN/datacenter IP, card velocity across PSPs, 3-D Secure enforcement — with real PSPs (M6b) / M18
@@ -140,6 +158,7 @@
 - 2026-11-23 — M2 identity built: Fortify auth + 2FA, sessions/devices, settings pages, certification center, staff roles, admin panel. 147 tests green. Bug found by tests and fixed: Fortify's 2FA QR label read a non-existent `login` attribute.
 - 2026-11-23 — Fix: password confirmation crashed for the same reason (Fortify reads `$user->login`); custom confirm callback + end-to-end 2FA test.
 - 2026-11-23 — M4 sellers built: activation via certification, store state machine, store management screens, public store page, seller admin. Bug found by tests and fixed: saving Seller Information without the description field wiped the stored description.
+- 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
 - 2026-11-23 — M6 checkout & payments built (branch `m6-checkout-payments`, on top of M5): quotes, checkout, reservations, order state machine up to paid, fake PSP + webhooks, expiry/sync jobs, credits seam, risk v1, payment review admin. Portable PostgreSQL 17.12 set up in C:\dev\tools\pgsql (data C:\dev\tools\pgsql-data, port 5433); M1–M5 suite also verified on it. Bug found by tests and fixed: a capture arriving after we cancelled the payment locally was dropped as stale — it is now recorded and flagged for refund.
 - 2026-11-23 — M5 offers & storage built (branch `m5-offers-storage`): offer state machine, create/edit/Active Offers, moderation, encrypted storage vault with HMAC duplicate detection, low-stock alerts + bar, product/offer/store pages with offers, favorites, browsing history. New dev machine: portable PHP 8.4.28 + Composer set up in C:\dev\tools again; repo cloned to C:\Users\Stjg0\x2key0.
 - 2026-11-23 — M3 catalog built. Portable Meilisearch 1.57 in C:\dev\tools\meilisearch for local parity tests. SQLite dev DB switched to WAL + busy timeout (concurrent dev server no longer locks seeding).

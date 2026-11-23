@@ -14,3 +14,5 @@ Schedule::command('storage:check-low-stock')->everyFifteenMinutes()->withoutOver
 Schedule::command('orders:expire-unpaid')->everyMinute()->withoutOverlapping()->onOneServer();
 Schedule::command('storage:release-expired-reservations')->everyMinute()->withoutOverlapping()->onOneServer();
 Schedule::command('payments:sync-pending')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('ledger:verify')->dailyAt('02:30')->onOneServer();
+Schedule::command('ledger:reconcile fake')->dailyAt('03:00')->onOneServer()->environments(['local', 'staging']);

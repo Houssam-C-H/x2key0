@@ -27,13 +27,16 @@ use App\Domains\Identity\Listeners\RecordSuccessfulLogin;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\Identity\Support\LogSmsSender;
+use App\Domains\Ledger\Models\LedgerAccount;
+use App\Domains\Ledger\Models\LedgerJournal;
+use App\Domains\Ledger\Policies\LedgerPolicy;
+use App\Domains\Ledger\Support\LedgerCreditsWallet;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\Policies\OfferPolicy;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\Policies\OrderPolicy;
 use App\Domains\Payments\Contracts\CreditsWallet;
 use App\Domains\Payments\Providers\FakePaymentProvider;
-use App\Domains\Payments\Support\UnfundedCreditsWallet;
 use App\Domains\Risk\Models\BlocklistEntry;
 use App\Domains\Risk\Models\RiskFlag;
 use App\Domains\Sellers\Models\MerchantContact;
@@ -67,8 +70,8 @@ final class AppServiceProvider extends ServiceProvider
         // Provider drivers: real ones are chosen with founder decisions (D11 KYC, SMS provider).
         $this->app->bind(KycProvider::class, FakeKycProvider::class);
 
-        // Credits Balance as a payment source: empty until the ledger (M7) backs it — ADR-016.
-        $this->app->bind(CreditsWallet::class, UnfundedCreditsWallet::class);
+        // Credits Balance as a payment source, backed by the ledger (ADR-016).
+        $this->app->bind(CreditsWallet::class, LedgerCreditsWallet::class);
 
         // Fake PSP (D2 until M6b): refused in production; webhook secret from config or derived from APP_KEY.
         $this->app->bind(FakePaymentProvider::class, function (): FakePaymentProvider {
@@ -133,6 +136,9 @@ final class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Offer::class, OfferPolicy::class);
         Gate::policy(StorageGroup::class, OfferPolicy::class);
+
+        Gate::policy(LedgerJournal::class, LedgerPolicy::class);
+        Gate::policy(LedgerAccount::class, LedgerPolicy::class);
 
         foreach ([Order::class, RiskFlag::class, BlocklistEntry::class] as $riskModel) {
             Gate::policy($riskModel, OrderPolicy::class);

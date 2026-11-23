@@ -105,7 +105,7 @@ final class OrderStateMachine
             $this->reservations->release($o->item);
 
             if ($o->paid_credits_amount > 0) {
-                $this->wallet->restore($o->buyer, $o->paid_credits_amount, $o->currency, "CREDITS_RESTORED:order:{$o->id}");
+                $this->wallet->restore($o->buyer, $o->paid_credits_amount, $o->currency, "CREDITS_RESTORED:order:{$o->id}", $o);
             }
 
             Payment::query()->where('order_id', $o->id)

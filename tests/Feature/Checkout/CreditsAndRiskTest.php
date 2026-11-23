@@ -69,15 +69,15 @@ it('refuses the order when the balance no longer covers the credits part', funct
             return $this->inner->available($user, $currency);
         }
 
-        public function spend(User $user, int $amount, string $currency, string $idempotencyKey): void
+        public function spend(User $user, int $amount, string $currency, string $idempotencyKey, ?Order $order = null): void
         {
             $this->inner->balances[$user->id] = 100; // another spend landed in between
-            $this->inner->spend($user, $amount, $currency, $idempotencyKey);
+            $this->inner->spend($user, $amount, $currency, $idempotencyKey, $order);
         }
 
-        public function restore(User $user, int $amount, string $currency, string $idempotencyKey): void
+        public function restore(User $user, int $amount, string $currency, string $idempotencyKey, ?Order $order = null): void
         {
-            $this->inner->restore($user, $amount, $currency, $idempotencyKey);
+            $this->inner->restore($user, $amount, $currency, $idempotencyKey, $order);
         }
     };
     app()->instance(CreditsWallet::class, $racing);

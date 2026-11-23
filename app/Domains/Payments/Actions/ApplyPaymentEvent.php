@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Payments\Actions;
 
+use App\Domains\Ledger\Actions\PostOrderPayments;
 use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\StateMachines\OrderStateMachine;
@@ -21,7 +22,8 @@ use Illuminate\Support\Facades\DB;
  * - Unknown payment, stale or out-of-order status → recorded, no change.
  * - Amount or currency different from the payment → risk flag, no transition (9.3 #6).
  * - Captured → payment captured; if the order still awaits payment it goes down the capture path (paid or
- *   payment review); if it was already cancelled/expired, a `late_capture` flag asks finance to refund (M8).
+ *   payment review, PAYMENT_CAPTURED journal); if it was already closed, a LATE_CAPTURE journal records the
+ *   money and a `late_capture` flag asks finance to refund it (M8).
  * - Failed / cancelled → payment closed and the unpaid order cancelled (stock and credits back).
  */
 final class ApplyPaymentEvent
@@ -29,6 +31,7 @@ final class ApplyPaymentEvent
     public function __construct(
         private readonly CapturePath $capture,
         private readonly OrderStateMachine $machine,
+        private readonly PostOrderPayments $ledger,
     ) {}
 
     public function handle(int $eventId): void
@@ -101,6 +104,7 @@ final class ApplyPaymentEvent
 
             if ($order->status !== OrderStatus::PendingPayment) {
                 RiskFlag::raise('order', $order->id, 'late_capture', 0, ['payment_id' => $payment->id, 'amount' => $payment->amount, 'order_status' => $order->status->value]);
+                $this->ledger->lateCapture($payment, $order);
 
                 return 'late_capture';
             }
