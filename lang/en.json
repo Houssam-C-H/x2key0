@@ -1455,5 +1455,18 @@
     "ledger.type.WITHDRAWAL_REQUESTED": "Withdrawal requested",
     "ledger.type.WITHDRAWAL_RELEASED": "Withdrawal returned",
     "ledger.type.WITHDRAWAL_PAID": "Withdrawal paid",
-    "ledger.type.WITHDRAWAL_FAILED": "Withdrawal failed"
+    "ledger.type.WITHDRAWAL_FAILED": "Withdrawal failed",
+    "order.progress.title": "Order progress",
+    "order.progress.placed": "Order placed",
+    "order.progress.paid": "Paid",
+    "order.progress.review": "Payment review",
+    "order.progress.in_progress": "Seller working on it",
+    "order.progress.delivered": "Delivered",
+    "order.progress.completed": "Completed",
+    "order.progress.cancelled": "Cancelled",
+    "order.progress.refunded": "Refunded",
+    "order.progress.issue": "Dispute open",
+    "order.progress.pay_before": "Pay before :time",
+    "order.progress.deliver_by": "Delivery by :time",
+    "order.progress.confirm_by": "Confirms by itself :time"
 }

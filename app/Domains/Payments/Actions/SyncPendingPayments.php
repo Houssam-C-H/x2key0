@@ -37,31 +37,38 @@ final class SyncPendingPayments
             ->orderBy('id')
             ->chunkById(100, function ($payments) use (&$synced): void {
                 foreach ($payments as $payment) {
-                    try {
-                        $state = $this->router->provider($payment->provider)->fetchPayment((string) $payment->provider_payment_id);
-                    } catch (Throwable $e) {
-                        Log::warning('Payment sync failed', ['payment' => $payment->public_id, 'error' => $e->getMessage()]);
-
-                        continue;
-                    }
-
-                    if (! $state->status->isFinal()) {
-                        continue;
-                    }
-
-                    $this->record->handle($payment->provider, new ProviderEvent(
-                        eventId: "sync:{$payment->public_id}:{$state->status->value}",
-                        type: 'sync.'.$state->status->value,
-                        providerPaymentId: (string) $payment->provider_payment_id,
-                        status: $state->status,
-                        amount: $state->amount,
-                        currency: $state->currency,
-                        payload: ['source' => 'sync'],
-                    ));
-                    $synced++;
+                    $synced += $this->syncOne($payment) ? 1 : 0;
                 }
             });
 
         return $synced;
+    }
+
+    /** Asks the PSP for one payment and records its final state as a sync event (idempotent per status). */
+    public function syncOne(Payment $payment): bool
+    {
+        try {
+            $state = $this->router->provider($payment->provider)->fetchPayment((string) $payment->provider_payment_id);
+        } catch (Throwable $e) {
+            Log::warning('Payment sync failed', ['payment' => $payment->public_id, 'error' => $e->getMessage()]);
+
+            return false;
+        }
+
+        if (! $state->status->isFinal()) {
+            return false;
+        }
+
+        $this->record->handle($payment->provider, new ProviderEvent(
+            eventId: "sync:{$payment->public_id}:{$state->status->value}",
+            type: 'sync.'.$state->status->value,
+            providerPaymentId: (string) $payment->provider_payment_id,
+            status: $state->status,
+            amount: $state->amount,
+            currency: $state->currency,
+            payload: ['source' => 'sync'],
+        ));
+
+        return true;
     }
 }

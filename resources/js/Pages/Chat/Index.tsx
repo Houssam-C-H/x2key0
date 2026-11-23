@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { DashboardLayout } from '@/Layouts/DashboardLayout';
 import { useShared, useT } from '@/lib/i18n';
+import { echo } from '@/lib/echo';
 import { xsrfToken } from '@/lib/offer';
 
 interface Conversation {
@@ -31,7 +32,8 @@ interface Props {
     maxLength: number;
 }
 
-const POLL_MS = 5000;
+const POLL_MS = 5000; // without websockets
+const FALLBACK_MS = 30000; // safety net even when live
 
 /** Chat (spec 12.1): conversation list with All / Unread / Read, thread, safety banner, contact-info notice. Polls every 5 s. */
 export default function Chat({ conversations, active, messages: initial, tab: initialTab, maxLength }: Props) {
@@ -55,20 +57,40 @@ export default function Chat({ conversations, active, messages: initial, tab: in
         if (!active) {
             return;
         }
-        const id = window.setInterval(async () => {
+        let stopped = false;
+        let live = false;
+        const refresh = async () => {
             try {
                 const response = await fetch(`/chat/${active.id}/poll`, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
-                if (response.ok) {
+                if (response.ok && !stopped) {
                     const data = (await response.json()) as { messages: ChatMessage[]; online: boolean };
                     setMessages(data.messages);
                     setOnline(data.online);
                 }
             } catch {
-                /* network hiccup: try again on the next tick */
+                /* network hiccup: the next signal or tick retries */
             }
-        }, POLL_MS);
+        };
 
-        return () => window.clearInterval(id);
+        // Live: Reverb pings the private conversation channel on every new message (ADR-021); the thread itself is
+        // fetched over HTTP so each reader gets their own redacted view. Polling stays as a slower fallback.
+        const channel = `conversation.${active.id}`;
+        void echo().then((client) => {
+            if (!client || stopped) return;
+            client.private(channel).listen('.conversation.updated', () => void refresh());
+            live = true;
+        });
+        const id = window.setInterval(() => {
+            if (!live) void refresh();
+        }, POLL_MS);
+        const slow = window.setInterval(() => void refresh(), FALLBACK_MS);
+
+        return () => {
+            stopped = true;
+            window.clearInterval(id);
+            window.clearInterval(slow);
+            void echo().then((client) => client?.leave(channel));
+        };
     }, [active?.id]);
 
     useEffect(() => {

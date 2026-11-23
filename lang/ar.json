@@ -1455,5 +1455,18 @@
     "ledger.type.WITHDRAWAL_REQUESTED": "طلب سحب",
     "ledger.type.WITHDRAWAL_RELEASED": "إرجاع سحب",
     "ledger.type.WITHDRAWAL_PAID": "سحب مدفوع",
-    "ledger.type.WITHDRAWAL_FAILED": "فشل السحب"
+    "ledger.type.WITHDRAWAL_FAILED": "فشل السحب",
+    "order.progress.title": "تقدّم الطلب",
+    "order.progress.placed": "تم الطلب",
+    "order.progress.paid": "مدفوع",
+    "order.progress.review": "مراجعة الدفع",
+    "order.progress.in_progress": "قيد التنفيذ",
+    "order.progress.delivered": "تم التسليم",
+    "order.progress.completed": "مكتمل",
+    "order.progress.cancelled": "ملغى",
+    "order.progress.refunded": "مسترد",
+    "order.progress.issue": "نزاع مفتوح",
+    "order.progress.pay_before": "ادفع قبل :time",
+    "order.progress.deliver_by": "التسليم قبل :time",
+    "order.progress.confirm_by": "تأكيد تلقائي :time"
 }

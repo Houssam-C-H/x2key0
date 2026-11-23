@@ -1455,5 +1455,18 @@
     "ledger.type.WITHDRAWAL_REQUESTED": "Retrait demandé",
     "ledger.type.WITHDRAWAL_RELEASED": "Retrait restitué",
     "ledger.type.WITHDRAWAL_PAID": "Retrait payé",
-    "ledger.type.WITHDRAWAL_FAILED": "Retrait échoué"
+    "ledger.type.WITHDRAWAL_FAILED": "Retrait échoué",
+    "order.progress.title": "Avancement de la commande",
+    "order.progress.placed": "Commande passée",
+    "order.progress.paid": "Payée",
+    "order.progress.review": "Vérification du paiement",
+    "order.progress.in_progress": "En préparation",
+    "order.progress.delivered": "Livrée",
+    "order.progress.completed": "Terminée",
+    "order.progress.cancelled": "Annulée",
+    "order.progress.refunded": "Remboursée",
+    "order.progress.issue": "Litige en cours",
+    "order.progress.pay_before": "Payer avant le :time",
+    "order.progress.deliver_by": "Livraison avant le :time",
+    "order.progress.confirm_by": "Confirmation auto le :time"
 }

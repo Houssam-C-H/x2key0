@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use App\Domains\Payments\Providers\FakePaymentProvider;
+use App\Domains\Payments\Providers\StripePaymentProvider;
 
 /*
  * X2KEY platform configuration.
@@ -53,6 +54,13 @@ return [
     'payments' => [
         'providers' => [
             'fake' => FakePaymentProvider::class,
+            'stripe' => StripePaymentProvider::class,
+        ],
+        // Stripe Checkout (M6b). Keys only in .env, never in the repository.
+        'stripe' => [
+            'key' => env('STRIPE_KEY', ''),
+            'secret' => env('STRIPE_SECRET', ''),
+            'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', ''),
         ],
         'fake' => [
             // Signs fake webhooks; derived from APP_KEY when empty.

@@ -18,10 +18,13 @@ use App\Domains\Orders\Models\Order;
 use App\Domains\Orders\StateMachines\OrderStateMachine;
 use App\Domains\Orders\Support\OrderPresenter;
 use App\Domains\Orders\Support\OrderRules;
+use App\Domains\Payments\Actions\SyncPendingPayments;
+use App\Domains\Payments\Models\Payment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -80,6 +83,15 @@ final class PurchaseOrderController
     public function show(Request $request, string $publicId): Response
     {
         $order = $this->own($request, $publicId);
+
+        // Back from Stripe's hosted page: ask Stripe for the session now instead of waiting for the webhook or the
+        // sync job. The state comes from Stripe's API, never from the redirect itself (ADR-017); throttled per payment.
+        if ($request->query('stripe') === 'return' && $order->status === OrderStatus::PendingPayment) {
+            $payment = $order->payments->first(fn (Payment $p): bool => $p->provider === 'stripe' && ! $p->status->isFinal());
+            if ($payment !== null && Cache::add("stripe-return:{$payment->id}", 1, 5)) {
+                app(SyncPendingPayments::class)->syncOne($payment);
+            }
+        }
 
         return Inertia::render('Buy/Orders/Show', [
             'order' => OrderPresenter::detail($order, app()->getLocale(), "/buy/orders/{$order->public_id}/evidence"),

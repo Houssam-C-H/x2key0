@@ -47,6 +47,9 @@ final class OrderPresenter
             'deliveryDueAt' => $order->delivery_due_at?->toIso8601String(),
             'deliveredAt' => $order->delivered_at?->toIso8601String(),
             'confirmDueAt' => $order->confirm_due_at?->toIso8601String(),
+            'acceptedAt' => $order->accepted_at?->toIso8601String(),
+            'completedAt' => $order->completed_at?->toIso8601String(),
+            'cancelledAt' => $order->cancelled_at?->toIso8601String(),
             'cancelReason' => $order->cancel_reason,
             'lines' => [
                 'subtotal' => $order->subtotal_amount,

@@ -38,7 +38,10 @@ use App\Domains\Ledger\Models\LedgerAccount;
 use App\Domains\Ledger\Models\LedgerJournal;
 use App\Domains\Ledger\Policies\LedgerPolicy;
 use App\Domains\Ledger\Support\LedgerCreditsWallet;
+use App\Domains\Messaging\Events\ConversationUpdated;
 use App\Domains\Messaging\Listeners\OpenOrderConversation;
+use App\Domains\Messaging\Models\Conversation;
+use App\Domains\Messaging\Models\Message;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\Policies\OfferPolicy;
 use App\Domains\Orders\Events\OrderCancelled;
@@ -51,6 +54,7 @@ use App\Domains\Payments\Contracts\CreditsWallet;
 use App\Domains\Payments\Models\Chargeback;
 use App\Domains\Payments\Policies\ChargebackPolicy;
 use App\Domains\Payments\Providers\FakePaymentProvider;
+use App\Domains\Payments\Providers\StripePaymentProvider;
 use App\Domains\Payouts\Models\PayoutMethodType;
 use App\Domains\Payouts\Models\WithdrawalRequest;
 use App\Domains\Payouts\Policies\PayoutPolicy;
@@ -77,11 +81,14 @@ use App\Shared\Support\Settings;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Meilisearch\Client as MeilisearchClient;
 use RuntimeException;
+use Throwable;
 
 final class AppServiceProvider extends ServiceProvider
 {
@@ -106,6 +113,12 @@ final class AppServiceProvider extends ServiceProvider
                 is_string($secret) && $secret !== '' ? $secret : hash_hmac('sha256', 'x2key-fake-psp-webhook', config()->string('app.key')),
                 $this->app->isProduction(),
             );
+        });
+        $this->app->bind(StripePaymentProvider::class, static function (): StripePaymentProvider {
+            $secret = config('x2key.payments.stripe.secret');
+            $webhook = config('x2key.payments.stripe.webhook_secret');
+
+            return new StripePaymentProvider(is_string($secret) ? $secret : '', is_string($webhook) ? $webhook : '');
         });
         $this->app->bind(SmsSender::class, LogSmsSender::class);
 
@@ -191,6 +204,22 @@ final class AppServiceProvider extends ServiceProvider
         }
 
         Product::observe(SyncProductSearch::class);
+
+        // Live chat (ADR-021): every new message (user, auto-reply, system line) pings the conversation channel after
+        // commit. A broadcast failure (Reverb down) never breaks sending; clients fall back to polling.
+        Message::created(static function (Message $message): void {
+            DB::afterCommit(static function () use ($message): void {
+                $publicId = Conversation::query()->whereKey($message->conversation_id)->value('public_id');
+                if (! is_string($publicId)) {
+                    return;
+                }
+                try {
+                    ConversationUpdated::dispatch($publicId, $message->id);
+                } catch (Throwable $e) {
+                    Log::warning('Chat broadcast failed', ['conversation' => $publicId, 'error' => $e->getMessage()]);
+                }
+            });
+        });
 
         Gate::policy(Ticket::class, TicketPolicy::class);
 

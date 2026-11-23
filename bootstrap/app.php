@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Private channels for live chat (spec 12.1, ADR-021): participants only.
+    ->withBroadcasting(__DIR__.'/../routes/channels.php')
     ->withMiddleware(function (Middleware $middleware): void {
         // Locale & display currency are plain preferences, readable without decryption.
         $middleware->encryptCookies(except: [ResolveLocale::LOCALE_COOKIE, ResolveLocale::CURRENCY_COOKIE]);

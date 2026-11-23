@@ -15,6 +15,20 @@ final class PaymentMethodSeeder extends Seeder
 {
     public function run(): void
     {
+        // Stripe Checkout (M6b): offered only when STRIPE_SECRET is configured (StripePaymentProvider::supports).
+        PaymentMethod::query()->updateOrCreate(['code' => 'stripe_card'], [
+            'name' => ['en' => 'Card (Visa, Mastercard…) · Stripe', 'fr' => 'Carte (Visa, Mastercard…) · Stripe', 'ar' => 'بطاقة (فيزا، ماستركارد…) · Stripe'],
+            'provider' => 'stripe',
+            'countries' => null,
+            'currencies' => ['USD'],
+            'min_amount' => 50,
+            'max_amount' => 1_000_000,
+            'fee_bps' => 0,
+            'fee_fixed' => 0,
+            'is_enabled' => true,
+            'sort' => 0,
+        ]);
+
         if (app()->isProduction()) {
             return;
         }
@@ -35,7 +49,7 @@ final class PaymentMethodSeeder extends Seeder
                 'fee_bps' => $feeBps,
                 'fee_fixed' => $feeFixed,
                 'is_enabled' => true,
-                'sort' => $sort,
+                'sort' => $sort + 1,
             ]);
         }
     }

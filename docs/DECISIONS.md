@@ -61,6 +61,10 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-025 — Stripe Checkout and websocket chat (2026-11-23)
+- **Stripe through Checkout Sessions** (hosted page): no card data touches X2KEY, 3-D Secure handled by Stripe. The session id is the provider payment id. Paid state arrives by signed webhook, by the 5-minute sync job, or by an immediate API lookup when the buyer comes back (throttled per payment) — the redirect itself never changes state (ADR-017 still holds). Keys live only in `.env`.
+- **Chat goes live with Reverb** but the socket carries only "conversation changed" signals; the browser fetches the thread over HTTP, so each reader keeps their own redacted view and no message text is pushed. Channel authorisation = conversation participants. Broadcasting happens after commit and failures are logged, never raised; polling remains the fallback.
+
 ## ADR-024 — Withdrawals and invoices (2026-11-23)
 - **Money leaves Available at request time** (into the user's PAYOUT_IN_TRANSIT), not at approval: the no-overdraw check then runs under the balance row lock and concurrent requests cannot overspend; rejection, cancellation and failure post the reverse journal.
 - **Fee = max(platform minimum, method fee)** — Part 27's `withdrawal_fee_amount` is a floor, not an extra charge on top of the method fee. Payouts are in USD until FX exists.

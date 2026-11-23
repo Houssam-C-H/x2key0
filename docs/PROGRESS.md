@@ -21,6 +21,12 @@
 | M14 | Coupons & campaigns | next | |
 | M15–M19 | — | not started | |
 
+## Stripe, live chat, order progress (after M13)
+- [x] **Stripe Checkout driver** (`StripePaymentProvider`, M6b part): hosted payment page, `checkout.session.*` webhooks verified with `STRIPE_WEBHOOK_SECRET`, session lookup for `payments:sync-pending` and right after the buyer returns (state read from Stripe's API, never from the redirect), refunds on the session's PaymentIntent with the journal key as idempotency key; method `stripe_card` offered only when `STRIPE_SECRET` is set; tests never call Stripe (keys forced empty in phpunit.xml)
+- [x] **Live chat over Reverb websockets** (ADR-021 updated): every new message (user, auto-reply, system) broadcasts a text-free `conversation.updated` signal on the participants-only private channel `conversation.{id}`; the page re-fetches its own redacted thread; polling stays as fallback (5 s without websockets, 30 s safety net); a Reverb outage never breaks sending
+- [x] **Order progress bar** at the top of both order pages: Placed → Paid (or Payment review) → In progress → Delivered → Completed with times, the next deadline under the current step, ISSUE when a dispute is open, red end step for cancelled/refunded
+- [ ] Stripe webhook endpoint registration in the dashboard (production) and the footer payment strip; other PSPs (D2)
+
 ## M13 checklist
 - [x] Tables: payout_method_catalog (PayPal, Payoneer, USDT-TRC20, bank transfer: fee bps + fixed, minimum, fields), payout_methods (details encrypted, masked label, default, soft removal), withdrawal_requests (amount, fee, payout, masked destination, idempotency key), withdrawal_status_history (append-only), invoice_profiles (tax id encrypted), invoice_sequences, invoices (immutable)
 - [x] `WithdrawalStateMachine` (spec 6.6): requested → approved → processing → paid | failed; requested → rejected | cancelled; history per transition; staff never act on their own withdrawal

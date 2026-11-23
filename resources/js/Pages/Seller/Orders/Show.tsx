@@ -1,7 +1,7 @@
 import { router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { type OrderDispute, OrderDisputeBox } from '@/Components/Disputes/OrderDisputeBox';
-import { DeliveriesPanel, ItemPanel, MoneyPanel, type OrderDetail, StatusBadge, Timeline } from '@/Components/Orders/OrderParts';
+import { DeliveriesPanel, ItemPanel, MoneyPanel, type OrderDetail, OrderProgress, StatusBadge, Timeline } from '@/Components/Orders/OrderParts';
 import { DashboardLayout, Panel } from '@/Layouts/DashboardLayout';
 import { useShared, useT } from '@/lib/i18n';
 
@@ -28,6 +28,7 @@ export default function SoldOrderShow({ order, can, dispute }: Props) {
 
     return (
         <DashboardLayout title={t('order.detail_title', { number: order.number })} bare>
+            <OrderProgress order={order} />
             <Panel title={order.number}>
                 <div className="flex flex-wrap items-center gap-3">
                     <StatusBadge status={order.status} substatus={order.substatus} />
