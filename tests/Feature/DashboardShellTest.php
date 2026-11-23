@@ -57,7 +57,7 @@ it('renders every sidebar leaf with that leaf active (placeholder until its mile
     $built = [
         'settings.account', 'settings.security', 'settings.certification', 'seller.store.mine', 'seller.store.services', 'seller.info', 'seller.contacts',
         'buy.orders', 'buy.credits', 'buy.points', 'buy.funding', 'announcements.all', 'announcements.unread', 'announcements.read', 'announcements.starred', 'buy.favorites', 'seller.orders', 'storage.logs', 'seller.offers.create', 'seller.offers', 'storage.groups', 'storage.items', 'storage.recycle',
-        'disputes.index', 'disputes.stats', 'seller.violations',
+        'disputes.index', 'disputes.stats', 'seller.violations', 'tickets.all', 'tickets.pending', 'tickets.awaiting', 'tickets.closed',
     ];
 
     foreach (DashboardMenu::leaves() as $leaf) {

@@ -20,7 +20,7 @@ final class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([UserLevelSeeder::class, RoleSeeder::class, SellerLevelSeeder::class, CatalogSeeder::class, PaymentMethodSeeder::class, PointsRuleSeeder::class, ViolationRuleSeeder::class]);
+        $this->call([UserLevelSeeder::class, RoleSeeder::class, SellerLevelSeeder::class, CatalogSeeder::class, PaymentMethodSeeder::class, PointsRuleSeeder::class, ViolationRuleSeeder::class, CannedReplySeeder::class]);
 
         if (! app()->environment('local', 'testing')) {
             return;

@@ -78,7 +78,7 @@ final class DisputeRules
     /**
      * What an order page shows about disputes: the latest case (open first) and whether one can be opened.
      *
-     * @return array{case: array{href: string, status: string}|null, canOpen: bool, openHref: string}
+     * @return array{case: array{href: string, status: string}|null, canOpen: bool, openHref: string, supportHref: string}
      */
     public function forOrder(Order $order, DisputeRole $role): array
     {
@@ -90,6 +90,7 @@ final class DisputeRules
             'case' => $case === null ? null : ['href' => $case->path(), 'status' => $case->status->value],
             'canOpen' => $this->reasons($order, $role) !== [],
             'openHref' => "/orders/{$order->public_id}/disputes/new",
+            'supportHref' => "/tickets/new?order={$order->public_id}",
         ];
     }
 

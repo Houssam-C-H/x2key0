@@ -20,6 +20,8 @@ return [
 
     'support' => [
         'merchant_email' => env('MERCHANT_SERVICES_EMAIL', 'merchants@x2key.test'),
+        'customer_email' => env('CUSTOMER_SERVICES_EMAIL', 'support@x2key.test'),
+        'dispute_email' => env('DISPUTE_SERVICES_EMAIL', 'disputes@x2key.test'),
     ],
 
     'settlement_currency' => 'USD',
@@ -119,6 +121,11 @@ return [
         'online_threshold_seconds' => 120,
         'low_stock_default_threshold' => 5,
         'ticket_autoclose_hours' => 72,
+        'ticket_reopen_days' => 7,
+        // First staff response targets by priority (spec Part 11 SLA timers).
+        'ticket_sla_hours_high' => 4,
+        'ticket_sla_hours_normal' => 24,
+        'ticket_sla_hours_low' => 72,
         'violation_appeal_days' => 7,
         'violation_points_ttl_days' => 90,
         // Active (upheld, unexpired) violation points that suspend / ban a store (spec 17.2 thresholds).

@@ -32,6 +32,7 @@ use App\Http\Controllers\Seller\ViolationController;
 use App\Http\Controllers\Settings\AccountController;
 use App\Http\Controllers\Settings\CertificationController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Controllers\TicketController;
 use App\Http\Middleware\ResolveLocale;
 use App\Shared\Navigation\DashboardMenu;
 use Illuminate\Http\Request;
@@ -123,6 +124,7 @@ Route::middleware('auth')->group(function (): void {
         '/buy/funding' => fn () => Route::get('/buy/funding', [FinanceController::class, 'funding'])->name('dash.buy.funding'),
         '/announcements' => fn () => Route::get('/announcements', [AnnouncementController::class, 'index'])->name('dash.announcements.all'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
+        '/tickets' => fn () => Route::get('/tickets', [TicketController::class, 'index'])->name('dash.tickets.all'),
         '/disputes' => fn () => Route::get('/disputes', [DisputeController::class, 'index'])->name('dash.disputes.index'),
         '/disputes/stats' => fn () => Route::get('/disputes/stats', [DisputeController::class, 'stats'])->name('dash.disputes.stats'),
         '/seller/violations' => fn () => Route::get('/seller/violations', [ViolationController::class, 'index'])->name('dash.seller.violations'),
@@ -211,6 +213,18 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/announcements/read-all', [AnnouncementController::class, 'readAll'])->name('announcements.read-all');
     Route::post('/announcements/{id}/read', [AnnouncementController::class, 'read'])->where('id', '[na][0-9]+')->name('announcements.read');
     Route::post('/announcements/{id}/star', [AnnouncementController::class, 'star'])->where('id', '[na][0-9]+')->name('announcements.star');
+
+    // Service tickets (spec Part 11 / Part 20)
+    Route::get('/tickets/new', [TicketController::class, 'create'])->name('tickets.create');
+    Route::post('/tickets', [TicketController::class, 'store'])->middleware('throttle:10,1')->name('tickets.store');
+    Route::get('/tickets/{ticket}/files/{attachment}', [TicketController::class, 'file'])->whereNumber(['ticket', 'attachment'])->name('tickets.file');
+    Route::prefix('/tickets/{publicId}')->where(['publicId' => '[0-9a-z]{26}'])->group(function (): void {
+        Route::get('/', [TicketController::class, 'show'])->name('tickets.show');
+        Route::post('/messages', [TicketController::class, 'reply'])->middleware('throttle:30,1')->name('tickets.reply');
+        Route::post('/close', [TicketController::class, 'close'])->name('tickets.close');
+        Route::post('/reopen', [TicketController::class, 'reopen'])->name('tickets.reopen');
+        Route::post('/rate', [TicketController::class, 'rate'])->name('tickets.rate');
+    });
 
     // Dispute Center (spec Part 10 / Part 20): open from an order, thread, proposals, escalation
     Route::get('/orders/{publicId}/disputes/new', [DisputeController::class, 'create'])->where('publicId', '[0-9a-z]{26}')->name('disputes.create');

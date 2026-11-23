@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M12 — Service Tickets (next). M1–M11 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M13 — Withdrawals & invoices (next). M1–M12 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -16,8 +16,22 @@
 | M9 | Completion, settlement, notifications | ✅ code done | See checklist below |
 | M10 | Chat | ✅ code done | See checklist below; Reverb live delivery pending |
 | M11 | Disputes, chargebacks, violations | ✅ code done | See checklist below; chargeback webhooks wait for real PSPs (M6b) |
-| M12 | Service Tickets | next | |
-| M13–M19 | — | not started | |
+| M12 | Service Tickets | ✅ code done | See checklist below |
+| M13 | Withdrawals, payout methods, invoices | next | |
+| M14–M19 | — | not started | |
+
+## M12 checklist
+- [x] Tables: tickets (ULID, topic, subject, topic form answers, optional order, dispute link, priority, status, assignee, SLA target, first response, last replies, close info, CSAT), ticket_messages (internal notes, system lines; append-only), ticket_attachments (private disk + SHA-256), ticket_status_history (append-only), canned_replies (en/fr/ar)
+- [x] `TicketStateMachine` (spec 6.5): pending ⇄ awaiting_reply → closed; closed → pending on reopen; history row per transition, system lines on close/reopen
+- [x] `TicketDesk`: open (8 topics from spec 1.9; catalog request follow-up form with required game, platform, area, server, product type, keywords), user reply (awaiting → pending, new SLA target), staff reply (pending → awaiting, first response recorded, auto-assign), internal notes (no status change, never shown to the user), close (user/staff), reopen within `ticket_reopen_days` (7), one CSAT rating 1–5 after close, assign, priority change (SLA recomputed), **convert an order ticket to a dispute** in the owner's name (dispute rules apply, link kept, ticket closed)
+- [x] Priority by topic: high for refund / after-sales / payment questions about an order, low for catalog requests, normal otherwise; first-response targets `ticket_sla_hours_high|normal|low` (4 / 24 / 72 h)
+- [x] `tickets:autoclose` (15 min, idempotent): awaiting_reply tickets whose last staff answer is older than `ticket_autoclose_hours` (72) close as "closed automatically"; re-checked under the row lock so a late user reply wins
+- [x] Support Center (spec 1.9): All · Pending · Awaiting Reply · Closed with counts (sidebar tabs), rows "topic : subject", order number, created, last reply, state; new ticket page with topic forms, optional own order, attachments; ticket page with thread, files, close, reopen (until date), rating; side box with customer / merchant / dispute service e-mails; "Contact support" on both order pages (pre-selects the order)
+- [x] Admin (support + admins): queue sorted by status and SLA target (overdue red, filters: status, priority, topic, assigned to me, overdue), full thread modal incl. internal notes and files, reply with canned replies (in the user's language) or internal note, assign + priority, close, convert to dispute; canned replies CRUD; inbox notifications on staff reply and close
+- [x] **Acceptance tests** (`tests/Feature/Tickets`): full lifecycle with history, internal notes hidden, auto-close only past the window and only once, user reply resets the clock, reopen window, single rating, order priority and conversion to a dispute, HTTP flows (tabs, catalog form validation, attachments owner-only), staff access
+- [x] 560 tests (544 passed, 16 skipped on SQLite); Larastan max 0 errors; Pint; TS strict
+- [ ] E-mail copies of ticket replies and an e-mail-in channel — with the notification preferences / e-mail milestone
+- [ ] Antivirus scan of attachments (`scan_status = pending`), SLA breach alerts to staff
 
 ## M11 checklist
 - [x] Tables: disputes (ULID, reason, requested resolution/qty, proposal, frozen amount, deadlines), dispute_messages (original + redacted, internal notes, system lines), dispute_evidence (private disk + SHA-256), dispute_decisions (one per case, final), dispute_status_history (append-only), chargebacks, violation_rules, violations; holds gain `frozen_by`
@@ -239,6 +253,7 @@
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
+- 2026-11-23 — M12 service tickets built (branch `m12-tickets`, on top of `m11-disputes`).
 - 2026-11-23 — M11 disputes, chargebacks and violations built (branch `m11-disputes`, on top of `m10-chat`). Bugs found by tests and fixed: a seller could clear the ISSUE sub-status of an order under dispute; resetting the confirmation timer after a dispute used a mass assignment the strict models refuse.
 - 2026-11-23 — M6 checkout & payments built (branch `m6-checkout-payments`, on top of M5): quotes, checkout, reservations, order state machine up to paid, fake PSP + webhooks, expiry/sync jobs, credits seam, risk v1, payment review admin. Portable PostgreSQL 17.12 set up in C:\dev\tools\pgsql (data C:\dev\tools\pgsql-data, port 5433); M1–M5 suite also verified on it. Bug found by tests and fixed: a capture arriving after we cancelled the payment locally was dropped as stale — it is now recorded and flagged for refund.
 - 2026-11-23 — M5 offers & storage built (branch `m5-offers-storage`): offer state machine, create/edit/Active Offers, moderation, encrypted storage vault with HMAC duplicate detection, low-stock alerts + bar, product/offer/store pages with offers, favorites, browsing history. New dev machine: portable PHP 8.4.28 + Composer set up in C:\dev\tools again; repo cloned to C:\Users\Stjg0\x2key0.

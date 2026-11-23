@@ -61,6 +61,9 @@ use App\Domains\Sellers\Policies\SellerPolicy;
 use App\Domains\Storage\Contracts\SecretVault;
 use App\Domains\Storage\Models\StorageGroup;
 use App\Domains\Storage\Vault\EnvelopeSecretVault;
+use App\Domains\Tickets\Models\CannedReply;
+use App\Domains\Tickets\Models\Ticket;
+use App\Domains\Tickets\Policies\TicketPolicy;
 use App\Domains\Violations\Listeners\RecordCancellationViolation;
 use App\Domains\Violations\Models\Violation;
 use App\Domains\Violations\Models\ViolationRule;
@@ -184,6 +187,9 @@ final class AppServiceProvider extends ServiceProvider
         }
 
         Product::observe(SyncProductSearch::class);
+
+        Gate::policy(Ticket::class, TicketPolicy::class);
+        Gate::policy(CannedReply::class, TicketPolicy::class);
 
         // Admins can do everything, except abilities that must hold for everyone (self-review).
         Gate::before(static function (User $user, string $ability, array $arguments): ?bool {

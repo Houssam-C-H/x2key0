@@ -61,6 +61,13 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-023 — Service tickets (2026-11-23)
+- **Statuses follow the observed tabs** (spec 6.5): `pending` = staff to answer, `awaiting_reply` = waiting for the user, `closed`. Only staff replies move pending → awaiting_reply; internal notes never change the status.
+- **SLA = first response target**, set when the ticket waits for staff (open, user reply, reopen) from the priority's hours, cleared when staff answer. Priority comes from the topic and whether an order is attached; staff can change it (the target moves with it until the first answer).
+- **Auto-close counts from the last staff answer** and is re-checked under the row lock, so a user who answers at the last minute keeps the ticket open.
+- **Conversion to a dispute opens the case in the ticket owner's name** with the normal dispute rules (the owner must be the order's buyer or seller and the order disputable now); staff pick reason, resolution and units. A converted ticket cannot be reopened (the case continues in the Dispute Center).
+- Attachments use the same private-disk + SHA-256 pattern as dispute evidence; served only to the owner (non-internal messages) and shown to staff in the admin.
+
 ## ADR-022 — Disputes, chargebacks and violations (2026-11-23)
 - **The case closes before the order moves.** `ResolveDispute` / `ApplyChargeback::lost` set the case status first, then call `OrderStateMachine` in the same transaction, so the order's open-case guard (`OpenCases::blocks`) refuses everyone else (buyer confirm, auto-confirm, cancellations, clearing ISSUE) while letting the outcome through.
 - **Refunds of delivered units take them back:** `delivered_qty` is reduced before RefundOrder runs, so delivered + refunded never exceeds quantity (PostgreSQL CHECK) and settlement keeps using units kept = quantity − refunded.

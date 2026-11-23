@@ -20,3 +20,4 @@ Schedule::command('orders:process-timers')->everyMinute()->withoutOverlapping()-
 Schedule::command('holds:release')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('disputes:escalate-overdue')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('violations:process')->hourly()->withoutOverlapping()->onOneServer();
+Schedule::command('tickets:autoclose')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
