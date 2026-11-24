@@ -1,11 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
 import { categoryIcon, Icon } from '@/Components/Icon';
-import { type CommunityRating, CommunityRatings } from '@/Components/Reviews/CommunityRatings';
+import { type HomeModule, HomeModuleView } from '@/Components/Home/HomeModules';
+import { SeoHead } from '@/Components/Catalog/SeoHead';
+import type { Seo } from '@/types/catalog';
 import { PublicLayout } from '@/Layouts/PublicLayout';
 import { useLocalePath, useShared, useT } from '@/lib/i18n';
 
-/** Home shell: hero with the 8 category tiles (spec 1.3 #1). Other modules arrive in M17. */
-export default function Home({ communityRatings = [] }: { communityRatings?: CommunityRating[] }) {
+/** Home page (spec 1.3): modules from the home CMS in their order; the hero carries the 8 category tiles. */
+export default function Home({ modules = [], seo }: { modules?: HomeModule[]; seo?: Seo }) {
     const t = useT();
     const { categoryTypes } = useShared();
     const lp = useLocalePath();
@@ -13,8 +15,9 @@ export default function Home({ communityRatings = [] }: { communityRatings?: Com
 
     return (
         <PublicLayout>
-            <Head title={t('home.hero_tagline')} />
+            {seo ? <SeoHead seo={seo} /> : <Head title={t('home.hero_tagline')} />}
 
+            {modules.length === 0 || modules.some((m) => m.code === 'hero') ? (
             <section className="relative overflow-hidden bg-surface-dark text-white">
                 <div
                     aria-hidden="true"
@@ -44,12 +47,13 @@ export default function Home({ communityRatings = [] }: { communityRatings?: Com
                     </ul>
                 </div>
             </section>
+            ) : null}
 
-            <CommunityRatings items={communityRatings} />
-
-            <section className="mx-auto max-w-7xl px-4 py-12">
-                <div className="rounded-md border-s-4 border-warning bg-warning-soft p-4 text-sm">{t('home.modules_coming')}</div>
-            </section>
+            {modules
+                .filter((m) => m.code !== 'hero')
+                .map((m) => (
+                    <HomeModuleView key={m.code} module={m} />
+                ))}
         </PublicLayout>
     );
 }

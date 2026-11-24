@@ -7,6 +7,9 @@ namespace App\Http\Controllers\Public;
 use App\Domains\Catalog\Models\Game;
 use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Product;
+use App\Domains\Content\Models\HelpArticle;
+use App\Domains\Content\Models\NewsArticle;
+use App\Domains\Content\Models\Page;
 use App\Domains\Sellers\Models\SellerProfile;
 use App\Http\Middleware\ResolveLocale;
 use Illuminate\Database\Eloquent\Builder;
@@ -59,6 +62,17 @@ final class SitemapController
 
         $add('');
         $add('/games');
+        $add('/news');
+        $add('/help');
+        foreach (NewsArticle::query()->published()->get(['slug', 'updated_at']) as $article) {
+            $add("/news/{$article->slug}", $article->updated_at->toDateString());
+        }
+        foreach (HelpArticle::query()->where('is_published', true)->get(['slug']) as $help) {
+            $add("/help/{$help->slug}");
+        }
+        foreach (Page::query()->where('is_published', true)->get(['slug', 'updated_at']) as $page) {
+            $add("/page/{$page->slug}", $page->updated_at->toDateString());
+        }
 
         $categories = GameCategory::query()
             ->visible()

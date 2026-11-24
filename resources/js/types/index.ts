@@ -39,6 +39,8 @@ export interface SharedProps {
     stockAlert: { count: number; titles: string[] } | null;
     inbox: { unread: number } | null;
     chat: { unread: number } | null;
+    footer: { columns: Record<string, { label: string; href: string }[]>; seoLinks: { label: string; href: string }[] } | null;
+    bookmarkPrompt: boolean;
     megaMenu: { code: string; label: string; href: string; games: { name: string; href: string; count: number }[] }[];
     errors: Record<string, string>;
     [key: string]: unknown;

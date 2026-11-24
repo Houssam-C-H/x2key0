@@ -61,6 +61,13 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-029 — Home CMS and content (2026-11-24)
+- **The home page is data**: `home_modules` decides which of the 12 sections show and in what order; the controller only adds the viewer's Browsing History. Shared module data is cached per locale and dropped by a version bump whenever any content model is saved, deleted, or the trending job runs, so staff edits show at once without cache keys to track.
+- **Automatic picks with pins on top**: each module has a rule (trend score, newest, featured, latest) and staff can pin items that always come first; pins of the wrong category type are ignored.
+- **Trending = recent demand**: 10 × orders paid in the last 7 days + views in the last 7 days, recomputed hourly from source rows (no counters to drift).
+- **Content is Markdown**, rendered on the server with raw HTML stripped and unsafe links removed; the pages insert the resulting HTML. Staff can format text but cannot inject script.
+- **Legal pages are drafts** until written with a lawyer (M19); the seeded texts say so on the page.
+
 ## ADR-028 — Reviews and level recompute (2026-11-24)
 - **One comment per order, editable until the seller answers**: the buyer can fix a comment inside the 30-day window, but once the seller has replied the pair is frozen so the reply always answers what is shown.
 - **Ratings count only visible comments**; hiding a comment changes the seller's rates at once. Neutral comments are shown and counted in the score table but not in the positive rate (spec: positive / (positive + negative)).

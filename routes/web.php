@@ -6,6 +6,7 @@ use App\Domains\Catalog\Models\Game;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\AuthPageController;
+use App\Http\Controllers\BookmarkPromptController;
 use App\Http\Controllers\Buy\CommentController;
 use App\Http\Controllers\Buy\FinanceController;
 use App\Http\Controllers\Buy\PurchaseOrderController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PreferencesController;
 use App\Http\Controllers\Public\AffiliateLandingController;
 use App\Http\Controllers\Public\CatalogController;
+use App\Http\Controllers\Public\ContentController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\StoreController;
@@ -55,6 +57,7 @@ Route::get('/', fn (Request $request) => redirect('/'.ResolveLocale::preferredLo
     ->name('root');
 
 Route::post('/preferences', PreferencesController::class)->name('preferences');
+Route::post('/bookmark-prompt/dismiss', BookmarkPromptController::class)->middleware('throttle:20,1')->name('bookmark.dismiss');
 
 // Affiliate referral links (spec Part 15 `/r/{code}`): count the click, set the first-click cookie, go on.
 Route::get('/r/{code}/{slug?}', [AffiliateLandingController::class, 'redirect'])->where(['code' => '[A-Za-z0-9]{4,16}', 'slug' => '[a-z0-9]{10}'])->middleware('throttle:120,1')->name('affiliate.redirect');
@@ -92,6 +95,13 @@ Route::prefix('{locale}')
         Route::get('/catalog/{type}', [CatalogController::class, 'categoryHub'])->where('type', '[a-z-]+')->name('catalog.type');
         Route::get('/search', [CatalogController::class, 'search'])->name('catalog.search');
         Route::get('/affiliate', [AffiliateLandingController::class, 'show'])->name('affiliate.landing');
+
+        // News, Help center, CMS pages (spec Part 20)
+        Route::get('/news', [ContentController::class, 'news'])->name('news.index');
+        Route::get('/news/{slug}', [ContentController::class, 'article'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('news.show');
+        Route::get('/help', [ContentController::class, 'help'])->name('help.index');
+        Route::get('/help/{slug}', [ContentController::class, 'helpArticle'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('help.show');
+        Route::get('/page/{slug}', [ContentController::class, 'page'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('page.show');
         Route::get('/store/{slug}', [StoreController::class, 'show'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('store.show');
         Route::get('/offer/{publicId}', [CatalogController::class, 'offer'])->where('publicId', '[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}')->name('offer.show');
 

@@ -7,9 +7,11 @@ namespace App\Http\Middleware;
 use App\Domains\Announcements\Support\AnnouncementCenter;
 use App\Domains\Catalog\Enums\CategoryTypeCode;
 use App\Domains\Catalog\Support\CatalogReader;
+use App\Domains\Content\Support\FooterContent;
 use App\Domains\Identity\Models\User;
 use App\Domains\Messaging\Support\ChatPresenter;
 use App\Domains\Storage\Support\StockAlerts;
+use App\Http\Controllers\BookmarkPromptController;
 use App\Shared\Navigation\DashboardMenuPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -64,6 +66,9 @@ final class HandleInertiaRequests extends Middleware
             ],
             // Mega menu columns (spec 1.1), cached per locale and flushed on catalog edits.
             'megaMenu' => fn (): array => app(CatalogReader::class)->megaMenu($locale),
+            // Footer pages and SEO keyword row (spec 1.3 #12), and the bookmark prompt (spec 1.1), on public pages.
+            'footer' => fn (): ?array => $request->route('locale') === null ? null : FooterContent::data($locale),
+            'bookmarkPrompt' => fn (): bool => $request->route('locale') !== null && BookmarkPromptController::show($request),
             // Dashboard sidebar for signed-in, non-localized (dashboard) pages; evaluated lazily.
             'menu' => fn (): ?array => $user instanceof User && $request->route('locale') === null
                 ? app(DashboardMenuPresenter::class)->present($request)

@@ -26,3 +26,4 @@ Schedule::command('coupons:expire-claims')->hourly()->onOneServer();
 Schedule::command('marketing:settle')->dailyAt('03:30')->onOneServer();
 Schedule::command('affiliate:release-commissions')->hourly()->onOneServer();
 Schedule::command('levels:recompute')->dailyAt('04:30')->onOneServer();
+Schedule::command('home:refresh-trending')->hourly()->onOneServer();

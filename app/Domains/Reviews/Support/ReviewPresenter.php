@@ -41,16 +41,20 @@ final class ReviewPresenter
      * Community ratings (spec Part 13, home module 7): featured comments first, then recent positive ones with at
      * least 20 characters of text, one per seller, with that seller's positive rate.
      *
+     * @param  list<int>  $pinned  comment ids pinned on the home CMS
      * @return list<array<string, mixed>>
      */
-    public static function community(int $limit, string $locale): array
+    public static function community(int $limit, string $locale, array $pinned = []): array
     {
         $base = OrderComment::query()->visible()->where('rating', 'positive')->whereNotNull('body')
             ->whereHas('seller', fn ($q) => $q->public())
             ->with(['buyer:id,name', 'seller:id,store_name,slug', 'seller.stats']);
 
+        // Pinned on the home CMS (in pin order), then featured, then the recent rule.
         /** @var Collection<int, OrderComment> $picked */
-        $picked = (clone $base)->where('featured_in_community', true)->orderByDesc('created_at')->limit($limit)->get();
+        $picked = $pinned === [] ? collect() : (clone $base)->whereIn('order_comments.id', $pinned)->get()
+            ->sortBy(static fn (OrderComment $c): int => (int) array_search($c->id, $pinned, true))->values();
+        $picked = $picked->concat((clone $base)->where('featured_in_community', true)->orderByDesc('created_at')->limit($limit)->get())->unique('id');
         if ($picked->count() < $limit) {
             $more = (clone $base)->where('created_at', '>=', now()->subDays(90))->orderByDesc('created_at')->limit(100)->get()
                 ->filter(static fn (OrderComment $c): bool => mb_strlen((string) $c->body) >= self::COMMUNITY_MIN_TEXT);

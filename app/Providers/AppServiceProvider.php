@@ -31,6 +31,14 @@ use App\Domains\Certification\Contracts\KycProvider;
 use App\Domains\Certification\Models\Certification;
 use App\Domains\Certification\Policies\CertificationPolicy;
 use App\Domains\Certification\Providers\FakeKycProvider;
+use App\Domains\Content\Models\HelpArticle;
+use App\Domains\Content\Models\HomeModule;
+use App\Domains\Content\Models\HomeModuleItem;
+use App\Domains\Content\Models\NewsArticle;
+use App\Domains\Content\Models\Page;
+use App\Domains\Content\Models\SeoLinkRow;
+use App\Domains\Content\Policies\ContentPolicy;
+use App\Domains\Content\Support\HomeCache;
 use App\Domains\Coupons\Models\Coupon;
 use App\Domains\Disputes\Models\Dispute;
 use App\Domains\Disputes\Policies\DisputePolicy;
@@ -203,6 +211,13 @@ final class AppServiceProvider extends ServiceProvider
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(Coupon::class, MarketingPolicy::class);
         Gate::policy(OrderComment::class, OrderCommentPolicy::class);
+        foreach ([HomeModule::class, HomeModuleItem::class, NewsArticle::class, HelpArticle::class, Page::class, SeoLinkRow::class] as $content) {
+            Gate::policy($content, ContentPolicy::class);
+        }
+        foreach ([HomeModule::class, HomeModuleItem::class, NewsArticle::class, HelpArticle::class, Page::class, SeoLinkRow::class] as $content) {
+            $content::saved(static fn () => HomeCache::flush());
+            $content::deleted(static fn () => HomeCache::flush());
+        }
         Gate::policy(Affiliate::class, MarketingPolicy::class);
         Gate::policy(AffiliateVideoRecord::class, MarketingPolicy::class);
         Gate::policy(CreativeAsset::class, MarketingPolicy::class);

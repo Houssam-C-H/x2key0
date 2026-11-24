@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M17 — Home modules CMS, News, Help center (next). M1–M16 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M18 — Admin & risk completion, reports, account deletion (next). M1–M17 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -21,8 +21,22 @@
 | M14 | Coupons & campaigns | ✅ code done | See checklist below |
 | M15 | Affiliate Program | ✅ code done | See checklist below; cash withdrawals for affiliates pending |
 | M16 | Reviews & community ratings | ✅ code done | See checklist below |
-| M17 | Home CMS, News, Help, footer pages | next | |
-| M18–M19 | — | not started | |
+| M17 | Home CMS, News, Help, footer pages | ✅ code done | See checklist below |
+| M18 | Admin & risk completion, reports | next | |
+| M19 | Launch hardening | not started | |
+
+## M17 checklist
+- [x] Tables: home_modules (12 codes, order, on/off, title, item count), home_module_items (pins), news_articles, help_articles, pages (footer column), seo_link_rows; `game_categories.trend_score`, `games.hot_score`
+- [x] **Home page from the CMS** (spec 1.3): Hero with the 8 category tiles · Browsing History (per viewer, never cached) · Hot Game (Currency / Items / Accounts / Gift Cards × top games) · Trending Top up (featured tile + grid) · Trending Gift Cards · Trending Video Games · Community ratings · Affiliate banner · New Game (4 columns of the newest game×category pages) · Game News · Payment strip · Footer; enabled modules in staff order, title and item count per module; before seeding the 12 defaults are used
+- [x] **Pins**: staff pin games, game×categories, comments or articles into a module; pinned items come first, then the automatic picks
+- [x] **`home:refresh-trending`** (hourly): trend score = 10 × orders paid in 7 days (not cancelled/refunded) + views in 7 days (offer and product browsing history); hot score per game = sum of its categories
+- [x] **News** (`/news`, `/news/{slug}`: published and due only, related posts), **Help center** (`/help` by section, `/help/{slug}` with the section's articles), **CMS pages** (`/page/{slug}`); Markdown rendered server-side with raw HTML stripped and unsafe links removed; all in the sitemap
+- [x] **Footer** from CMS pages per column (built-in links until a column has pages; Help, News and Affiliate point to their sections) + SEO keyword row; cached, refreshed on every content change (HomeCache version bump)
+- [x] **Bookmark prompt** under the header ("press Ctrl+D / ⌘D", phone wording, "No more prompts" stored on the account or in a cookie, × hides it for the visit)
+- [x] Admin (moderators + support, admins): Home modules (order, on/off, title, count), Pinned home items, News (cover upload, game, draft/published, schedule), Help center, Pages & footer, SEO links
+- [x] Seeders: `HomeModuleSeeder` (always), `DemoContentSeeder` (local: 12 footer pages — legal texts marked as drafts for M19 —, 7 help articles, 4 news, SEO row)
+- [x] 11 new tests (`tests/Feature/Content`): default and staff module order, on/off and titles, trending scores + pins + 7-day window, per-viewer history, news visibility, safe Markdown, help and pages, footer refresh, bookmark prompt, payment strip, sitemap, admin access; Larastan max 0 errors; Pint; TS strict
+- [ ] Affiliate banner QR code image, carousels with arrows/dots (today: scrollable rows), PWA install prompt, per-game news pages, real legal texts (M19)
 
 ## M16 checklist
 - [x] Table `order_comments` (one per order: rating, Delivery Speed · Service Quality · Item Description 1–5, text, seller reply, visible/hidden with reason, featured, edited); `seller_stats.positive_rate_90d_bps`; seller level thresholds `min_positive_rate_bps`, `max_dispute_loss_bps`, `max_violation_points`; points rule `comment` (10)
@@ -318,6 +332,7 @@
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
+- 2026-11-24 — `main` fast-forwarded to M16. M17 home CMS (12 modules, pins, trending job), News, Help center, CMS pages and footer, bookmark prompt built (branch `m17-home-content`).
 - 2026-11-24 — `main` fast-forwarded to M15. M16 reviews, community ratings and level recompute built (branch `m16-reviews`).
 - 2026-11-24 — `main` fast-forwarded to M14 (all milestone branches contained). M15 Affiliate Program built (branch `m15-affiliate`). Found while testing: a queued attribution cookie leaked into the next request handled by the same process, so the cookie is now attached to the redirect itself.
 - 2026-11-24 — M14 coupons & campaigns completed (branch `m14-coupons`, on top of `m13-withdrawals`; the backend WIP — pricing, redemptions, ledger shares — was finished with checkout UI, Coupon Center, seller codes, campaigns, marketing e-mails, admin and tests). PostgreSQL-only bugs from M11/M13 found by the full PostgreSQL run and fixed: refunding a completed order left its units counted as delivered (DB check `order_items_qty_consistent`); the audit log wrote string keys (payout method types) into the numeric `subject_id`; adding a payout account used `FOR UPDATE` with `COUNT(*)`. Suite: 613 tests, PostgreSQL 603 passed / SQLite 594 passed, rest skipped.

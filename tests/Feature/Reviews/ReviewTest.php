@@ -139,7 +139,7 @@ it('shows Community ratings: featured first, then recent positive comments with 
     $cards = ReviewPresenter::community(4, 'en');
     expect($cards)->toHaveCount(1)->and($cards[0]['id'])->toBe($long->id)->and($cards[0]['stars'])->toBe(5);
 
-    $this->get('/en')->assertOk()->assertInertia(fn (Assert $p) => $p->has('communityRatings', 1));
+    expect(collect($this->get('/en')->inertiaProps('modules'))->firstWhere('code', 'community_ratings')['data']['items'])->toHaveCount(1);
     $this->get('/en/store/'.$this->seller->slug)->assertInertia(fn (Assert $p) => $p->has('reviews', 2)->where('store.stats.ratingCount', 2));
 });
 

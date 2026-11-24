@@ -13,7 +13,7 @@ export interface CommunityRating {
 }
 
 /** Community ratings (spec 1.3 #7): review cards with stars, the seller's positive %, text, avatar, date, user. */
-export function CommunityRatings({ items }: { items: CommunityRating[] }) {
+export function CommunityRatings({ items, title }: { items: CommunityRating[]; title?: string }) {
     const t = useT();
     const { locale } = useShared();
     if (items.length === 0) {
@@ -23,7 +23,7 @@ export function CommunityRatings({ items }: { items: CommunityRating[] }) {
     return (
         <section className="mx-auto max-w-7xl px-4 py-12" aria-labelledby="community-title">
             <h2 id="community-title" className="mb-5 text-2xl font-extrabold">
-                {t('review.community.title')}
+                {title ?? t('review.community.title')}
             </h2>
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {items.map((r) => (

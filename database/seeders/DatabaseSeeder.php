@@ -20,7 +20,7 @@ final class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([UserLevelSeeder::class, RoleSeeder::class, SellerLevelSeeder::class, CatalogSeeder::class, PaymentMethodSeeder::class, PointsRuleSeeder::class, ViolationRuleSeeder::class, CannedReplySeeder::class, PayoutMethodCatalogSeeder::class]);
+        $this->call([UserLevelSeeder::class, RoleSeeder::class, SellerLevelSeeder::class, CatalogSeeder::class, PaymentMethodSeeder::class, PointsRuleSeeder::class, ViolationRuleSeeder::class, CannedReplySeeder::class, PayoutMethodCatalogSeeder::class, HomeModuleSeeder::class]);
 
         if (! app()->environment('local', 'testing')) {
             return;
@@ -48,7 +48,7 @@ final class DatabaseSeeder extends Seeder
         }
 
         $this->seedDemoSeller();
-        $this->call([OfferSeeder::class, DemoCreditsSeeder::class, DemoMarketingSeeder::class, DemoAffiliateSeeder::class]);
+        $this->call([OfferSeeder::class, DemoCreditsSeeder::class, DemoMarketingSeeder::class, DemoAffiliateSeeder::class, DemoContentSeeder::class]);
     }
 
     /** seller_demo: certified (email, phone, identity), active store, a few passed services. */
