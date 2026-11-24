@@ -27,6 +27,7 @@ enum AccountCode: string
     case RevCommission = 'REV_COMMISSION';
     case RevBuyerFee = 'REV_BUYER_FEE';
     case RevPayoutFee = 'REV_PAYOUT_FEE';
+    case RevMarketing = 'REV_MARKETING';
     case ExpPspFees = 'EXP_PSP_FEES';
     case ExpChargebackLoss = 'EXP_CHARGEBACK_LOSS';
     case ExpChargebackFees = 'EXP_CHARGEBACK_FEES';
@@ -37,7 +38,7 @@ enum AccountCode: string
     {
         return match ($this) {
             self::PspClearing, self::Bank => AccountType::Asset,
-            self::RevCommission, self::RevBuyerFee, self::RevPayoutFee => AccountType::Revenue,
+            self::RevCommission, self::RevBuyerFee, self::RevPayoutFee, self::RevMarketing => AccountType::Revenue,
             self::ExpPspFees, self::ExpChargebackLoss, self::ExpChargebackFees, self::ExpPromotions, self::ExpAffiliate => AccountType::Expense,
             default => AccountType::Liability,
         };

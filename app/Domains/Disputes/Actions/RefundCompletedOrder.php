@@ -120,7 +120,11 @@ final class RefundCompletedOrder
             RefundOrder::row($order, null, Refund::CREDITS, $toCreditsAmount, 'dispute_refund', 'succeeded', null, $actor, $by?->id);
         }
 
-        $item->forceFill(['refunded_qty' => $item->refunded_qty + $units])->save();
+        // Refunded units stop counting as delivered (DB check: delivered + refunded <= quantity).
+        $item->forceFill([
+            'refunded_qty' => $item->refunded_qty + $units,
+            'delivered_qty' => max(0, $item->delivered_qty - $units),
+        ])->save();
         $order->forceFill([
             'refunded_credits_amount' => $order->refunded_credits_amount + $fromCredits,
             'refunded_psp_amount' => $order->refunded_psp_amount + $fromPsp,

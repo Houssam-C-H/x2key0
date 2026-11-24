@@ -1,4 +1,6 @@
 import { Link, router } from '@inertiajs/react';
+import { useState } from 'react';
+import { CouponCard, type CouponCardData } from '@/Components/Coupons/CouponCard';
 import { Breadcrumbs } from '@/Components/Catalog/Breadcrumbs';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
 import { OfferCard } from '@/Components/Offer/OfferCard';
@@ -27,6 +29,7 @@ interface Props {
         stats: { ordersCompleted: number; completionRateBps: number | null; positiveRateBps: number | null; ratingCount: number; disputeRateBps: number | null };
     };
     services: SellerService[];
+    coupons: CouponCardData[];
     featured: OfferCardData[];
     offers: OfferCardData[];
     isOwner: boolean;
@@ -35,7 +38,7 @@ interface Props {
 }
 
 /** Public store page (spec 1.8 My Store). Offers, reviews and coupons join with M5 / M14 / M16. */
-export default function Store({ store, services, featured, offers, isOwner, breadcrumbs, seo }: Props) {
+export default function Store({ store, services, coupons, featured, offers, isOwner, breadcrumbs, seo }: Props) {
     const t = useT();
     const { locale, auth } = useShared();
     const rate = (bps: number | null) => (bps === null ? '—' : bpsToPercent(bps));
@@ -107,6 +110,21 @@ export default function Store({ store, services, featured, offers, isOwner, brea
                         <section className="card p-5">
                             <h2 className="mb-2 font-bold">{t('seller.store.notice')}</h2>
                             <p className="whitespace-pre-line text-sm">{store.notice}</p>
+                        </section>
+                    )}
+                    {(coupons.length > 0 || !isOwner) && (
+                        <section className="card space-y-3 p-5">
+                            <h2 className="font-bold">{t('coupon.store.title')}</h2>
+                            {coupons.length > 0 && (
+                                <ul className="grid gap-3 sm:grid-cols-2">
+                                    {coupons.map((c) => (
+                                        <li key={c.id}>
+                                            <CouponCard coupon={c} canClaim={!isOwner} />
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {!isOwner && <StoreCodeForm store={store.slug} />}
                         </section>
                     )}
                     <section className="card p-5">
@@ -197,5 +215,36 @@ function Row({ label, value }: { label: string; value: string }) {
             <dt className="text-muted">{label}</dt>
             <dd className="font-semibold">{value}</dd>
         </div>
+    );
+}
+
+/** Enter a store code (public or private "Recommend" code from a marketing e-mail). */
+function StoreCodeForm({ store }: { store: string }) {
+    const t = useT();
+    const { auth, locale, errors } = useShared();
+    const [code, setCode] = useState('');
+
+    if (!auth.user) {
+        return (
+            <Link href={'/' + locale + '/login'} className="text-sm text-primary">
+                {t('coupon.store.login')}
+            </Link>
+        );
+    }
+
+    return (
+        <form
+            className="flex flex-wrap items-start gap-2"
+            onSubmit={(e) => {
+                e.preventDefault();
+                router.post('/coupons/code', { store, code }, { preserveScroll: true, onSuccess: () => setCode('') });
+            }}
+        >
+            <input className="field max-w-xs uppercase" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t('coupon.store.code')} aria-label={t('coupon.store.code')} maxLength={32} />
+            <button type="submit" className="btn-outline-pill" disabled={code.trim() === ''}>
+                {t('coupon.claim')}
+            </button>
+            {errors.coupon && <p className="w-full text-sm text-danger">{errors.coupon}</p>}
+        </form>
     );
 }

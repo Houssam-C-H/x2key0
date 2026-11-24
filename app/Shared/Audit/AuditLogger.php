@@ -37,12 +37,19 @@ final class AuditLogger
     ): AuditLog {
         $actor ??= $this->auth->guard()->user();
 
+        // `subject_id` is numeric; models keyed by a string (e.g. payout method types by code) keep the key in `after`.
+        $key = $subject?->getKey();
+        $numeric = is_int($key) || (is_string($key) && ctype_digit($key));
+        if ($key !== null && ! $numeric) {
+            $after = [...($after ?? []), '_key' => is_scalar($key) ? (string) $key : null];
+        }
+
         return AuditLog::query()->create([
             'actor_type' => $actor instanceof Model ? $actor->getMorphClass() : null,
             'actor_id' => $actor?->getAuthIdentifier(),
             'action' => $action,
             'subject_type' => $subject?->getMorphClass(),
-            'subject_id' => $subject?->getKey(),
+            'subject_id' => $numeric ? (int) $key : null,
             'before' => self::redact($before),
             'after' => self::redact($after),
             'ip' => $this->request?->ip(),

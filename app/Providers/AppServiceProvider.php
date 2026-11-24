@@ -7,6 +7,10 @@ namespace App\Providers;
 use App\Domains\Announcements\Listeners\SendOrderNotifications;
 use App\Domains\Announcements\Models\Announcement;
 use App\Domains\Announcements\Policies\AnnouncementPolicy;
+use App\Domains\Campaigns\Models\Campaign;
+use App\Domains\Campaigns\Models\CampaignParticipation;
+use App\Domains\Campaigns\Policies\MarketingPolicy;
+use App\Domains\Campaigns\Support\CampaignBadges;
 use App\Domains\Catalog\Listeners\SyncProductSearch;
 use App\Domains\Catalog\Models\CategoryType;
 use App\Domains\Catalog\Models\Game;
@@ -23,6 +27,7 @@ use App\Domains\Certification\Contracts\KycProvider;
 use App\Domains\Certification\Models\Certification;
 use App\Domains\Certification\Policies\CertificationPolicy;
 use App\Domains\Certification\Providers\FakeKycProvider;
+use App\Domains\Coupons\Models\Coupon;
 use App\Domains\Disputes\Models\Dispute;
 use App\Domains\Disputes\Policies\DisputePolicy;
 use App\Domains\Identity\Contracts\SmsSender;
@@ -97,6 +102,7 @@ final class AppServiceProvider extends ServiceProvider
         // Scoped = one instance per request/job (safe under Octane/queues).
         $this->app->scoped(AuditLogger::class);
         $this->app->scoped(Settings::class);
+        $this->app->scoped(CampaignBadges::class);
 
         // Provider drivers: real ones are chosen with founder decisions (D11 KYC, SMS provider).
         $this->app->bind(KycProvider::class, FakeKycProvider::class);
@@ -184,6 +190,9 @@ final class AppServiceProvider extends ServiceProvider
         Gate::policy(StorageGroup::class, OfferPolicy::class);
 
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
+        Gate::policy(Coupon::class, MarketingPolicy::class);
+        Gate::policy(Campaign::class, MarketingPolicy::class);
+        Gate::policy(CampaignParticipation::class, MarketingPolicy::class);
         Gate::policy(LedgerJournal::class, LedgerPolicy::class);
         Gate::policy(LedgerAccount::class, LedgerPolicy::class);
 

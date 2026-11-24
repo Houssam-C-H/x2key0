@@ -42,13 +42,22 @@ interface Props {
     credits: { available: number; use: boolean };
     buyerInputs: BuyerInputField[];
     idempotencyKey: string;
+    coupons: { eligible: EligibleCoupon[]; selected: string[] };
+}
+
+interface EligibleCoupon {
+    id: string;
+    issuer: 'platform' | 'seller';
+    label: string;
+    name: string;
+    discount: number;
 }
 
 /**
  * Checkout (spec 1.6 / 9): quantity, buyer inputs, payment method, credits, price lines, Pay.
  * Changing quantity, method or credits re-quotes on the server; the idempotency key stays the same.
  */
-export default function CheckoutShow({ offer, gameCategory, quantity, quote, methods, method, credits, buyerInputs, idempotencyKey }: Props) {
+export default function CheckoutShow({ offer, gameCategory, quantity, quote, methods, method, credits, buyerInputs, idempotencyKey, coupons }: Props) {
     const t = useT();
     const { locale, errors } = useShared();
     const [inputs, setInputs] = useState<Record<string, string>>(Object.fromEntries(buyerInputs.map((f) => [f.key, ''])));
@@ -57,19 +66,31 @@ export default function CheckoutShow({ offer, gameCategory, quantity, quote, met
     const step = offer.integerMultiple ? offer.minQty : 1;
     const max = Math.max(offer.minQty, Math.min(offer.maxQty ?? offer.stock, offer.stock));
 
-    const requote = (patch: { qty?: number; method?: string | null; credits?: boolean }) =>
+    const requote = (patch: { qty?: number; method?: string | null; credits?: boolean; coupons?: string[] }) => {
+        const picked = patch.coupons ?? coupons.selected;
         router.get(
             '/checkout',
-            { offer: offer.id, qty: patch.qty ?? quantity, method: (patch.method === undefined ? method : patch.method) ?? undefined, credits: (patch.credits ?? credits.use) ? 1 : undefined },
-            { preserveState: true, preserveScroll: true, replace: true, only: ['quote', 'quantity', 'methods', 'method', 'credits'] },
+            {
+                offer: offer.id,
+                qty: patch.qty ?? quantity,
+                method: (patch.method === undefined ? method : patch.method) ?? undefined,
+                credits: (patch.credits ?? credits.use) ? 1 : undefined,
+                coupons: picked.length === 0 ? 'none' : picked.join(','),
+            },
+            { preserveState: true, preserveScroll: true, replace: true, only: ['quote', 'quantity', 'methods', 'method', 'credits', 'coupons'] },
         );
+    };
+    const pickCoupon = (issuer: 'platform' | 'seller', id: string) => {
+        const others = coupons.selected.filter((s) => coupons.eligible.find((c) => c.id === s)?.issuer !== issuer);
+        requote({ coupons: id === '' ? others : [...others, id] });
+    };
 
     const pay = (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
         router.post(
             '/checkout',
-            { offer: offer.id, quantity, buyer_inputs: inputs, method, use_credits: credits.use, idempotency_key: idempotencyKey },
+            { offer: offer.id, quantity, buyer_inputs: inputs, method, use_credits: credits.use, coupons: coupons.selected, idempotency_key: idempotencyKey },
             { preserveScroll: true, onFinish: () => setSubmitting(false) },
         );
     };
@@ -172,6 +193,33 @@ export default function CheckoutShow({ offer, gameCategory, quantity, quote, met
                                     );
                                 })}
                             </div>
+                        </section>
+                    )}
+
+                    {coupons.eligible.length > 0 && (
+                        <section className="card space-y-3 p-5">
+                            <h2 className="font-bold">{t('coupon.checkout.title')}</h2>
+                            {(['seller', 'platform'] as const).map((issuer) => {
+                                const options = coupons.eligible.filter((c) => c.issuer === issuer);
+                                if (options.length === 0) {
+                                    return null;
+                                }
+                                const current = coupons.selected.find((s) => options.some((o) => o.id === s)) ?? '';
+                                return (
+                                    <label key={issuer} className="grid gap-1 text-sm">
+                                        <span className="font-medium">{t('coupon.checkout.' + issuer)}</span>
+                                        <select className="field" value={current} onChange={(e) => pickCoupon(issuer, e.target.value)}>
+                                            <option value="">{t('coupon.checkout.none')}</option>
+                                            {options.map((o) => (
+                                                <option key={o.id} value={o.id}>
+                                                    {o.label} · {o.name} (−{money(o.discount)})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                );
+                            })}
+                            {errors.coupons && <p className="text-sm text-danger">{errors.coupons}</p>}
                         </section>
                     )}
 

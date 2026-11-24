@@ -7,6 +7,8 @@ namespace App\Http\Controllers;
 use App\Domains\Checkout\Actions\CreateOrder;
 use App\Domains\Checkout\Data\CheckoutRequest;
 use App\Domains\Checkout\Support\QuoteCalculator;
+use App\Domains\Coupons\Support\AppliedCoupons;
+use App\Domains\Coupons\Support\CouponPricing;
 use App\Domains\Identity\Models\User;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\Support\OfferPresenter;
@@ -30,7 +32,7 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
  */
 final class CheckoutController
 {
-    public function show(Request $request, QuoteCalculator $quotes, PaymentRouter $router, CreditsWallet $wallet): Response|RedirectResponse
+    public function show(Request $request, QuoteCalculator $quotes, PaymentRouter $router, CreditsWallet $wallet, CouponPricing $coupons): Response|RedirectResponse
     {
         $buyer = self::user($request);
         $locale = app()->getLocale();
@@ -46,7 +48,19 @@ final class CheckoutController
         $qty = max($offer->min_qty, $request->integer('qty', $offer->min_qty));
         $credits = $wallet->available($buyer, $offer->currency);
         $useCredits = $credits > 0 && $request->boolean('credits');
-        $quoteNoMethod = $quotes->quote($offer, $qty, null, $useCredits ? $credits : 0);
+
+        // Coupons (spec 14.1): the best eligible store + platform coupon are pre-selected; `coupons=none` clears them.
+        $listUnit = $quotes->quote($offer, $qty, null, 0)->listUnitPrice;
+        $eligible = $coupons->eligible($offer, $qty, $listUnit, $buyer, $locale);
+        $selected = self::selectedCoupons($request, $eligible);
+        try {
+            $applied = $coupons->apply($offer, $qty, $listUnit, $buyer, $selected);
+        } catch (CheckoutException) {
+            $applied = AppliedCoupons::none();
+            $selected = [];
+        }
+
+        $quoteNoMethod = $quotes->quote($offer, $qty, null, $useCredits ? $credits : 0, $applied);
         $methods = $quoteNoMethod->pspDue > 0 ? $router->available($buyer->country, $offer->currency, $quoteNoMethod->pspDue) : [];
         $methodCode = is_string($m = $request->query('method')) ? $m : ($methods[0]->code ?? null);
         $method = collect($methods)->first(fn (PaymentMethod $pm): bool => $pm->code === $methodCode);
@@ -55,7 +69,8 @@ final class CheckoutController
             'offer' => OfferPresenter::row($offer, $locale),
             'gameCategory' => $offer->gameCategory->title($locale),
             'quantity' => $qty,
-            'quote' => $quotes->quote($offer, $qty, $method, $useCredits ? $credits : 0)->toArray(),
+            'quote' => $quotes->quote($offer, $qty, $method, $useCredits ? $credits : 0, $applied)->toArray(),
+            'coupons' => ['eligible' => $eligible, 'selected' => $selected],
             'methods' => array_map(static fn (PaymentMethod $pm): array => [
                 'code' => $pm->code,
                 'name' => $pm->translate('name', $locale),
@@ -78,6 +93,8 @@ final class CheckoutController
             'buyer_inputs.*' => ['nullable', 'string', 'max:255'],
             'method' => ['nullable', 'string', 'max:32'],
             'use_credits' => ['boolean'],
+            'coupons' => ['array', 'max:2'],
+            'coupons.*' => ['string', 'size:26'],
             'idempotency_key' => ['required', 'string', 'size:26', 'alpha_num'],
         ]);
 
@@ -101,6 +118,7 @@ final class CheckoutController
                 idempotencyKey: strtolower($request->string('idempotency_key')->toString()),
                 ip: $request->ip(),
                 country: $buyer->country,
+                couponClaimIds: self::claimIds($request->input('coupons')),
             ));
         } catch (CheckoutException $e) {
             return back()->withErrors([$e->field => $e->getMessage()]);
@@ -115,6 +133,37 @@ final class CheckoutController
         }
 
         return redirect($order->path());
+    }
+
+    /**
+     * Claim ids picked on the page (`coupons=a,b` or `none`), otherwise the best of each kind.
+     *
+     * @param  list<array{id: string, issuer: string, label: string, name: string, discount: int}>  $eligible
+     * @return list<string>
+     */
+    private static function selectedCoupons(Request $request, array $eligible): array
+    {
+        $raw = $request->query('coupons');
+        if (is_string($raw)) {
+            $ids = array_column($eligible, 'id');
+
+            return $raw === 'none' ? [] : array_values(array_intersect(array_slice(explode(',', $raw), 0, 2), $ids));
+        }
+
+        $best = [];
+        foreach ($eligible as $coupon) {
+            $best[$coupon['issuer']] ??= $coupon['id']; // eligible() is sorted best first per kind
+        }
+
+        return array_values($best);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function claimIds(mixed $raw): array
+    {
+        return array_values(array_filter(is_array($raw) ? $raw : [], 'is_string'));
     }
 
     private static function user(Request $request): User

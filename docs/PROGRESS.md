@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M14 — Coupons & campaigns (next). M1–M13 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M15 — Affiliate Program (next). M1–M14 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -18,8 +18,24 @@
 | M11 | Disputes, chargebacks, violations | ✅ code done | See checklist below; chargeback webhooks wait for real PSPs (M6b) |
 | M12 | Service Tickets | ✅ code done | See checklist below |
 | M13 | Withdrawals, payout methods, invoices | ✅ code done | See checklist below |
-| M14 | Coupons & campaigns | next | |
-| M15–M19 | — | not started | |
+| M14 | Coupons & campaigns | ✅ code done | See checklist below |
+| M15 | Affiliate Program | next | |
+| M16–M19 | — | not started | |
+
+## M14 checklist
+- [x] Tables: coupons (platform | seller, fixed | percent, scope, limits, points price, validity), coupon_claims, order_coupon_redemptions (unique per claim, reversed once), campaigns, campaign_participations, marketing_emails; `orders.refunded_discount_platform_amount`
+- [x] **Pricing** (`CouponPricing`, spec 14.1 / 7.2): a store coupon lowers every unit's seller-side price (the order item keeps that price, so escrow, settlement and refunds stay "unit price × units"); a platform coupon takes an amount off the order (fixed or capped percent, never more than the seller-side subtotal); stacking max one store + one platform coupon, non-stackable coupons alone; scope by game / category type / game×category, minimum order, buyer level, currency
+- [x] **Checkout**: the best eligible store and platform coupon are pre-selected and can be changed or removed; price lines Discount Amount / Platform Discount; claims re-checked under lock and redeemed in the order transaction
+- [x] **Money**: PLATFORM_COUPON_FUNDED at capture (EXP_PROMOTIONS → ORDER_ESCROW, so escrow holds the full seller-side price); refunds, completed-order dispute refunds and chargebacks give the platform share back to EXP_PROMOTIONS; cancel / full refund restores claims that have not expired
+- [x] **Coupon Center** (`/coupons/shopping`, `/coupons/platform`): claimable public store codes grouped by store, platform coupons (free, or bought with X2K Score — D9: points only ever buy coupons), My coupons with status; store page lists public codes and takes any code (public or private "Recommend")
+- [x] **Seller coupon codes** (`/seller/coupons`, `/seller/coupons/private`): batch create (one per line, 4–20 chars, unique per store), % off (≤ 90 %), whole store or one approved game×category, use limit, expiry; edit expiry; end selected
+- [x] **Campaigns** (spec 14.2): admin creates campaigns (type, games, max offers per seller, window); sellers apply with live offers on `/seller/campaigns`, withdraw or re-apply; merchant managers approve or reject with a reason (inbox notification); approved offers show the campaign badge while it runs
+- [x] **Marketing e-mails** (spec 14.3): 4 templates → up to 6 live offers + optional private code → past buyers with a completed order in a date range who allow seller promotions → preview (recipients, cost = count × $0.001 rounded up, caps left) → send (queued mail per recipient, en/fr/ar); caps 1,000/day and 10,000/month per seller; `marketing:settle` bills the next day from the Available balance (MARKETING_FEE: SELLER_AVAILABLE → REV_MARKETING) and leaves the send Unsettled while the balance is short; Mail promotion records
+- [x] Admin (merchant managers + admins): Platform coupons, Campaigns, Campaign applications; demo data (`DemoMarketingSeeder`: welcome $2, 10 % for 100 points, SAVE10 public, LOYAL20 private, an open flash sale)
+- [x] `coupons:expire-claims` (hourly), `marketing:settle` (daily 03:30)
+- [x] 28 new tests (`tests/Feature/Coupons`, 613 in total): pricing and ledger (escrow, promotions, verify), claim limits, points, stacking, other people's claims, restore on cancel, seller codes, campaigns and badges, marketing caps, opt-out, billing; Larastan max 0 errors; Pint; TS strict
+- [ ] Platform subsidy of campaign prices (`platform_subsidy_bps` is shown, not yet posted to EXP_PROMOTIONS), campaign placements on the home page, coupon ROI report
+- [ ] Marketing e-mail unsubscribe link with a signed token (today: link to account settings), bounce handling
 
 ## Stripe, live chat, order progress (after M13)
 - [x] **Stripe Checkout driver** (`StripePaymentProvider`, M6b part): hosted payment page, `checkout.session.*` webhooks verified with `STRIPE_WEBHOOK_SECRET`, session lookup for `payments:sync-pending` and right after the buyer returns (state read from Stripe's API, never from the redirect), refunds on the session's PaymentIntent with the journal key as idempotency key; method `stripe_card` offered only when `STRIPE_SECRET` is set; tests never call Stripe (keys forced empty in phpunit.xml)
@@ -104,7 +120,7 @@
 - [x] 491 tests (PostgreSQL 481 passed, SQLite 475 passed; the rest skip where they cannot run); Larastan max 0 errors; Pint; TS strict
 - [ ] E-mail and live (Reverb) delivery of notifications — with chat (M10); notification preferences UI
 - [ ] Disputes can block completion and hold funds (`SELLER_FROZEN`) — M11 (the hook is marked in `OrderStateMachine::complete`)
-- [ ] Withdrawals from the Available Balance — M13; coupons spending points — M14; affiliate accrual on completion — M15; purchase-order comments — M16
+- [ ] Withdrawals from the Available Balance — M13; coupons spending points — done in M14; affiliate accrual on completion — M15; purchase-order comments — M16
 - [ ] Segment targeting of announcements and a Redis-cached unread count — later
 
 ## M8 checklist
@@ -273,6 +289,7 @@
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
+- 2026-11-24 — M14 coupons & campaigns completed (branch `m14-coupons`, on top of `m13-withdrawals`; the backend WIP — pricing, redemptions, ledger shares — was finished with checkout UI, Coupon Center, seller codes, campaigns, marketing e-mails, admin and tests). PostgreSQL-only bugs from M11/M13 found by the full PostgreSQL run and fixed: refunding a completed order left its units counted as delivered (DB check `order_items_qty_consistent`); the audit log wrote string keys (payout method types) into the numeric `subject_id`; adding a payout account used `FOR UPDATE` with `COUNT(*)`. Suite: 613 tests, PostgreSQL 603 passed / SQLite 594 passed, rest skipped.
 - 2026-11-23 — M13 withdrawals, payout methods and invoices built (branch `m13-withdrawals`, from `main`).
 - 2026-11-23 — M12 service tickets built (branch `m12-tickets`, on top of `m11-disputes`).
 - 2026-11-23 — M11 disputes, chargebacks and violations built (branch `m11-disputes`, on top of `m10-chat`). Bugs found by tests and fixed: a seller could clear the ISSUE sub-status of an order under dispute; resetting the confirmation timer after a dispute used a mass assignment the strict models refuse.

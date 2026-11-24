@@ -61,6 +61,14 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-026 — Coupons, campaigns and marketing e-mails (2026-11-24)
+- **Store coupons change the unit price, platform coupons change the order.** A store coupon is the seller's own discount, so the order item stores the discounted seller-side unit price and every later step (escrow, commission, settlement, refunds) keeps working on "unit price × units". A platform coupon is a separate amount the platform funds into escrow at capture (PLATFORM_COUPON_FUNDED), so the seller is paid as if there were no coupon; its share is tracked in `refunded_discount_platform_amount` and goes back to EXP_PROMOTIONS on refunds and chargebacks.
+- **One claim = one redemption**, unique per claim and reversed once; cancelled or fully refunded orders give claims back unless they expired meanwhile.
+- **Points buy coupons only** (D9): a platform coupon with `points_cost` is the only way to spend X2K Score; there is no points → credits path.
+- **Checkout pre-selects the best eligible coupon of each kind** and lets the buyer change or drop it; the server re-checks everything under lock when the order is created.
+- **Campaign badges are computed, not stored**: approved participations of running campaigns are loaded once per request (`CampaignBadges`, scoped binding), so ending a campaign removes the badges without touching offers. The platform subsidy is informational until a pricing rule for it is decided.
+- **Marketing e-mails are billed later**: the send is recorded with its price and billed the next day from SELLER_AVAILABLE (MARKETING_FEE, no overdraw); a short balance leaves it Unsettled and it is retried daily. Recipients are past buyers with a completed order who did not turn off seller promotions.
+
 ## ADR-025 — Stripe Checkout and websocket chat (2026-11-23)
 - **Stripe through Checkout Sessions** (hosted page): no card data touches X2KEY, 3-D Secure handled by Stripe. The session id is the provider payment id. Paid state arrives by signed webhook, by the 5-minute sync job, or by an immediate API lookup when the buyer comes back (throttled per payment) — the redirect itself never changes state (ADR-017 still holds). Keys live only in `.env`.
 - **Chat goes live with Reverb** but the socket carries only "conversation changed" signals; the browser fetches the thread over HTTP, so each reader keeps their own redacted view and no message text is pushed. Channel authorisation = conversation participants. Broadcasting happens after commit and failures are logged, never raised; polling remains the fallback.

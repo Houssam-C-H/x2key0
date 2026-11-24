@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Offers\Support;
 
+use App\Domains\Campaigns\Support\CampaignBadges;
 use App\Domains\Catalog\Support\CatalogPresenter;
 use App\Domains\Messaging\Support\Presence;
 use App\Domains\Offers\Enums\Fulfillment;
@@ -44,6 +45,7 @@ final class OfferPresenter
             'title' => $offer->title,
             'href' => $offer->path($locale),
             'seller' => self::seller($offer, $locale),
+            'campaign' => app(CampaignBadges::class)->for($offer->id),
             'deliveryMethod' => $offer->delivery_method->value,
             'deliveryMinutes' => $offer->delivery_time_minutes,
             'auto' => $offer->fulfillment === Fulfillment::Auto,
@@ -74,6 +76,7 @@ final class OfferPresenter
             'gameCategory' => $offer->gameCategory->title($locale),
             'image' => $offer->product?->image_path,
             'seller' => self::seller($offer, $locale),
+            'campaign' => app(CampaignBadges::class)->for($offer->id),
             'deliveryMinutes' => $offer->delivery_time_minutes,
             'insuranceDays' => $offer->insurance_days,
             'priceCents' => $offer->unit_price_amount,

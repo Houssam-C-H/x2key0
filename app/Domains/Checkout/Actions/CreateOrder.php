@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Domains\Checkout\Actions;
 
 use App\Domains\Checkout\Data\CheckoutRequest;
+use App\Domains\Checkout\Support\Quote;
+use App\Domains\Checkout\Support\QuoteCalculator;
 use App\Domains\Coupons\Actions\CouponRedemptions;
 use App\Domains\Coupons\Support\AppliedCoupons;
 use App\Domains\Coupons\Support\CouponPricing;
-use App\Domains\Checkout\Support\Quote;
-use App\Domains\Checkout\Support\QuoteCalculator;
 use App\Domains\Identity\Enums\UserStatus;
 use App\Domains\Identity\Models\User;
 use App\Domains\Offers\Models\Offer;

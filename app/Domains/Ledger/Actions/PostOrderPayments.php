@@ -86,7 +86,7 @@ final class PostOrderPayments
 
     /**
      * REFUND (spec 7.2): escrow gives back the seller-side part, fee revenue the fee part, promotions the platform
- * coupon share (the buyer never paid it); the buyer is paid
+     * coupon share (the buyer never paid it); the buyer is paid
      * from the credits part (BUYER_CREDITS −) and the card part (PSP_CLEARING −), or everything as credits.
      */
     public function refund(Order $order, string $key, int $sellerPart, int $feePart, int $fromCredits, int $fromPsp, ?string $provider, bool $toCredits, int $promoPart = 0): void

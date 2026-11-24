@@ -9,6 +9,7 @@ use App\Http\Controllers\Buy\FinanceController;
 use App\Http\Controllers\Buy\PurchaseOrderController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CouponController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\EngagementController;
@@ -20,6 +21,9 @@ use App\Http\Controllers\Public\CatalogController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\StoreController;
+use App\Http\Controllers\Seller\CampaignController;
+use App\Http\Controllers\Seller\CouponController as SellerCouponController;
+use App\Http\Controllers\Seller\MarketingEmailController;
 use App\Http\Controllers\Seller\MerchantContactsController;
 use App\Http\Controllers\Seller\OfferController;
 use App\Http\Controllers\Seller\OnboardingController;
@@ -108,6 +112,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Screens that exist. They keep the `dash.{menu key}` name of their menu entry (ADR-004).
+    /** @var array<string, Closure(): Illuminate\Routing\Route> $implemented */
     $implemented = [
         '/settings/account' => fn () => Route::get('/settings/account', [AccountController::class, 'show'])->name('dash.settings.account'),
         '/settings/security' => fn () => Route::get('/settings/security', [SecurityController::class, 'show'])->name('dash.settings.security'),
@@ -125,6 +130,13 @@ Route::middleware('auth')->group(function (): void {
         '/buy/points' => fn () => Route::get('/buy/points', [FinanceController::class, 'points'])->name('dash.buy.points'),
         '/buy/funding' => fn () => Route::get('/buy/funding', [FinanceController::class, 'funding'])->name('dash.buy.funding'),
         '/announcements' => fn () => Route::get('/announcements', [AnnouncementController::class, 'index'])->name('dash.announcements.all'),
+        '/coupons/shopping' => fn () => Route::get('/coupons/shopping', [CouponController::class, 'shopping'])->name('dash.coupons.shopping'),
+        '/coupons/platform' => fn () => Route::get('/coupons/platform', [CouponController::class, 'platform'])->name('dash.coupons.platform'),
+        '/seller/coupons' => fn () => Route::get('/seller/coupons', [SellerCouponController::class, 'index'])->name('dash.seller.store.coupons'),
+        '/seller/campaigns' => fn () => Route::get('/seller/campaigns', [CampaignController::class, 'index'])->name('dash.seller.marketing.campaigns'),
+        '/seller/marketing/emails' => fn () => Route::get('/seller/marketing/emails', [MarketingEmailController::class, 'create'])->name('dash.seller.marketing.emails'),
+        '/seller/marketing/records' => fn () => Route::get('/seller/marketing/records', [MarketingEmailController::class, 'records'])->name('dash.seller.marketing.records'),
+        '/seller/coupons/private' => fn () => Route::get('/seller/coupons/private', [SellerCouponController::class, 'private'])->name('dash.seller.store.coupons_private'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
         '/seller/withdrawals' => fn () => Route::get('/seller/withdrawals', [WithdrawalController::class, 'index'])->name('dash.seller.withdrawals.records'),
         '/seller/withdrawals/methods' => fn () => Route::get('/seller/withdrawals/methods', [WithdrawalController::class, 'methods'])->name('dash.seller.withdrawals.methods'),
@@ -168,6 +180,16 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/seller/store/featured', [StoreSettingsController::class, 'featured'])->name('seller.store.featured');
         Route::post('/seller/services', [ServiceApplicationController::class, 'store'])->middleware('throttle:30,1')->name('seller.services.store');
         Route::post('/seller/info', [SellerInfoController::class, 'update'])->middleware('throttle:20,1')->name('seller.info.update');
+
+        // Store coupons (spec 1.8 "My Coupon Codes")
+        Route::post('/seller/coupons', [SellerCouponController::class, 'store'])->middleware('throttle:30,1')->name('seller.coupons.store');
+        Route::post('/seller/coupons/end', [SellerCouponController::class, 'end'])->name('seller.coupons.end');
+        Route::post('/seller/coupons/{publicId}/extend', [SellerCouponController::class, 'extend'])->where('publicId', '[0-9a-z]{26}')->name('seller.coupons.extend');
+
+        // Marketing campaigns and paid marketing e-mails (spec 14.2 / 14.3)
+        Route::post('/seller/campaigns/{campaign}/apply', [CampaignController::class, 'apply'])->whereNumber('campaign')->middleware('throttle:20,1')->name('seller.campaigns.apply');
+        Route::post('/seller/campaigns/{campaign}/withdraw', [CampaignController::class, 'withdraw'])->whereNumber('campaign')->name('seller.campaigns.withdraw');
+        Route::post('/seller/marketing/emails', [MarketingEmailController::class, 'store'])->middleware('throttle:6,1')->name('seller.marketing.send');
 
         // Offers (spec 1.8)
         Route::post('/seller/offers', [OfferController::class, 'store'])->middleware('throttle:30,1')->name('seller.offers.store');
@@ -264,6 +286,11 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/chat/{publicId}/mute', [ChatController::class, 'mute'])->where('publicId', '[0-9a-z]{26}')->name('chat.mute');
     Route::post('/chat/store/{slug}', [ChatController::class, 'startPreSale'])->middleware('throttle:20,1')->name('chat.start');
     Route::post('/chat/order/{publicId}', [ChatController::class, 'forOrder'])->where('publicId', '[0-9a-z]{26}')->name('chat.order');
+
+    // Coupon Center (spec 14.1): claim, buy with points, store code
+    Route::post('/coupons/code', [CouponController::class, 'code'])->middleware('throttle:20,1')->name('coupons.code');
+    Route::post('/coupons/{publicId}/claim', [CouponController::class, 'claim'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:30,1')->name('coupons.claim');
+    Route::post('/coupons/{publicId}/redeem', [CouponController::class, 'redeem'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:10,1')->name('coupons.redeem');
 
     // Favorites (spec Part 20: POST /api/favorites toggle)
     Route::post('/favorites', [EngagementController::class, 'toggleFavorite'])->middleware('throttle:60,1')->name('favorites.toggle');

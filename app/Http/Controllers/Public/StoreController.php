@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Domains\Coupons\Models\Coupon;
+use App\Domains\Coupons\Support\CouponPresenter;
 use App\Domains\Identity\Models\User;
 use App\Domains\Messaging\Support\Presence;
 use App\Domains\Offers\Models\Offer;
@@ -73,6 +75,7 @@ final class StoreController
                 ],
             ],
             'services' => SellerPresenter::passedServices($profile, $locale),
+            'coupons' => self::coupons($profile, $viewer instanceof User ? $viewer : null, $locale),
             'featured' => array_map(static fn (Offer $o): array => OfferPresenter::card($o, $locale), $featured),
             'offers' => array_map(static fn (Offer $o): array => OfferPresenter::card($o, $locale), $offers),
             'isOwner' => $viewer instanceof User && $viewer->id === $profile->user_id,
@@ -97,5 +100,21 @@ final class StoreController
         }
 
         return intdiv($stats->disputes_opened * 10000, $stats->orders_completed);
+    }
+
+    /**
+     * Public store coupons with a Claim button (spec 14.1 "where claimed: store page").
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function coupons(SellerProfile $profile, ?User $viewer, string $locale): array
+    {
+        $coupons = Coupon::query()->live()->where('issuer', Coupon::SELLER)->where('seller_profile_id', $profile->id)->where('is_public', true)
+            ->where(fn ($q) => $q->whereNull('claim_limit_total')->orWhereColumn('claimed_count', '<', 'claim_limit_total'))
+            ->orderByDesc('value')->limit(20)->get();
+        $scopes = CouponPresenter::scopeTitles($coupons, $locale);
+        $mine = CouponPresenter::mine($viewer, $coupons);
+
+        return array_values($coupons->map(static fn (Coupon $c): array => CouponPresenter::card($c, $locale, $scopes, $mine))->all());
     }
 }

@@ -33,4 +33,5 @@ enum JournalType: string
     case WithdrawalReleased = 'WITHDRAWAL_RELEASED';
     case WithdrawalPaid = 'WITHDRAWAL_PAID';
     case WithdrawalFailed = 'WITHDRAWAL_FAILED';
+    case MarketingFee = 'MARKETING_FEE';
 }

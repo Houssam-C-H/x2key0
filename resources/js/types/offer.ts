@@ -14,6 +14,8 @@ export interface OfferRow {
     title: string;
     href: string;
     seller: OfferSeller;
+    /** Running campaign type when the offer was approved for it (spec 14.2). */
+    campaign: string | null;
     deliveryMethod: string;
     deliveryMinutes: number;
     auto: boolean;
@@ -35,6 +37,7 @@ export interface OfferCardData {
     title: string;
     href: string;
     gameCategory: string;
+    campaign: string | null;
     image: string | null;
     seller: OfferSeller;
     deliveryMinutes: number;

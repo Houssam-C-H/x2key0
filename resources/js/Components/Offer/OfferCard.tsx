@@ -27,6 +27,9 @@ export function OfferCard({ offer }: { offer: OfferCardData }) {
                         🛡 {offer.insuranceDays}
                     </span>
                 )}
+                {offer.campaign && (
+                    <span className="absolute end-2 top-2 rounded bg-danger px-1.5 py-0.5 text-[11px] font-bold text-white">{t('campaign.badge.' + offer.campaign)}</span>
+                )}
                 <span className="absolute bottom-2 end-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-semibold text-white">{deliveryTime(offer.deliveryMinutes, t)}</span>
             </div>
             <div className="mt-auto flex items-center gap-2 p-3">

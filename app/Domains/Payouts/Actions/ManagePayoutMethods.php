@@ -41,7 +41,9 @@ final class ManagePayoutMethods
         }
 
         return DB::transaction(function () use ($user, $catalog, $currency, $clean): PayoutMethod {
-            $count = PayoutMethod::query()->where('user_id', $user->id)->usable()->lockForUpdate()->count();
+            // PostgreSQL refuses FOR UPDATE with COUNT(*): serialise additions per user on the user row instead.
+            User::query()->whereKey($user->id)->lockForUpdate()->first();
+            $count = PayoutMethod::query()->where('user_id', $user->id)->usable()->count();
             if ($count >= self::MAX_METHODS) {
                 throw PayoutException::because('payout.error.too_many', ['count' => self::MAX_METHODS]);
             }

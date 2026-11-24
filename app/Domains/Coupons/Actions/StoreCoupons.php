@@ -52,7 +52,7 @@ final class StoreCoupons
         }
 
         return DB::transaction(function () use ($seller, $codes, $data, $expires): array {
-            $taken = Coupon::query()->where('seller_profile_id', $seller->id)->whereIn('code', $codes)->pluck('code')->all();
+            $taken = array_values(array_filter(Coupon::query()->where('seller_profile_id', $seller->id)->whereIn('code', $codes)->pluck('code')->all(), 'is_string'));
             if ($taken !== []) {
                 throw CouponException::because('coupon.error.code_taken', ['code' => implode(', ', $taken)]);
             }
