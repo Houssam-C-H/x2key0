@@ -24,3 +24,4 @@ Schedule::command('tickets:autoclose')->everyFifteenMinutes()->withoutOverlappin
 Schedule::command('invoices:issue-monthly')->monthlyOn(1, '04:00')->onOneServer();
 Schedule::command('coupons:expire-claims')->hourly()->onOneServer();
 Schedule::command('marketing:settle')->dailyAt('03:30')->onOneServer();
+Schedule::command('affiliate:release-commissions')->hourly()->onOneServer();

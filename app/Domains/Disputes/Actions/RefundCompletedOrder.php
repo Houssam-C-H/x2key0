@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Disputes\Actions;
 
+use App\Domains\Affiliate\Actions\AffiliateCommissions;
 use App\Domains\Disputes\Exceptions\DisputeException;
 use App\Domains\Identity\Models\User;
 use App\Domains\Ledger\Actions\PostJournal;
@@ -42,6 +43,7 @@ final class RefundCompletedOrder
         private readonly PaymentRouter $router,
         private readonly OrderStateMachine $orders,
         private readonly AwardOrderPoints $points,
+        private readonly AffiliateCommissions $affiliates,
     ) {}
 
     public function handle(Order $order, int $units, bool $toCredits, int $frozenAvailable, ActorType $actor, ?User $by): int
@@ -139,6 +141,7 @@ final class RefundCompletedOrder
         if ($all) {
             $this->points->reverse($order);
         }
+        $this->affiliates->recalculate($order->refresh(), 'refund');
 
         return $recovery['fromFrozen'];
     }

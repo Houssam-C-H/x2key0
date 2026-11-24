@@ -61,6 +61,15 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-027 — Affiliate Program (2026-11-24)
+- **Commission base = the platform's net on the order** (OPEN_QUESTIONS #2 working assumption): commission + buyer fees kept − platform coupon kept, as in the §7.2 worked example; PSP fees are not deducted yet. Rates are settings (20 % / 3 %) and can be overridden per affiliate.
+- **Accrual follows completion, not payment**, from an `OrderCompleted` listener; the per-order unique row plus the journal idempotency key make it exactly-once even if the event is replayed.
+- **Hold**: commission is released 7 days (`affiliate_hold_extra_days`) after the order's latest seller hold, so a refund or chargeback during the seller hold can still take it back from pending.
+- **Reversal is a recalculation**: after a refund the commission is recomputed on the new base and only the difference is reversed (repeatable for several partial refunds); a lost chargeback reverses everything. Reversing an approved commission can make the available balance negative; that is recovered from later earnings (spec invariant 4.3 #2 allows clawbacks).
+- **Attribution = first click** (cookie for the attribution window) or a typed code at sign-up; the referral row is permanent, `attribution_expires_at` decides which orders count. Self-referral is blocked by device fingerprint at sign-up and by buyer/seller identity at accrual.
+- **Money out = Credits Balance for now** (D8 allows credits from affiliate conversion); cash withdrawals for affiliates reuse the M13 withdrawal tables later.
+- **The Alliance Bill is a view of the ledger**, not a stored statement, so it can never disagree with balances.
+
 ## ADR-026 — Coupons, campaigns and marketing e-mails (2026-11-24)
 - **Store coupons change the unit price, platform coupons change the order.** A store coupon is the seller's own discount, so the order item stores the discounted seller-side unit price and every later step (escrow, commission, settlement, refunds) keeps working on "unit price × units". A platform coupon is a separate amount the platform funds into escrow at capture (PLATFORM_COUPON_FUNDED), so the seller is paid as if there were no coupon; its share is tracked in `refunded_discount_platform_amount` and goes back to EXP_PROMOTIONS on refunds and chargebacks.
 - **One claim = one redemption**, unique per claim and reversed once; cancelled or fully refunded orders give claims back unless they expired meanwhile.

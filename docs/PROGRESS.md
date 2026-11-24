@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M15 — Affiliate Program (next). M1–M14 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M16 — Reviews & community ratings (next). M1–M15 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -19,8 +19,23 @@
 | M12 | Service Tickets | ✅ code done | See checklist below |
 | M13 | Withdrawals, payout methods, invoices | ✅ code done | See checklist below |
 | M14 | Coupons & campaigns | ✅ code done | See checklist below |
-| M15 | Affiliate Program | next | |
-| M16–M19 | — | not started | |
+| M15 | Affiliate Program | ✅ code done | See checklist below; cash withdrawals for affiliates pending |
+| M16 | Reviews & community ratings | next | |
+| M17–M19 | — | not started | |
+
+## M15 checklist
+- [x] Tables: affiliates (code, inviter for level 2, status, rank, per-affiliate rates / attribution days), affiliate_links, affiliate_referrals (one per user, attribution window), affiliate_commissions (per affiliate × order, held → approved, reversed amount), affiliate_video_records, creative_assets; FKs for `users.referred_by_affiliate_id` and `orders.affiliate_id` on PostgreSQL
+- [x] **Enrol** on Manage or the public landing; an invited user's inviter becomes the parent (level 2); custom code (4–16 letters/digits); **promotional links** to any page of this site only (`/r/{code}/{slug}`), each with clicks and sign-ups
+- [x] **Attribution**: `/r/{code}` counts the click and sets a first-click cookie for the attribution window (later clicks never replace it); at sign-up the user is tied to the affiliate (also from a code typed on the sign-up form); blocked: suspended affiliates and sign-ups from the affiliate's own devices
+- [x] **Commission** when a referred buyer's order completes inside the window: base = platform net (commission + buyer fees kept − platform coupon kept); level 1 = 20 %, level 2 = 3 % (settings, overridable per affiliate); none when the affiliate is the buyer or the seller; AFFILIATE_ACCRUAL (EXP_AFFILIATE → AFFILIATE_PENDING), once per affiliate × order
+- [x] **Release** after the order's seller hold + `affiliate_hold_extra_days` (7): `affiliate:release-commissions` (hourly) posts AFFILIATE_RELEASE (pending → available)
+- [x] **Reversal**: a refund of a completed order recalculates the commission on the lower base and reverses the difference; a lost chargeback reverses everything (from pending, or from available, which may go negative)
+- [x] **Transfer to Wallet**: available balance → Credits Balance from USD 10 (AFFILIATE_TO_CREDITS, no overdraw, idempotent, recent password)
+- [x] **My Affiliates** (direct / indirect, masked "S****a", register date, country, orders, recent transaction, commission); **Alliance Bill** per month and type, read from the ledger (commission, second level, video, reversals, net); **Promotional video records** (YouTube / TikTok / Twitch / other, https only) with staff approval and reward (AFFILIATE_VIDEO_REWARD) or rejection; **Creative Assets** by theme and language with copy-to-clipboard
+- [x] Public `/{locale}/affiliate` landing (rates from settings, 4 steps, FAQ); admin (merchant managers + admins): Affiliates (suspend / activate, rank, rates), Video reviews, Creative assets; demo: buyer_demo is affiliate `DEMO2026`
+- [x] 11 new tests (`tests/Feature/Affiliate`): links and cookie, sign-up attribution (link, typed code, same-device block), two-level accrual and idempotency, window / seller / suspended exclusions, release, transfer minimum and balance, reversal math, videos, masked lists, bill, admin access; Larastan max 0 errors; Pint; TS strict
+- [ ] Affiliate **cash withdrawals** (today: transfer to Credits Balance; the withdrawal tables already carry `source = affiliate`, the wizard and rules are seller-only)
+- [ ] Same-payment-fingerprint block (needs PSP card fingerprints), Alliance Bill PDF, home-page affiliate banner + QR code, "earned this week" ticker
 
 ## M14 checklist
 - [x] Tables: coupons (platform | seller, fixed | percent, scope, limits, points price, validity), coupon_claims, order_coupon_redemptions (unique per claim, reversed once), campaigns, campaign_participations, marketing_emails; `orders.refunded_discount_platform_amount`
@@ -120,7 +135,7 @@
 - [x] 491 tests (PostgreSQL 481 passed, SQLite 475 passed; the rest skip where they cannot run); Larastan max 0 errors; Pint; TS strict
 - [ ] E-mail and live (Reverb) delivery of notifications — with chat (M10); notification preferences UI
 - [ ] Disputes can block completion and hold funds (`SELLER_FROZEN`) — M11 (the hook is marked in `OrderStateMachine::complete`)
-- [ ] Withdrawals from the Available Balance — M13; coupons spending points — done in M14; affiliate accrual on completion — M15; purchase-order comments — M16
+- [ ] Withdrawals from the Available Balance — M13; coupons spending points — done in M14; affiliate accrual on completion — done in M15; purchase-order comments — M16
 - [ ] Segment targeting of announcements and a Redis-cached unread count — later
 
 ## M8 checklist
@@ -289,6 +304,7 @@
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
+- 2026-11-24 — `main` fast-forwarded to M14 (all milestone branches contained). M15 Affiliate Program built (branch `m15-affiliate`). Found while testing: a queued attribution cookie leaked into the next request handled by the same process, so the cookie is now attached to the redirect itself.
 - 2026-11-24 — M14 coupons & campaigns completed (branch `m14-coupons`, on top of `m13-withdrawals`; the backend WIP — pricing, redemptions, ledger shares — was finished with checkout UI, Coupon Center, seller codes, campaigns, marketing e-mails, admin and tests). PostgreSQL-only bugs from M11/M13 found by the full PostgreSQL run and fixed: refunding a completed order left its units counted as delivered (DB check `order_items_qty_consistent`); the audit log wrote string keys (payout method types) into the numeric `subject_id`; adding a payout account used `FOR UPDATE` with `COUNT(*)`. Suite: 613 tests, PostgreSQL 603 passed / SQLite 594 passed, rest skipped.
 - 2026-11-23 — M13 withdrawals, payout methods and invoices built (branch `m13-withdrawals`, from `main`).
 - 2026-11-23 — M12 service tickets built (branch `m12-tickets`, on top of `m11-disputes`).

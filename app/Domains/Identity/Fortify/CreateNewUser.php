@@ -43,7 +43,7 @@ final class CreateNewUser implements CreatesNewUsers
             'referral_code' => ['nullable', 'string', 'max:64', 'alpha_dash'],
         ])->validate();
 
-        // Attribution itself is M15; keep the code so it can be applied then.
+        // A typed referral code; the Registered listener applies it when no link was clicked (M15, TrackReferrals).
         if (! empty($data['referral_code']) && $this->request->hasSession()) {
             $this->request->session()->put('referral_code', $data['referral_code']);
         }

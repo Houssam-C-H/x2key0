@@ -113,6 +113,7 @@ return [
         'affiliate_level2_bps' => 300,
         'affiliate_attribution_days' => 90,
         'affiliate_transfer_min' => 1000,
+        'affiliate_hold_extra_days' => 7, // commission held = order settlement hold + this (spec Part 27)
         'coupon_max_stack_platform' => 1,
         'coupon_max_stack_store' => 1,
         'withdrawal_min_amount' => 1000,

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domains\Affiliate\Listeners\AffiliateListeners;
+use App\Domains\Affiliate\Models\Affiliate;
+use App\Domains\Affiliate\Models\AffiliateVideoRecord;
+use App\Domains\Affiliate\Models\CreativeAsset;
 use App\Domains\Announcements\Listeners\SendOrderNotifications;
 use App\Domains\Announcements\Models\Announcement;
 use App\Domains\Announcements\Policies\AnnouncementPolicy;
@@ -85,6 +89,7 @@ use App\Shared\Audit\AuditLogger;
 use App\Shared\Support\Settings;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -173,6 +178,8 @@ final class AppServiceProvider extends ServiceProvider
         Event::listen(OrderPaid::class, OpenOrderConversation::class);
         Event::listen(OrderDelivered::class, [SendOrderNotifications::class, 'delivered']);
         Event::listen(OrderCompleted::class, [SendOrderNotifications::class, 'completed']);
+        Event::listen(OrderCompleted::class, [AffiliateListeners::class, 'completed']);
+        Event::listen(Registered::class, [AffiliateListeners::class, 'registered']);
         Event::listen(OrderCancelled::class, [SendOrderNotifications::class, 'cancelled']);
         Event::listen(OrderCancelled::class, RecordCancellationViolation::class);
         Event::listen(HoldReleased::class, [SendOrderNotifications::class, 'holdReleased']);
@@ -191,6 +198,9 @@ final class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(Coupon::class, MarketingPolicy::class);
+        Gate::policy(Affiliate::class, MarketingPolicy::class);
+        Gate::policy(AffiliateVideoRecord::class, MarketingPolicy::class);
+        Gate::policy(CreativeAsset::class, MarketingPolicy::class);
         Gate::policy(Campaign::class, MarketingPolicy::class);
         Gate::policy(CampaignParticipation::class, MarketingPolicy::class);
         Gate::policy(LedgerJournal::class, LedgerPolicy::class);

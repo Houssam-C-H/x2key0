@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Affiliate\Actions\AffiliateAccounts;
 use App\Domains\Identity\Models\User;
 use App\Domains\Sellers\Models\SellerProfile;
 use App\Shared\Navigation\DashboardMenu;
@@ -54,11 +55,13 @@ it('matches the spec 1.7 group order', function (): void {
 it('renders every sidebar leaf with that leaf active (placeholder until its milestone ships)', function (): void {
     $user = SellerProfile::factory()->create()->user;
     unlockPrivacy($user); // Storage pages sit behind the Privacy Password
+    app(AffiliateAccounts::class)->enrol($user); // affiliate pages need an enrolment
     $built = [
         'settings.account', 'settings.security', 'settings.certification', 'seller.store.mine', 'seller.store.services', 'seller.info', 'seller.contacts',
         'buy.orders', 'buy.credits', 'buy.points', 'buy.funding', 'announcements.all', 'announcements.unread', 'announcements.read', 'announcements.starred', 'buy.favorites', 'seller.orders', 'storage.logs', 'seller.offers.create', 'seller.offers', 'storage.groups', 'storage.items', 'storage.recycle',
         'disputes.index', 'disputes.stats', 'seller.violations', 'tickets.all', 'tickets.pending', 'tickets.awaiting', 'tickets.closed', 'seller.withdrawals.records', 'seller.withdrawals.methods', 'invoices.service', 'invoices.vouchers', 'invoices.info',
         'coupons.shopping', 'coupons.platform', 'seller.store.coupons', 'seller.store.coupons_private', 'seller.marketing.emails', 'seller.marketing.records', 'seller.marketing.campaigns',
+        'affiliate.manage', 'affiliate.referrals', 'affiliate.videos', 'affiliate.bills', 'affiliate.assets',
     ];
 
     foreach (DashboardMenu::leaves() as $leaf) {

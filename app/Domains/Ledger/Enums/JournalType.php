@@ -18,6 +18,10 @@ enum JournalType: string
     case PlatformCouponFunded = 'PLATFORM_COUPON_FUNDED';
     case OrderSettlement = 'ORDER_SETTLEMENT';
     case AffiliateAccrual = 'AFFILIATE_ACCRUAL';
+    case AffiliateRelease = 'AFFILIATE_RELEASE';
+    case AffiliateReversal = 'AFFILIATE_REVERSAL';
+    case AffiliateToCredits = 'AFFILIATE_TO_CREDITS';
+    case AffiliateVideoReward = 'AFFILIATE_VIDEO_REWARD';
     case HoldRelease = 'HOLD_RELEASE';
     case ReserveRelease = 'RESERVE_RELEASE';
     case Refund = 'REFUND';

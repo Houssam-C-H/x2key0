@@ -8,7 +8,7 @@ use App\Domains\Identity\Enums\StaffRole;
 use App\Domains\Identity\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
-/** Platform coupons, campaigns and campaign applications (spec Part 18): merchant managers; admins via Gate::before. */
+/** Platform coupons, campaigns, applications and the Affiliate Program admin (spec Part 18): merchant managers; admins via Gate::before. */
 final class MarketingPolicy
 {
     public function viewAny(User $user): bool

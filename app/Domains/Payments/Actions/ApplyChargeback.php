@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Payments\Actions;
 
+use App\Domains\Affiliate\Actions\AffiliateCommissions;
 use App\Domains\Announcements\Support\Notifier;
 use App\Domains\Identity\Models\User;
 use App\Domains\Ledger\Actions\PostJournal;
@@ -44,6 +45,7 @@ final class ApplyChargeback
         private readonly SellerFunds $funds,
         private readonly OrderStateMachine $orders,
         private readonly AwardOrderPoints $points,
+        private readonly AffiliateCommissions $affiliates,
     ) {}
 
     public function open(Payment $payment, string $caseId, int $amount, int $fee = 0, ?string $reasonCode = null): Chargeback
@@ -167,6 +169,7 @@ final class ApplyChargeback
                 }
                 $order->forceFill(['seller_net_amount' => $order->seller_net_amount - $recovered])->save();
                 $this->points->reverse($order);
+                $this->affiliates->reverseAll($order, 'chargeback');
             } elseif (in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivering, OrderStatus::Delivered], true)) {
                 // Escrow holds the seller-side price of the kept units; all of it leaves with the closed order:
                 // the charged-back part covers the loss, anything above it (credits part) goes back to the buyer.

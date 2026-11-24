@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Catalog\Models\Game;
+use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\AuthPageController;
 use App\Http\Controllers\Buy\FinanceController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\FakePspController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PreferencesController;
+use App\Http\Controllers\Public\AffiliateLandingController;
 use App\Http\Controllers\Public\CatalogController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\SitemapController;
@@ -52,6 +54,9 @@ Route::get('/', fn (Request $request) => redirect('/'.ResolveLocale::preferredLo
 
 Route::post('/preferences', PreferencesController::class)->name('preferences');
 
+// Affiliate referral links (spec Part 15 `/r/{code}`): count the click, set the first-click cookie, go on.
+Route::get('/r/{code}/{slug?}', [AffiliateLandingController::class, 'redirect'])->where(['code' => '[A-Za-z0-9]{4,16}', 'slug' => '[a-z0-9]{10}'])->middleware('throttle:120,1')->name('affiliate.redirect');
+
 // PSP webhooks (spec 9.3): signature-authenticated, CSRF-exempt (bootstrap/app.php).
 Route::post('/webhooks/{provider}', PaymentWebhookController::class)->where('provider', '[a-z0-9_]+')->middleware('throttle:600,1')->name('webhooks.payments');
 
@@ -84,6 +89,7 @@ Route::prefix('{locale}')
         Route::get('/games', [CatalogController::class, 'games'])->name('catalog.games');
         Route::get('/catalog/{type}', [CatalogController::class, 'categoryHub'])->where('type', '[a-z-]+')->name('catalog.type');
         Route::get('/search', [CatalogController::class, 'search'])->name('catalog.search');
+        Route::get('/affiliate', [AffiliateLandingController::class, 'show'])->name('affiliate.landing');
         Route::get('/store/{slug}', [StoreController::class, 'show'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('store.show');
         Route::get('/offer/{publicId}', [CatalogController::class, 'offer'])->where('publicId', '[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}')->name('offer.show');
 
@@ -137,6 +143,11 @@ Route::middleware('auth')->group(function (): void {
         '/seller/marketing/emails' => fn () => Route::get('/seller/marketing/emails', [MarketingEmailController::class, 'create'])->name('dash.seller.marketing.emails'),
         '/seller/marketing/records' => fn () => Route::get('/seller/marketing/records', [MarketingEmailController::class, 'records'])->name('dash.seller.marketing.records'),
         '/seller/coupons/private' => fn () => Route::get('/seller/coupons/private', [SellerCouponController::class, 'private'])->name('dash.seller.store.coupons_private'),
+        '/affiliate/manage' => fn () => Route::get('/affiliate/manage', [AffiliateController::class, 'manage'])->name('dash.affiliate.manage'),
+        '/affiliate/referrals' => fn () => Route::get('/affiliate/referrals', [AffiliateController::class, 'referrals'])->name('dash.affiliate.referrals'),
+        '/affiliate/videos' => fn () => Route::get('/affiliate/videos', [AffiliateController::class, 'videos'])->name('dash.affiliate.videos'),
+        '/affiliate/bills' => fn () => Route::get('/affiliate/bills', [AffiliateController::class, 'bills'])->name('dash.affiliate.bills'),
+        '/affiliate/assets' => fn () => Route::get('/affiliate/assets', [AffiliateController::class, 'assets'])->name('dash.affiliate.assets'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
         '/seller/withdrawals' => fn () => Route::get('/seller/withdrawals', [WithdrawalController::class, 'index'])->name('dash.seller.withdrawals.records'),
         '/seller/withdrawals/methods' => fn () => Route::get('/seller/withdrawals/methods', [WithdrawalController::class, 'methods'])->name('dash.seller.withdrawals.methods'),
@@ -286,6 +297,13 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/chat/{publicId}/mute', [ChatController::class, 'mute'])->where('publicId', '[0-9a-z]{26}')->name('chat.mute');
     Route::post('/chat/store/{slug}', [ChatController::class, 'startPreSale'])->middleware('throttle:20,1')->name('chat.start');
     Route::post('/chat/order/{publicId}', [ChatController::class, 'forOrder'])->where('publicId', '[0-9a-z]{26}')->name('chat.order');
+
+    // Affiliate Program (spec Part 15)
+    Route::post('/affiliate/enrol', [AffiliateController::class, 'enrol'])->middleware('throttle:10,1')->name('affiliate.enrol');
+    Route::post('/affiliate/code', [AffiliateController::class, 'code'])->middleware('throttle:10,1')->name('affiliate.code');
+    Route::post('/affiliate/links', [AffiliateController::class, 'link'])->middleware('throttle:30,1')->name('affiliate.links');
+    Route::post('/affiliate/transfer', [AffiliateController::class, 'transfer'])->middleware(['recent.password', 'throttle:10,1'])->name('affiliate.transfer');
+    Route::post('/affiliate/videos', [AffiliateController::class, 'submitVideo'])->middleware('throttle:20,1')->name('affiliate.videos.submit');
 
     // Coupon Center (spec 14.1): claim, buy with points, store code
     Route::post('/coupons/code', [CouponController::class, 'code'])->middleware('throttle:20,1')->name('coupons.code');
