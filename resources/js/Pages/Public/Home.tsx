@@ -1,10 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
 import { categoryIcon, Icon } from '@/Components/Icon';
+import { type CommunityRating, CommunityRatings } from '@/Components/Reviews/CommunityRatings';
 import { PublicLayout } from '@/Layouts/PublicLayout';
 import { useLocalePath, useShared, useT } from '@/lib/i18n';
 
 /** Home shell: hero with the 8 category tiles (spec 1.3 #1). Other modules arrive in M17. */
-export default function Home() {
+export default function Home({ communityRatings = [] }: { communityRatings?: CommunityRating[] }) {
     const t = useT();
     const { categoryTypes } = useShared();
     const lp = useLocalePath();
@@ -43,6 +44,8 @@ export default function Home() {
                     </ul>
                 </div>
             </section>
+
+            <CommunityRatings items={communityRatings} />
 
             <section className="mx-auto max-w-7xl px-4 py-12">
                 <div className="rounded-md border-s-4 border-warning bg-warning-soft p-4 text-sm">{t('home.modules_coming')}</div>

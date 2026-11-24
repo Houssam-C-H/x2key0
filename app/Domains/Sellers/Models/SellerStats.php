@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property int $disputes_lost
  * @property int|null $completion_rate_bps
  * @property int|null $positive_rate_bps
+ * @property int|null $positive_rate_90d_bps
  * @property int $rating_count
  * @property int|null $avg_delivery_minutes
  * @property int $sales_30d_amount
@@ -36,7 +37,7 @@ final class SellerStats extends Model
 
     protected $fillable = [
         'seller_profile_id', 'orders_completed', 'orders_cancelled_by_seller', 'disputes_opened', 'disputes_lost',
-        'completion_rate_bps', 'positive_rate_bps', 'rating_count', 'avg_delivery_minutes', 'sales_30d_amount', 'violation_points',
+        'completion_rate_bps', 'positive_rate_bps', 'positive_rate_90d_bps', 'rating_count', 'avg_delivery_minutes', 'sales_30d_amount', 'violation_points',
     ];
 
     /**
@@ -51,6 +52,7 @@ final class SellerStats extends Model
             'disputes_lost' => 'integer',
             'completion_rate_bps' => 'integer',
             'positive_rate_bps' => 'integer',
+            'positive_rate_90d_bps' => 'integer',
             'rating_count' => 'integer',
             'avg_delivery_minutes' => 'integer',
             'sales_30d_amount' => 'integer',

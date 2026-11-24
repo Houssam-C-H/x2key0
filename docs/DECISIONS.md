@@ -61,6 +61,14 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-028 — Reviews and level recompute (2026-11-24)
+- **One comment per order, editable until the seller answers**: the buyer can fix a comment inside the 30-day window, but once the seller has replied the pair is frozen so the reply always answers what is shown.
+- **Ratings count only visible comments**; hiding a comment changes the seller's rates at once. Neutral comments are shown and counted in the score table but not in the positive rate (spec: positive / (positive + negative)).
+- **Reviews are public, so contact details are refused** (not masked as in chat).
+- **Stats are recomputed from source rows**, not incremented: the daily job rebuilds completed counts, completion rate, 30-day sales and delivery time from orders, so drift from earlier counters disappears. A seller with no rating counts as 0 % positive for levels that require a rating.
+- **Seller level = highest level whose every threshold holds**; staff overrides set `level_locked` (audited) and the job leaves those sellers alone. Changing level changes commission, hold and reserve only for orders settled afterwards.
+- **Community ratings are chosen, not stored**: featured comments first, then the recent rule; M17 turns it into a CMS module with pinning.
+
 ## ADR-027 — Affiliate Program (2026-11-24)
 - **Commission base = the platform's net on the order** (OPEN_QUESTIONS #2 working assumption): commission + buyer fees kept − platform coupon kept, as in the §7.2 worked example; PSP fees are not deducted yet. Rates are settings (20 % / 3 %) and can be overridden per affiliate.
 - **Accrual follows completion, not payment**, from an `OrderCompleted` listener; the per-order unique row plus the journal idempotency key make it exactly-once even if the event is replayed.

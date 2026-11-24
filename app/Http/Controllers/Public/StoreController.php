@@ -10,6 +10,7 @@ use App\Domains\Identity\Models\User;
 use App\Domains\Messaging\Support\Presence;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\Support\OfferPresenter;
+use App\Domains\Reviews\Support\ReviewPresenter;
 use App\Domains\Sellers\Enums\SellerStatus;
 use App\Domains\Sellers\Models\SellerProfile;
 use App\Domains\Sellers\Support\SellerPresenter;
@@ -70,11 +71,13 @@ final class StoreController
                     'ordersCompleted' => $stats->orders_completed ?? 0,
                     'completionRateBps' => $stats?->completion_rate_bps,
                     'positiveRateBps' => $stats?->positive_rate_bps,
+                    'positiveRate90Bps' => $stats?->positive_rate_90d_bps,
                     'ratingCount' => $stats->rating_count ?? 0,
                     'disputeRateBps' => self::disputeRate($profile),
                 ],
             ],
             'services' => SellerPresenter::passedServices($profile, $locale),
+            'reviews' => ReviewPresenter::store($profile, $locale),
             'coupons' => self::coupons($profile, $viewer instanceof User ? $viewer : null, $locale),
             'featured' => array_map(static fn (Offer $o): array => OfferPresenter::card($o, $locale), $featured),
             'offers' => array_map(static fn (Offer $o): array => OfferPresenter::card($o, $locale), $offers),

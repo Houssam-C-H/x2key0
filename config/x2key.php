@@ -128,6 +128,7 @@ return [
         'risk_review_score' => 50,
         'payment_sync_after_minutes' => 5,
         'online_threshold_seconds' => 120,
+        'comment_window_days' => 30, // one comment per completed order within this window (spec Part 13)
         'low_stock_default_threshold' => 5,
         'ticket_autoclose_hours' => 72,
         'ticket_reopen_days' => 7,

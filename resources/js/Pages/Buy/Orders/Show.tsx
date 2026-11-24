@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { type OrderDispute, OrderDisputeBox } from '@/Components/Disputes/OrderDisputeBox';
 import { DeliveriesPanel, ItemPanel, MoneyPanel, type OrderDetail, OrderProgress, StatusBadge, Timeline } from '@/Components/Orders/OrderParts';
@@ -17,7 +17,7 @@ interface Secret {
  * Order detail (spec 1.6 / 8.3): status, deliveries with an audited reveal, cancel after a missed deadline,
  * cancel remainder, refunds, timeline. While payment is pending the page refreshes itself.
  */
-export default function OrderShow({ order, can, dispute }: { order: OrderDetail; can: { cancel: boolean; cancelRemainder: boolean; reveal: boolean; confirm: boolean }; dispute: OrderDispute }) {
+export default function OrderShow({ order, can, dispute }: { order: OrderDetail; can: { cancel: boolean; cancelRemainder: boolean; reveal: boolean; confirm: boolean; comment: boolean }; dispute: OrderDispute }) {
     const t = useT();
     const { locale, errors } = useShared();
     const [secrets, setSecrets] = useState<Secret[] | null>(null);
@@ -59,8 +59,13 @@ export default function OrderShow({ order, can, dispute }: { order: OrderDetail;
                 <div className="flex flex-wrap items-center gap-3">
                     <StatusBadge status={order.status} />
                     <span className="text-sm text-muted">{new Date(order.createdAt).toLocaleString(locale)}</span>
+                    {can.comment && (
+                        <Link href={'/buy/comments?order=' + order.publicId} className="btn-primary ms-auto px-3 py-1 text-sm">
+                            {t('review.leave')}
+                        </Link>
+                    )}
                     {order.status !== 'pending_payment' && (
-                        <button type="button" className="btn-outline-pill ms-auto px-3 py-1 text-sm" onClick={() => router.post(`/chat/order/${order.publicId}`)}>
+                        <button type="button" className={'btn-outline-pill px-3 py-1 text-sm ' + (can.comment ? '' : 'ms-auto')} onClick={() => router.post(`/chat/order/${order.publicId}`)}>
                             {t('chat.open_order_chat')}
                         </button>
                     )}

@@ -9,6 +9,7 @@ use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Orders\Enums\SellerSubstatus;
 use App\Domains\Payments\Models\Payment;
 use App\Domains\Payments\Models\Refund;
+use App\Domains\Reviews\Models\OrderComment;
 use App\Domains\Risk\Enums\RiskDecision;
 use App\Domains\Sellers\Models\SellerProfile;
 use App\Domains\Storage\Vault\SealedSecret;
@@ -145,6 +146,16 @@ final class Order extends Model
     public function seller(): BelongsTo
     {
         return $this->belongsTo(SellerProfile::class, 'seller_profile_id');
+    }
+
+    /**
+     * The buyer's comment on this order (spec 5.11), if any.
+     *
+     * @return HasOne<OrderComment, $this>
+     */
+    public function comment(): HasOne
+    {
+        return $this->hasOne(OrderComment::class);
     }
 
     /**

@@ -137,7 +137,7 @@ it('notifies the people an order concerns: new order, delivered, completed, fund
 
     $types = fn (User $u) => InboxItem::query()->where('user_id', $u->id)->orderBy('id')->pluck('notification_type')->all();
     expect($types($seller))->toBe(['order_new', 'order_completed', 'funds_released'])
-        ->and($types($fx['buyer']))->toBe(['order_delivered']);
+        ->and($types($fx['buyer']))->toBe(['order_delivered', 'comment_invite']); // M16: invite to comment on completion
 
     $this->actingAs($seller)->get('/announcements')->assertInertia(fn (Assert $p) => $p
         ->where('items.0.title', 'Earnings released: USD 9.20')

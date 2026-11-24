@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Domains\Reviews\Support\ReviewPresenter;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,6 +15,7 @@ final class HomeController
      */
     public function __invoke(): Response
     {
-        return Inertia::render('Public/Home');
+        // Community ratings (spec 1.3 #7, Part 13); the other modules arrive with the home CMS (M17).
+        return Inertia::render('Public/Home', ['communityRatings' => ReviewPresenter::community(4, app()->getLocale())]);
     }
 }

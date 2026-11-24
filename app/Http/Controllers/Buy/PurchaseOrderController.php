@@ -20,6 +20,7 @@ use App\Domains\Orders\Support\OrderPresenter;
 use App\Domains\Orders\Support\OrderRules;
 use App\Domains\Payments\Actions\SyncPendingPayments;
 use App\Domains\Payments\Models\Payment;
+use App\Domains\Reviews\Actions\OrderComments;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -100,6 +101,7 @@ final class PurchaseOrderController
                 'cancelRemainder' => OrderRules::buyerCanCancelRemainder($order),
                 'reveal' => OrderRules::buyerCanReveal($order),
                 'confirm' => $order->status === OrderStatus::Delivered && ! OpenCases::blocks($order->id),
+                'comment' => app(OrderComments::class)->canComment($order),
             ],
             'dispute' => app(DisputeRules::class)->forOrder($order, DisputeRole::Buyer),
         ]);

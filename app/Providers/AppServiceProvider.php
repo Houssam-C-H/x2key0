@@ -67,6 +67,9 @@ use App\Domains\Payments\Providers\StripePaymentProvider;
 use App\Domains\Payouts\Models\PayoutMethodType;
 use App\Domains\Payouts\Models\WithdrawalRequest;
 use App\Domains\Payouts\Policies\PayoutPolicy;
+use App\Domains\Reviews\Listeners\ReviewListeners;
+use App\Domains\Reviews\Models\OrderComment;
+use App\Domains\Reviews\Policies\OrderCommentPolicy;
 use App\Domains\Risk\Models\BlocklistEntry;
 use App\Domains\Risk\Models\RiskFlag;
 use App\Domains\Sellers\Models\MerchantContact;
@@ -179,6 +182,7 @@ final class AppServiceProvider extends ServiceProvider
         Event::listen(OrderDelivered::class, [SendOrderNotifications::class, 'delivered']);
         Event::listen(OrderCompleted::class, [SendOrderNotifications::class, 'completed']);
         Event::listen(OrderCompleted::class, [AffiliateListeners::class, 'completed']);
+        Event::listen(OrderCompleted::class, [ReviewListeners::class, 'completed']);
         Event::listen(Registered::class, [AffiliateListeners::class, 'registered']);
         Event::listen(OrderCancelled::class, [SendOrderNotifications::class, 'cancelled']);
         Event::listen(OrderCancelled::class, RecordCancellationViolation::class);
@@ -198,6 +202,7 @@ final class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(Coupon::class, MarketingPolicy::class);
+        Gate::policy(OrderComment::class, OrderCommentPolicy::class);
         Gate::policy(Affiliate::class, MarketingPolicy::class);
         Gate::policy(AffiliateVideoRecord::class, MarketingPolicy::class);
         Gate::policy(CreativeAsset::class, MarketingPolicy::class);

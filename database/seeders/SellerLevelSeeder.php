@@ -13,6 +13,14 @@ use Illuminate\Database\Seeder;
  */
 final class SellerLevelSeeder extends Seeder
 {
+    /** Recompute thresholds (M16): min positive rate, max dispute-loss rate, max violation points. */
+    private const array THRESHOLDS = [
+        'silver' => [9000, 300, 10],
+        'gold' => [9500, 200, 6],
+        'platinum' => [9700, 100, 4],
+        'diamond' => [9800, 50, 2],
+    ];
+
     public function run(): void
     {
         $levels = [
@@ -37,6 +45,9 @@ final class SellerLevelSeeder extends Seeder
                 'rank_boost' => $boost,
                 'min_orders_completed' => $minOrders,
                 'min_completion_rate_bps' => $minRate,
+                'min_positive_rate_bps' => self::THRESHOLDS[$code][0] ?? 0,
+                'max_dispute_loss_bps' => self::THRESHOLDS[$code][1] ?? null,
+                'max_violation_points' => self::THRESHOLDS[$code][2] ?? null,
             ]);
         }
     }

@@ -25,6 +25,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $rank_boost
  * @property int $min_orders_completed
  * @property int $min_completion_rate_bps
+ * @property int $min_positive_rate_bps
+ * @property int|null $max_dispute_loss_bps
+ * @property int|null $max_violation_points
  */
 final class SellerLevel extends Model
 {
@@ -36,6 +39,7 @@ final class SellerLevel extends Model
     protected $fillable = [
         'code', 'name', 'stars', 'sort', 'commission_bps', 'hold_days', 'reserve_bps',
         'max_active_offers', 'auto_approve', 'rank_boost', 'min_orders_completed', 'min_completion_rate_bps',
+        'min_positive_rate_bps', 'max_dispute_loss_bps', 'max_violation_points',
     ];
 
     /**
@@ -55,6 +59,9 @@ final class SellerLevel extends Model
             'rank_boost' => 'integer',
             'min_orders_completed' => 'integer',
             'min_completion_rate_bps' => 'integer',
+            'min_positive_rate_bps' => 'integer',
+            'max_dispute_loss_bps' => 'integer',
+            'max_violation_points' => 'integer',
         ];
     }
 

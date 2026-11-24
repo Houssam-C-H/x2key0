@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M16 — Reviews & community ratings (next). M1–M15 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M17 — Home modules CMS, News, Help center (next). M1–M16 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -20,8 +20,22 @@
 | M13 | Withdrawals, payout methods, invoices | ✅ code done | See checklist below |
 | M14 | Coupons & campaigns | ✅ code done | See checklist below |
 | M15 | Affiliate Program | ✅ code done | See checklist below; cash withdrawals for affiliates pending |
-| M16 | Reviews & community ratings | next | |
-| M17–M19 | — | not started | |
+| M16 | Reviews & community ratings | ✅ code done | See checklist below |
+| M17 | Home CMS, News, Help, footer pages | next | |
+| M18–M19 | — | not started | |
+
+## M16 checklist
+- [x] Table `order_comments` (one per order: rating, Delivery Speed · Service Quality · Item Description 1–5, text, seller reply, visible/hidden with reason, featured, edited); `seller_stats.positive_rate_90d_bps`; seller level thresholds `min_positive_rate_bps`, `max_dispute_loss_bps`, `max_violation_points`; points rule `comment` (10)
+- [x] **Comment** a completed order within `comment_window_days` (30): positive / neutral / negative, optional sub-scores and text (≤ 1000, no contact details — reviews are public); once per order; earns the `comment` points rule once; the seller is notified; the buyer is invited when the order completes
+- [x] **Edit** by the buyer inside the window until the seller replies; **reply** by the seller once (buyer notified)
+- [x] **Purchase Order Comment** (`/buy/comments`): To comment / Commented, rating filter, feedback score table (7 d / 30 d / all × positive / neutral / negative), % positive, edit; "Leave a comment" on the order page
+- [x] **Sell Order Comments** (`/seller/comments`): score table, % positive lifetime and 90 days, Transaction level (average) with the three sub-scores, filter, reply; buyer names masked (`fau***uvu`)
+- [x] **Ratings**: positive rate = positive / (positive + negative), lifetime and last 90 days, from visible comments only, refreshed on every change; store page shows both rates and the latest reviews
+- [x] **Community ratings** on the home page: featured comments first, then recent (90 d) positive comments with ≥ 20 characters, one per seller, with the seller's positive %
+- [x] **Moderation** (moderators + admins): hide with a reason / show again (ratings follow), feature visible positive comments
+- [x] **Levels recompute** (`levels:recompute`, daily): seller stats from orders (completed count, completion rate = completed / (completed + seller cancellations), 30-day sales, average delivery minutes) and comments; seller level = highest level whose thresholds all hold (orders, completion, positive rate, dispute-loss rate, violation points), notification on change, `level_locked` respected; buyer level from lifetime completed spend, also right after each completed order
+- [x] 16 new tests (`tests/Feature/Reviews`): eligibility and window, once per order, points, contact-info guard, edit/reply rules, rates and score table, 90-day window, moderation effects, community selection, level thresholds (7 cases), locked levels, buyer levels, admin access; Larastan max 0 errors; Pint; TS strict
+- [ ] Comment photos, review search on product/offer pages, abuse tracking of buyers who only leave negatives, staff level override UI with reason (today: Filament field + audit)
 
 ## M15 checklist
 - [x] Tables: affiliates (code, inviter for level 2, status, rank, per-affiliate rates / attribution days), affiliate_links, affiliate_referrals (one per user, attribution window), affiliate_commissions (per affiliate × order, held → approved, reversed amount), affiliate_video_records, creative_assets; FKs for `users.referred_by_affiliate_id` and `orders.affiliate_id` on PostgreSQL
@@ -135,7 +149,7 @@
 - [x] 491 tests (PostgreSQL 481 passed, SQLite 475 passed; the rest skip where they cannot run); Larastan max 0 errors; Pint; TS strict
 - [ ] E-mail and live (Reverb) delivery of notifications — with chat (M10); notification preferences UI
 - [ ] Disputes can block completion and hold funds (`SELLER_FROZEN`) — M11 (the hook is marked in `OrderStateMachine::complete`)
-- [ ] Withdrawals from the Available Balance — M13; coupons spending points — done in M14; affiliate accrual on completion — done in M15; purchase-order comments — M16
+- [ ] Withdrawals from the Available Balance — M13; coupons spending points — done in M14; affiliate accrual on completion — done in M15; purchase-order comments — done in M16
 - [ ] Segment targeting of announcements and a Redis-cached unread count — later
 
 ## M8 checklist
@@ -304,6 +318,7 @@
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
+- 2026-11-24 — `main` fast-forwarded to M15. M16 reviews, community ratings and level recompute built (branch `m16-reviews`).
 - 2026-11-24 — `main` fast-forwarded to M14 (all milestone branches contained). M15 Affiliate Program built (branch `m15-affiliate`). Found while testing: a queued attribution cookie leaked into the next request handled by the same process, so the cookie is now attached to the redirect itself.
 - 2026-11-24 — M14 coupons & campaigns completed (branch `m14-coupons`, on top of `m13-withdrawals`; the backend WIP — pricing, redemptions, ledger shares — was finished with checkout UI, Coupon Center, seller codes, campaigns, marketing e-mails, admin and tests). PostgreSQL-only bugs from M11/M13 found by the full PostgreSQL run and fixed: refunding a completed order left its units counted as delivered (DB check `order_items_qty_consistent`); the audit log wrote string keys (payout method types) into the numeric `subject_id`; adding a payout account used `FOR UPDATE` with `COUNT(*)`. Suite: 613 tests, PostgreSQL 603 passed / SQLite 594 passed, rest skipped.
 - 2026-11-23 — M13 withdrawals, payout methods and invoices built (branch `m13-withdrawals`, from `main`).

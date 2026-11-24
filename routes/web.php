@@ -6,6 +6,7 @@ use App\Domains\Catalog\Models\Game;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\AuthPageController;
+use App\Http\Controllers\Buy\CommentController;
 use App\Http\Controllers\Buy\FinanceController;
 use App\Http\Controllers\Buy\PurchaseOrderController;
 use App\Http\Controllers\ChatController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\StoreController;
 use App\Http\Controllers\Seller\CampaignController;
+use App\Http\Controllers\Seller\CommentController as SellerCommentController;
 use App\Http\Controllers\Seller\CouponController as SellerCouponController;
 use App\Http\Controllers\Seller\MarketingEmailController;
 use App\Http\Controllers\Seller\MerchantContactsController;
@@ -148,6 +150,8 @@ Route::middleware('auth')->group(function (): void {
         '/affiliate/videos' => fn () => Route::get('/affiliate/videos', [AffiliateController::class, 'videos'])->name('dash.affiliate.videos'),
         '/affiliate/bills' => fn () => Route::get('/affiliate/bills', [AffiliateController::class, 'bills'])->name('dash.affiliate.bills'),
         '/affiliate/assets' => fn () => Route::get('/affiliate/assets', [AffiliateController::class, 'assets'])->name('dash.affiliate.assets'),
+        '/buy/comments' => fn () => Route::get('/buy/comments', [CommentController::class, 'index'])->name('dash.buy.comments'),
+        '/seller/comments' => fn () => Route::get('/seller/comments', [SellerCommentController::class, 'index'])->name('dash.seller.store.comments'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
         '/seller/withdrawals' => fn () => Route::get('/seller/withdrawals', [WithdrawalController::class, 'index'])->name('dash.seller.withdrawals.records'),
         '/seller/withdrawals/methods' => fn () => Route::get('/seller/withdrawals/methods', [WithdrawalController::class, 'methods'])->name('dash.seller.withdrawals.methods'),
@@ -193,6 +197,9 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/seller/info', [SellerInfoController::class, 'update'])->middleware('throttle:20,1')->name('seller.info.update');
 
         // Store coupons (spec 1.8 "My Coupon Codes")
+        // Sell Order Comments (spec 1.8): one reply per comment
+        Route::post('/seller/comments/{comment}/reply', [SellerCommentController::class, 'reply'])->whereNumber('comment')->middleware('throttle:30,1')->name('seller.comments.reply');
+
         Route::post('/seller/coupons', [SellerCouponController::class, 'store'])->middleware('throttle:30,1')->name('seller.coupons.store');
         Route::post('/seller/coupons/end', [SellerCouponController::class, 'end'])->name('seller.coupons.end');
         Route::post('/seller/coupons/{publicId}/extend', [SellerCouponController::class, 'extend'])->where('publicId', '[0-9a-z]{26}')->name('seller.coupons.extend');
@@ -244,6 +251,10 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:20,1')->name('checkout.store');
     });
     // Purchase Orders (spec 6.1 / 8.3)
+    // Purchase Order Comment (spec Part 13)
+    Route::post('/buy/orders/{publicId}/comment', [CommentController::class, 'store'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:20,1')->name('buy.comments.store');
+    Route::put('/buy/comments/{comment}', [CommentController::class, 'update'])->whereNumber('comment')->middleware('throttle:20,1')->name('buy.comments.update');
+
     Route::prefix('/buy/orders/{publicId}')->where(['publicId' => '[0-9a-z]{26}'])->group(function (): void {
         Route::get('/', [PurchaseOrderController::class, 'show'])->name('buy.orders.show');
         Route::post('/confirm', [PurchaseOrderController::class, 'confirm'])->middleware('throttle:20,1')->name('buy.orders.confirm');
