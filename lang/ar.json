@@ -2121,5 +2121,20 @@
     "offer.csv.too_many": "يتم استيراد أول :max صفًا فقط في كل مرة.",
     "offer.csv.unknown_id": "لا يوجد عرض في متجرك بهذا المعرّف.",
     "offer.csv.not_number": "\":column\" يجب أن يكون رقمًا.",
-    "offer.csv.required": "\":column\" مطلوب لعرض جديد."
+    "offer.csv.required": "\":column\" مطلوب لعرض جديد.",
+    "catalog.landing.title": "شراء :title — ابتداءً من :price",
+    "catalog.landing.title_plain": "شراء :title",
+    "catalog.landing.description": "اشترِ :title من :sellers بائعين موثّقين: :count عرضًا ابتداءً من :price. الدفع محجوز حتى التسليم، تسليم سريع، دعم حقيقي.",
+    "catalog.landing.description_empty": ":title من بائعين موثّقين على X2KEY، مع حجز الدفع حتى التسليم.",
+    "catalog.landing.intro": "قارن :count عرضًا لـ :title من :sellers بائعين موثّقين، ابتداءً من :price. تبقى دفعتك لدى X2KEY حتى تستلم طلبك.",
+    "catalog.landing.intro_empty": "لا توجد عروض لـ :title حاليًا. عيّن تنبيه سعر وسنبلغك عند إدراج عرض.",
+    "catalog.landing.faq_title": "أسئلة حول :title",
+    "catalog.landing.faq.safe_q": "هل شراء :title على X2KEY آمن؟",
+    "catalog.landing.faq.safe_a": "نعم. تحتفظ X2KEY بدفعتك حتى يتم التسليم وتؤكده. إذا حدثت مشكلة تفتح مطالبة ويقرر فريقنا.",
+    "catalog.landing.faq.delivery_q": "ما سرعة التسليم؟",
+    "catalog.landing.faq.delivery_a": "يعرض كل عرض وقت التسليم. تصل الرموز المتوفرة فورًا؛ ويسلّم البائع الطلبات الأخرى خلال الوقت المعروض.",
+    "catalog.landing.faq.pay_q": "كيف يمكنني الدفع؟",
+    "catalog.landing.faq.pay_a": "بالبطاقة أو برصيد X2KEY. لا تصل بيانات بطاقتك إلى البائع أبدًا.",
+    "catalog.landing.faq.problem_q": "ماذا لو واجه طلب :title مشكلة؟",
+    "catalog.landing.faq.problem_a": "افتح مطالبة من الطلب قبل التأكيد. يُسترد ثمن ما لم يُسلَّم أو ما كان غير مطابق أو الرموز غير الصالحة ضمن حماية المشتري."
 }

@@ -30,6 +30,8 @@ interface Props {
     serviceTypes?: { code: string; name: string; count: number }[];
     activeService?: string | null;
     priceAlert?: PriceAlertState | null;
+    /** Landing copy (intro + FAQ), mirrored in the page's structured data. */
+    landing?: { intro: string; faq: { q: string; a: string }[] };
     seo: Seo;
 }
 
@@ -64,7 +66,7 @@ function toParams(state: ListingState, page = 1, service: string | null = null):
     return params;
 }
 
-export default function Listing({ gameCategory, tabs, breadcrumbs, filters, query, sorts, results, offerResults, serviceTypes = [], activeService = null, priceAlert = null, seo }: Props) {
+export default function Listing({ gameCategory, tabs, breadcrumbs, filters, query, sorts, results, offerResults, serviceTypes = [], activeService = null, priceAlert = null, landing, seo }: Props) {
     const t = useT();
     const { locale } = useShared();
     const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -90,6 +92,7 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
                     <h1 className="text-2xl font-extrabold">{gameCategory.title}</h1>
                     {priceAlert && <PriceAlertButton alert={priceAlert} />}
                 </div>
+                {landing?.intro && <p className="max-w-3xl text-sm text-muted">{landing.intro}</p>}
                 <CategoryTabs tabs={tabs} />
                 {gameCategory.notice && <NoticeBox text={gameCategory.notice} />}
 
@@ -211,6 +214,25 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
                     <Icon name="chevron" size={14} className="rotate-180 rtl:rotate-0" />
                     {t('catalog.back_to_game', { game: gameCategory.game })}
                 </a>
+
+                {landing && landing.faq.length > 0 && (
+                    <section className="max-w-3xl pt-6">
+                        <h2 className="mb-3 text-lg font-bold">{t('catalog.landing.faq_title', { title: gameCategory.title })}</h2>
+                        <div className="divide-y divide-line rounded-xl border border-line bg-white">
+                            {landing.faq.map((f) => (
+                                <details key={f.q} className="group px-4 py-3">
+                                    <summary className="cursor-pointer list-none font-semibold marker:hidden">
+                                        <span className="flex items-center justify-between gap-3">
+                                            {f.q}
+                                            <span className="text-muted transition group-open:rotate-45">+</span>
+                                        </span>
+                                    </summary>
+                                    <p className="mt-2 text-sm text-muted">{f.a}</p>
+                                </details>
+                            ))}
+                        </div>
+                    </section>
+                )}
             </div>
         </PublicLayout>
     );

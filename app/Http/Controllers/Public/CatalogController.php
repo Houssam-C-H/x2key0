@@ -202,6 +202,7 @@ final class CatalogController
             ['name' => $gameCategory->type->translate('name', $locale), 'href' => "/{$locale}/catalog/{$gameCategory->type->urlSlug()}"],
             ['name' => $info['title'], 'href' => $gameCategory->path($locale)],
         ];
+        $landing = self::landing($gameCategory, $info['title'], $locale);
 
         return Inertia::render('Public/Catalog/Listing', [
             'gameCategory' => $info,
@@ -234,15 +235,65 @@ final class CatalogController
             ),
             'serviceTypes' => $serviceTypes,
             'activeService' => $activeService?->code,
+            'landing' => $landing['visible'],
             'seo' => Seo::make(
-                $info['title'],
-                __('catalog.listing.description', ['title' => $info['title'], 'count' => $result->total]),
+                $landing['title'],
+                $landing['description'],
                 "/{$gameCategory->game->slug}/{$gameCategory->slug}",
                 $locale,
                 noindex: ! $query->isIndexable() || ($gameCategory->product_count_cached === 0 && $gameCategory->offer_count_cached === 0),
-                jsonLd: [Seo::breadcrumbList($crumbs)],
+                jsonLd: [Seo::breadcrumbList($crumbs), ...$landing['jsonLd']],
             ),
         ]);
+    }
+
+    /**
+     * Landing-page SEO for a game×category (search traffic like "buy fortnite accounts"): keyword title with the
+     * lowest price, a description with real figures, AggregateOffer + FAQPage structured data, and the same intro
+     * and FAQ as visible content (structured data must match what is on the page).
+     *
+     * @return array{title: string, description: string, jsonLd: list<array<string, mixed>>, visible: array{intro: string, faq: list<array{q: string, a: string}>}}
+     */
+    private static function landing(GameCategory $gameCategory, string $title, string $locale): array
+    {
+        $stats = Offer::query()->live()->where('offers.game_category_id', $gameCategory->id)
+            ->selectRaw('MIN(offers.unit_price_amount) as low, MAX(offers.unit_price_amount) as high, COUNT(*) as n, COUNT(DISTINCT offers.seller_profile_id) as sellers')
+            ->toBase()->first();
+        $low = is_numeric($stats?->low) ? (int) $stats->low : null;
+        $high = is_numeric($stats?->high) ? (int) $stats->high : null;
+        $count = is_numeric($stats?->n) ? (int) $stats->n : 0;
+        $sellers = is_numeric($stats?->sellers) ? (int) $stats->sellers : 0;
+        $price = $low === null ? null : '$'.self::decimal($low);
+        $vars = ['title' => $title, 'price' => $price ?? '', 'count' => $count, 'sellers' => $sellers, 'game' => $gameCategory->game->translate('name', $locale)];
+        $text = static fn (string $key): string => is_string($s = __($key, $vars)) ? $s : $key;
+
+        $faq = [];
+        foreach (['safe', 'delivery', 'pay', 'problem'] as $k) {
+            $faq[] = ['q' => $text("catalog.landing.faq.{$k}_q"), 'a' => $text("catalog.landing.faq.{$k}_a")];
+        }
+
+        $jsonLd = [[
+            '@context' => 'https://schema.org',
+            '@type' => 'FAQPage',
+            'mainEntity' => array_map(static fn (array $f): array => ['@type' => 'Question', 'name' => $f['q'], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['a']]], $faq),
+        ]];
+        if ($low !== null && $high !== null && $count > 0) {
+            array_unshift($jsonLd, [
+                '@context' => 'https://schema.org',
+                '@type' => 'Product',
+                'name' => $title,
+                'category' => $gameCategory->type->translate('name', $locale),
+                'brand' => ['@type' => 'Brand', 'name' => $vars['game']],
+                'offers' => ['@type' => 'AggregateOffer', 'priceCurrency' => 'USD', 'lowPrice' => self::decimal($low), 'highPrice' => self::decimal($high), 'offerCount' => $count],
+            ]);
+        }
+
+        return [
+            'title' => $price === null ? $text('catalog.landing.title_plain') : $text('catalog.landing.title'),
+            'description' => $count === 0 ? $text('catalog.landing.description_empty') : $text('catalog.landing.description'),
+            'jsonLd' => $jsonLd,
+            'visible' => ['intro' => $count === 0 ? $text('catalog.landing.intro_empty') : $text('catalog.landing.intro'), 'faq' => $faq],
+        ];
     }
 
     public function product(Request $request, string $locale, string $game, string $category, string $product): Response

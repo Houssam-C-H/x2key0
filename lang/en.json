@@ -2121,5 +2121,20 @@
     "offer.csv.too_many": "Only the first :max rows are imported at once.",
     "offer.csv.unknown_id": "No offer of your store has this id.",
     "offer.csv.not_number": "“:column” must be a number.",
-    "offer.csv.required": "“:column” is required for a new offer."
+    "offer.csv.required": "“:column” is required for a new offer.",
+    "catalog.landing.title": "Buy :title — from :price",
+    "catalog.landing.title_plain": "Buy :title",
+    "catalog.landing.description": "Buy :title from :sellers verified sellers: :count offers from :price. Payment held until delivery, fast delivery, real support.",
+    "catalog.landing.description_empty": ":title from verified sellers on X2KEY, with payment held until delivery.",
+    "catalog.landing.intro": "Compare :count offers for :title from :sellers verified sellers, starting at :price. Your payment stays with X2KEY until you receive your order.",
+    "catalog.landing.intro_empty": "No offers for :title right now. Set a price alert and we will tell you when sellers list one.",
+    "catalog.landing.faq_title": "Questions about :title",
+    "catalog.landing.faq.safe_q": "Is it safe to buy :title on X2KEY?",
+    "catalog.landing.faq.safe_a": "Yes. X2KEY holds your payment until the order is delivered and you confirm it. If something is wrong you open a claim and our team decides.",
+    "catalog.landing.faq.delivery_q": "How fast is delivery?",
+    "catalog.landing.faq.delivery_a": "Each offer shows its delivery time. Codes in stock arrive instantly; other orders are delivered by the seller in the time shown.",
+    "catalog.landing.faq.pay_q": "How can I pay?",
+    "catalog.landing.faq.pay_a": "By card or with X2KEY credits. Your card details never reach the seller.",
+    "catalog.landing.faq.problem_q": "What if my :title order has a problem?",
+    "catalog.landing.faq.problem_a": "Open a claim from the order before confirming. Not delivered, not as described or invalid codes are refunded under buyer protection."
 }

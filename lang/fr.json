@@ -2121,5 +2121,20 @@
     "offer.csv.too_many": "Seules les :max premières lignes sont importées à la fois.",
     "offer.csv.unknown_id": "Aucune offre de votre boutique n’a cet id.",
     "offer.csv.not_number": "« :column » doit être un nombre.",
-    "offer.csv.required": "« :column » est requis pour une nouvelle offre."
+    "offer.csv.required": "« :column » est requis pour une nouvelle offre.",
+    "catalog.landing.title": "Acheter :title — dès :price",
+    "catalog.landing.title_plain": "Acheter :title",
+    "catalog.landing.description": "Achetez :title auprès de :sellers vendeurs vérifiés : :count offres dès :price. Paiement retenu jusqu’à la livraison, livraison rapide, vrai support.",
+    "catalog.landing.description_empty": ":title auprès de vendeurs vérifiés sur X2KEY, paiement retenu jusqu’à la livraison.",
+    "catalog.landing.intro": "Comparez :count offres pour :title de :sellers vendeurs vérifiés, à partir de :price. Votre paiement reste chez X2KEY jusqu’à la réception.",
+    "catalog.landing.intro_empty": "Aucune offre pour :title pour le moment. Créez une alerte prix et nous vous préviendrons.",
+    "catalog.landing.faq_title": "Questions sur :title",
+    "catalog.landing.faq.safe_q": "Est-il sûr d’acheter :title sur X2KEY ?",
+    "catalog.landing.faq.safe_a": "Oui. X2KEY conserve votre paiement jusqu’à la livraison et votre confirmation. En cas de problème, vous ouvrez une réclamation et notre équipe tranche.",
+    "catalog.landing.faq.delivery_q": "Quel est le délai de livraison ?",
+    "catalog.landing.faq.delivery_a": "Chaque offre indique son délai. Les codes en stock arrivent instantanément ; les autres commandes sont livrées par le vendeur dans le délai affiché.",
+    "catalog.landing.faq.pay_q": "Comment payer ?",
+    "catalog.landing.faq.pay_a": "Par carte ou avec des crédits X2KEY. Vos données de carte ne parviennent jamais au vendeur.",
+    "catalog.landing.faq.problem_q": "Et si ma commande :title pose problème ?",
+    "catalog.landing.faq.problem_a": "Ouvrez une réclamation depuis la commande avant de confirmer. Non livré, non conforme ou codes invalides sont remboursés par la protection acheteur."
 }
