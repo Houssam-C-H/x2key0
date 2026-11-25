@@ -211,7 +211,7 @@
     "settings.account.messengers": "Messengers",
     "settings.account.messengers_hint": "Visible only to X2KEY staff, to reach you about orders. Never shared with buyers or sellers.",
     "settings.account.social": "Linked accounts",
-    "settings.account.social_hint": "Sign in with other accounts. Linking is coming soon.",
+    "settings.account.social_hint": "Log in with Google or Facebook: connect them in Security.",
     "security.verified": "Verified",
     "security.unverified": "Not verified",
     "security.email.title": "Email",
@@ -2004,5 +2004,16 @@
     "notify.storage_disabled.title": "Your Storage was switched off",
     "notify.storage_disabled.body": "X2KEY switched off Storage for your store. Offers delivered from Storage are out of stock until it is back on.",
     "notify.storage_enabled.title": "Your Storage is back on",
-    "notify.storage_enabled.body": "Storage is available again and your Storage offers are back in stock."
+    "notify.storage_enabled.body": "Storage is available again and your Storage offers are back in stock.",
+    "mail.footer.line": "X2KEY · marketplace for digital game goods. Never share codes or passwords outside your X2KEY order.",
+    "mail.footer.preferences": "Manage e-mail preferences",
+    "mail.notification.action": "Open in X2KEY",
+    "mail.notification.why": "You receive this because of activity on your X2KEY account.",
+    "settings.emails.title": "E-mail notifications",
+    "settings.emails.hint": "Everything also appears in your Announcements inbox. Money, dispute and security e-mails are always sent.",
+    "settings.emails.order": "Order updates (new, delivered, completed, cancelled)",
+    "settings.emails.merchant": "Store updates (low stock, level changes)",
+    "settings.emails.ticket": "Support ticket replies",
+    "settings.emails.save": "Save e-mail preferences",
+    "settings.emails.saved": "E-mail preferences saved."
 }

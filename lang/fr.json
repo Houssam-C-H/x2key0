@@ -211,7 +211,7 @@
     "settings.account.messengers": "Messageries",
     "settings.account.messengers_hint": "Visibles uniquement par l'équipe X2KEY pour vous joindre au sujet des commandes. Jamais partagées avec les acheteurs ou vendeurs.",
     "settings.account.social": "Comptes liés",
-    "settings.account.social_hint": "Connexion avec d'autres comptes. Bientôt disponible.",
+    "settings.account.social_hint": "Connectez-vous avec Google ou Facebook : associez-les dans Sécurité.",
     "security.verified": "Vérifié",
     "security.unverified": "Non vérifié",
     "security.email.title": "E-mail",
@@ -2004,5 +2004,16 @@
     "notify.storage_disabled.title": "Votre Stockage a été désactivé",
     "notify.storage_disabled.body": "X2KEY a désactivé le Stockage de votre boutique. Les offres livrées depuis le Stockage sont en rupture jusqu’à sa réactivation.",
     "notify.storage_enabled.title": "Votre Stockage est réactivé",
-    "notify.storage_enabled.body": "Le Stockage est de nouveau disponible et vos offres sont de nouveau en stock."
+    "notify.storage_enabled.body": "Le Stockage est de nouveau disponible et vos offres sont de nouveau en stock.",
+    "mail.footer.line": "X2KEY · marketplace de biens de jeu numériques. Ne partagez jamais de codes ou mots de passe hors de votre commande X2KEY.",
+    "mail.footer.preferences": "Gérer les préférences e-mail",
+    "mail.notification.action": "Ouvrir dans X2KEY",
+    "mail.notification.why": "Vous recevez ceci suite à une activité sur votre compte X2KEY.",
+    "settings.emails.title": "Notifications par e-mail",
+    "settings.emails.hint": "Tout apparaît aussi dans vos Annonces. Les e-mails d’argent, de litige et de sécurité sont toujours envoyés.",
+    "settings.emails.order": "Suivi des commandes (nouvelle, livrée, terminée, annulée)",
+    "settings.emails.merchant": "Boutique (stock bas, changement de niveau)",
+    "settings.emails.ticket": "Réponses aux tickets de support",
+    "settings.emails.save": "Enregistrer",
+    "settings.emails.saved": "Préférences e-mail enregistrées."
 }

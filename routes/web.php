@@ -365,6 +365,7 @@ Route::middleware('auth')->group(function (): void {
 
     // Settings › Account
     Route::put('/settings/account', [AccountController::class, 'update'])->name('settings.account.update');
+    Route::put('/settings/account/emails', [AccountController::class, 'updateEmails'])->name('settings.account.emails');
     // Personal data download (spec Part 23, GDPR): recent password, a few times per hour
     Route::get('/settings/account/export', [OpsController::class, 'export'])->middleware(['recent.password', 'throttle:data-export'])->name('settings.account.export');
 

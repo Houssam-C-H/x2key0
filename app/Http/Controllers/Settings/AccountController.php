@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Settings;
 
+use App\Domains\Announcements\Support\Notifier;
 use App\Domains\Identity\Enums\MessengerType;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Models\UserMessenger;
+use App\Domains\Identity\Models\UserPreference;
 use App\Http\Middleware\ResolveLocale;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,6 +42,8 @@ final class AccountController
                 'level' => $user->level?->label(),
                 'memberSince' => $user->created_at->toDateString(),
                 'sellerPromoEmails' => $user->preferences->seller_promo_emails ?? true,
+                // E-mail copies of notifications (Notifier::EMAILED), on unless switched off.
+                'emails' => array_combine(Notifier::PREFERENCES, array_map(static fn (string $p): bool => Notifier::wants($user->id, $p), Notifier::PREFERENCES)),
             ],
             'messengers' => collect(MessengerType::cases())->map(fn (MessengerType $type): array => [
                 'type' => $type->value,
@@ -47,6 +51,25 @@ final class AccountController
             ])->all(),
             'timezones' => timezone_identifiers_list(),
         ]);
+    }
+
+    public function updateEmails(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $rules = [];
+        foreach (Notifier::PREFERENCES as $p) {
+            $rules[$p] = ['boolean'];
+        }
+        $request->validate($rules);
+
+        $prefs = [];
+        foreach (Notifier::PREFERENCES as $p) {
+            $prefs[$p] = $request->boolean($p);
+        }
+        UserPreference::query()->updateOrCreate(['user_id' => $user->id], ['email_prefs' => $prefs]);
+
+        return back()->with('success', __('settings.emails.saved'));
     }
 
     public function update(Request $request): RedirectResponse

@@ -211,7 +211,7 @@
     "settings.account.messengers": "تطبيقات المراسلة",
     "settings.account.messengers_hint": "يراها فريق X2KEY فقط للتواصل معك بشأن الطلبات. لا تتم مشاركتها مع المشترين أو البائعين.",
     "settings.account.social": "الحسابات المرتبطة",
-    "settings.account.social_hint": "الدخول بحسابات أخرى. الربط قريبًا.",
+    "settings.account.social_hint": "سجّل الدخول عبر Google أو Facebook: اربطهما من الأمان.",
     "security.verified": "موثّق",
     "security.unverified": "غير موثّق",
     "security.email.title": "البريد الإلكتروني",
@@ -2004,5 +2004,16 @@
     "notify.storage_disabled.title": "تم إيقاف مخزنك",
     "notify.storage_disabled.body": "أوقف X2KEY المخزن لمتجرك. العروض المسلَّمة من المخزن نافدة حتى إعادة تفعيله.",
     "notify.storage_enabled.title": "تمت إعادة تفعيل مخزنك",
-    "notify.storage_enabled.body": "المخزن متاح مجددًا وعادت عروضك إلى المخزون."
+    "notify.storage_enabled.body": "المخزن متاح مجددًا وعادت عروضك إلى المخزون.",
+    "mail.footer.line": "X2KEY · سوق سلع الألعاب الرقمية. لا تشارك الرموز أو كلمات المرور خارج طلبك على X2KEY.",
+    "mail.footer.preferences": "إدارة تفضيلات البريد",
+    "mail.notification.action": "افتح في X2KEY",
+    "mail.notification.why": "تتلقى هذا بسبب نشاط على حساب X2KEY الخاص بك.",
+    "settings.emails.title": "إشعارات البريد الإلكتروني",
+    "settings.emails.hint": "يظهر كل شيء أيضًا في صندوق الإعلانات. تُرسل رسائل المال والنزاعات والأمان دائمًا.",
+    "settings.emails.order": "تحديثات الطلبات (جديد، مُسلَّم، مكتمل، ملغى)",
+    "settings.emails.merchant": "تحديثات المتجر (مخزون منخفض، تغيّر المستوى)",
+    "settings.emails.ticket": "ردود تذاكر الدعم",
+    "settings.emails.save": "حفظ التفضيلات",
+    "settings.emails.saved": "تم حفظ تفضيلات البريد."
 }

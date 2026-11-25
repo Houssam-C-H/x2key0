@@ -105,7 +105,7 @@ it('refuses public coupons, other sellers\' offers and sends over the daily cap'
     ($this->send)()->assertSessionHasErrors('send');
 
     expect(MarketingEmail::query()->count())->toBe(0);
-    Mail::assertNothingQueued();
+    Mail::assertNotQueued(MarketingMail::class);
 });
 
 it('bills the send the next day from the Available balance (MARKETING_FEE), once', function (): void {

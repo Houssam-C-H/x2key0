@@ -22,6 +22,8 @@ levels recompute, trending, account deletions, retention pruning, `ops:heartbeat
 
 **Browser tests** (tests/e2e, Playwright with the installed Microsoft Edge): with the app running, `npm run e2e`. It first runs `php artisan e2e:prepare` (via `docker compose exec` by default; set `E2E_ARTISAN="php artisan"` and `BASE_URL=…` otherwise), which resets the accounts `e2e_buyer`, `e2e_seller`, `e2e_admin` and one test offer — it refuses to run in production. Every journey runs at desktop and phone size and fails if a page scrolls sideways. Report: `storage/e2e-report/index.html`.
 
+**E-mail:** all mail uses the branded theme (resources/views/vendor/mail, logo `public/brand/x2key-logo-email.png`). Important inbox notifications are also e-mailed (`Notifier::EMAILED`; users can switch off order / store / ticket e-mails in Settings › Account, money, dispute and safety ones always go). Mail is queued, so a queue worker must run. Any SMTP provider works without code: e.g. Resend — `MAIL_MAILER=smtp`, `MAIL_HOST=smtp.resend.com`, `MAIL_PORT=465`, `MAIL_SCHEME=smtps`, `MAIL_USERNAME=resend`, `MAIL_PASSWORD=<API key>`, `MAIL_FROM_ADDRESS=no-reply@<your-domain>` (verify the domain's SPF/DKIM in the provider first).
+
 ## 2. Health and alerts
 
 - `GET /up` — the framework is booting (load balancer check).

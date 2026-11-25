@@ -16,12 +16,11 @@ interface Props {
         level: string | null;
         memberSince: string;
         sellerPromoEmails: boolean;
+        emails: Record<string, boolean>;
     };
     messengers: { type: string; handle: string }[];
     timezones: string[];
 }
-
-const SOCIAL = ['google', 'facebook', 'steam', 'x', 'discord', 'tiktok', 'line'];
 
 export default function Account({ account, messengers, timezones }: Props) {
     const t = useT();
@@ -140,17 +139,42 @@ export default function Account({ account, messengers, timezones }: Props) {
                 </div>
             </Panel>
 
+            <EmailsPanel emails={account.emails} />
+
             <Panel title={t('settings.account.social')} description={t('settings.account.social_hint')}>
-                <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                    {SOCIAL.map((p) => (
-                        <li key={p} className="flex items-center justify-between rounded-md border border-line px-3 py-2">
-                            <span className="font-medium capitalize">{p === 'x' ? 'X' : p}</span>
-                            <span className="text-xs text-muted">{t('settings.coming_soon')}</span>
-                        </li>
-                    ))}
-                </ul>
+                <Link href="/settings/security#connected" className="btn-outline-pill px-4 py-2 text-sm">
+                    {t('security.social.title')}
+                </Link>
             </Panel>
         </DashboardLayout>
+    );
+}
+
+/** E-mail copies of notifications (Notifier::EMAILED); money, dispute and security e-mails are always sent. */
+function EmailsPanel({ emails }: { emails: Record<string, boolean> }) {
+    const t = useT();
+    const form = useForm(emails);
+
+    return (
+        <Panel id="emails" title={t('settings.emails.title')} description={t('settings.emails.hint')}>
+            <form
+                className="space-y-3"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    form.put('/settings/account/emails', { preserveScroll: true });
+                }}
+            >
+                {Object.keys(emails).map((k) => (
+                    <label key={k} className="flex items-center gap-3 text-sm">
+                        <input type="checkbox" className="accent-primary" checked={form.data[k] ?? true} onChange={(e) => form.setData(k, e.target.checked)} />
+                        {t('settings.emails.' + k)}
+                    </label>
+                ))}
+                <button type="submit" className="btn-primary" disabled={form.processing}>
+                    {t('settings.emails.save')}
+                </button>
+            </form>
+        </Panel>
     );
 }
 

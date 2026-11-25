@@ -57,6 +57,20 @@ def icon(size: int, inset: float, rounded: bool = True) -> Image.Image:
     return canvas.resize((size, size), Image.LANCZOS)
 
 
+def logo_png(width: int) -> Image.Image:
+    """Full logo (mark + wordmark) on transparent, for e-mails (clients do not render SVG reliably)."""
+    full = json.loads((ROOT / 'resources/js/Components/Brand/logo-paths.json').read_text())['full']
+    big_w = width * SS
+    scale = big_w / full['w']
+    big_h = int(full['h'] * scale) + 2
+    side = max(big_w, big_h)
+    canvas = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+    canvas.paste(INK, (0, 0), shape_mask(full['ink'], side, scale, 0))
+    canvas.paste(RED, (0, 0), shape_mask(full['red'], side, scale, 0))
+    canvas = canvas.crop((0, 0, big_w, big_h))
+    return canvas.resize((width, max(1, big_h // SS)), Image.LANCZOS)
+
+
 def main() -> None:
     brand = ROOT / 'public' / 'brand'
     brand.mkdir(parents=True, exist_ok=True)
@@ -65,6 +79,7 @@ def main() -> None:
     icon(192, 0.14).save(brand / 'icon-192.png', optimize=True)
     icon(512, 0.14).save(brand / 'icon-512.png', optimize=True)
     icon(512, 0.22, rounded=False).save(brand / 'icon-maskable-512.png', optimize=True)
+    logo_png(360).save(brand / 'x2key-logo-email.png', optimize=True)
     print('icons written to', brand)
 
 
