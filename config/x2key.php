@@ -23,6 +23,19 @@ return [
     // GET /health?token=… returns the detailed checks; without the token only the overall status (docs/RUNBOOK.md).
     'ops' => [
         'health_token' => env('HEALTH_TOKEN'),
+
+        // Backups (docs/RUNBOOK.md §4): `ops:backup` nightly to this disk (an S3-compatible bucket in production,
+        // separate from the app's own storage), kept this many days. The health check fails when the last good
+        // backup is older than backup_max_age_hours, wherever backups are required (production by default).
+        'backup_disk' => env('BACKUP_DISK', 'backups'),
+        'backup_retention_days' => (int) env('BACKUP_RETENTION_DAYS', 14),
+        'backup_max_age_hours' => (int) env('BACKUP_MAX_AGE_HOURS', 26),
+        'backups_required' => (bool) env('BACKUPS_REQUIRED', env('APP_ENV') === 'production'),
+
+        // Alerts: a failing health check (and its recovery) goes to this e-mail and/or Slack incoming webhook.
+        'alert_email' => env('OPS_ALERT_EMAIL'),
+        'alert_slack_webhook' => env('OPS_SLACK_WEBHOOK'),
+        'alert_repeat_minutes' => (int) env('OPS_ALERT_REPEAT_MINUTES', 60),
     ],
 
     // Data retention per table (spec Part 23 "retention per table"), applied by `privacy:prune` daily.

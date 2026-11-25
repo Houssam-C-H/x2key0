@@ -30,6 +30,14 @@ return [
 
     'disks' => [
 
+        // ops:backup target when BACKUP_DISK is not set to a bucket (outside the uploaded folders it archives).
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'throw' => true,
+            'report' => false,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

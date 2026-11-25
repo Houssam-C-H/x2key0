@@ -48,6 +48,15 @@ final class HealthCheck
             ? ['ok' => true, 'detail' => 'last ledger:verify clean']
             : ['ok' => ! is_array($ledger), 'detail' => is_array($ledger) ? 'ledger:verify found problems' : 'ledger:verify has not run yet'];
 
+        // Backups (ops:backup nightly): only where they are required (production by default).
+        if (config()->boolean('x2key.ops.backups_required')) {
+            $age = Backup::age();
+            $max = config()->integer('x2key.ops.backup_max_age_hours') * 3600;
+            $checks['backup'] = $age !== null && $age <= $max
+                ? ['ok' => true, 'detail' => 'last backup '.intdiv($age, 3600).' h ago']
+                : ['ok' => false, 'detail' => $age === null ? 'no backup recorded (is ops:backup scheduled?)' : 'last backup '.intdiv($age, 3600).' h ago'];
+        }
+
         $stuck = DB::table('payment_events')->where('signature_valid', true)->whereNull('processed_at')->where('received_at', '<', now()->subMinutes(15))->count();
         $checks['payments'] = ['ok' => $stuck === 0, 'detail' => "{$stuck} payment event(s) unprocessed for 15 minutes"];
 

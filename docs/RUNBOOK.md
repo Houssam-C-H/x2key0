@@ -48,6 +48,11 @@ levels recompute, trending, account deletions, retention pruning, `ops:heartbeat
 | payments | Check the PSP status page and webhook delivery; `php artisan payments:sync-pending` pulls state from the PSP. Events are stored once and applied once (safe to replay). |
 | database / cache | Provider console; app returns 503 until back. |
 
+### Alerts and uptime
+
+- `ops:check` (every 5 minutes) sends failing checks to `OPS_ALERT_EMAIL` and/or a Slack incoming webhook `OPS_SLACK_WEBHOOK`: once when a check fails, every `OPS_ALERT_REPEAT_MINUTES` (60) while it stays down, once when it recovers. Messages contain check names and short details only.
+- These alerts need the app to be running. Add an **external uptime monitor** (UptimeRobot, Better Stack, Pingdom…) that calls `https://<your-domain>/health` every minute (with `HEALTH_TOKEN` for full detail) and alerts by SMS/e-mail when it fails or is unreachable — that also covers the whole server being down.
+
 ## 3. Security settings to check at every deploy
 
 - `APP_ENV=production`, `APP_DEBUG=false`, HTTPS only; HSTS is sent automatically in production over HTTPS.
@@ -61,7 +66,8 @@ levels recompute, trending, account deletions, retention pruning, `ops:heartbeat
 ## 4. Backups and restore
 
 - **Continuous**: managed PostgreSQL with point-in-time recovery (PITR), 7–14 days.
-- **Logical**: `scripts/backup.sh` daily to separate storage (14 days kept, SHA-256 alongside).
+- **Logical, automatic**: `php artisan ops:backup` runs nightly at 03:15 from the scheduler wherever backups are required (production by default, `BACKUPS_REQUIRED`). It writes the database (`pg_dump` custom format) and every uploaded file (`storage/app/public` + `private` as `uploads.tar.gz`), each with its SHA-256 and a `manifest.json`, to `BACKUP_DISK` under `backups/<UTC stamp>/`, and deletes sets older than `BACKUP_RETENTION_DAYS` (14). Point `BACKUP_DISK` at a bucket **in another account or provider** than the app (e.g. an `s3` disk with its own keys); the default `backups` disk is local and only for development. The `backup` health check fails when the last good backup is older than `BACKUP_MAX_AGE_HOURS` (26), so a silent stop raises an alert.
+- `scripts/backup.sh` remains for one-off dumps from outside the app.
 - **Drill** (monthly, and before launch): `scripts/restore-drill.sh <dump>` on a non-production server. It restores,
   checks migrations and runs `ledger:verify`. Record the duration (RTO) and the backup age (RPO) in the drill log.
 - Files: private disk (evidence, invoices, storage uploads) must be backed up with the same retention.
