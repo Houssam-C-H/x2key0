@@ -37,6 +37,15 @@ const paths: Record<string, string> = {
     check: 'm5 12 4.5 4.5L19 7',
     sparkle: 'M12 3v4m0 10v4M3 12h4m10 0h4M6.3 6.3l2.8 2.8m5.8 5.8 2.8 2.8m0-11.4-2.8 2.8m-5.8 5.8-2.8 2.8',
     wallet: 'M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1V7Zm0 0 11-3v3m1 7h.01',
+    repeat: 'M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3m13-2v2a3 3 0 0 1-3 3H4',
+    monitor: 'M3 5h18v11H3V5Zm6 15h6m-3-4v4',
+    puzzle: 'M5 8h3a2 2 0 1 1 4 0h3v3a2 2 0 1 1 0 4v4H5v-4a2 2 0 1 0 0-4V8Z',
+    card: 'M3 6h18v12H3V6Zm0 4h18M7 15h3',
+    mail: 'M3 6h18v12H3V6Zm0 0 9 7 9-7',
+    bag: 'M5 8h14l-1 12H6L5 8Zm4 0V6a3 3 0 0 1 6 0v2',
+    phone: 'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm3 15h2',
+    grid: 'M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z',
+    fire: 'M12 21a7 7 0 0 0 7-7c0-4-3-6-4-9-1 3-3 3-3 3s0-3-2-5c0 4-5 6-5 11a7 7 0 0 0 7 7Zm0 0a3 3 0 0 0 3-3c0-2-2-3-2-4-1 1-2 1-2 1s-2 1-2 3a3 3 0 0 0 3 3Z',
 };
 
 export type IconName = keyof typeof paths;
@@ -76,4 +85,11 @@ export const categoryIcon: Record<string, string> = {
     video_games: 'gamepad',
     gift_cards: 'gift',
     coupons_savings: 'tag',
+    subscriptions: 'repeat',
+    software_apps: 'monitor',
+    game_dlc: 'puzzle',
+    gaming_ecards: 'card',
+    egift_cards: 'mail',
+    retail_gift_cards: 'bag',
+    mobile_recharges: 'phone',
 };

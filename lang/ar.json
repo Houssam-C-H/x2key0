@@ -1919,5 +1919,13 @@
     "home.sell.one": "تسليم تلقائي من خزنة مفاتيحك",
     "home.sell.two": "رسوم أقل مع ارتقاء مستوى متجرك",
     "home.sell.three": "اسحب إلى PayPal أو Payoneer أو USDT أو البنك",
-    "home.sell.cta": "ابدأ البيع"
+    "home.sell.cta": "ابدأ البيع",
+    "header.browse": "تصفّح",
+    "header.search_short": "ابحث عن ألعاب وشحن وبطاقات…",
+    "header.in_category": "في",
+    "megamenu.popular_in": "الأكثر طلبًا في :label",
+    "megamenu.view_all_in": "كل :label",
+    "megamenu.sell_title": "لديك مخزون للبيع؟",
+    "megamenu.sell_body": "افتح متجرًا في دقائق وتواصل مع مشترين حول العالم.",
+    "megamenu.empty": "لا توجد ألعاب في هذه الفئة بعد."
 }

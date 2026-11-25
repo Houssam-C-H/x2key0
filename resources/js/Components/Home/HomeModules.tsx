@@ -159,7 +159,7 @@ export function HomeModuleView({ module }: { module: HomeModule }) {
                             <li key={l.href}>
                                 <Link href={l.href} className="group flex items-center gap-3 rounded-xl border border-line bg-white p-2 pe-3 transition hover:border-primary/40 hover:shadow-md">
                                     <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
-                                        <GameArt name={l.game ?? l.label} />
+                                        <GameArt name={l.game ?? l.label} compact />
                                     </span>
                                     <span className="min-w-0 flex-1">
                                         <span className="block truncate text-sm font-semibold group-hover:text-primary">{l.game ?? l.label}</span>

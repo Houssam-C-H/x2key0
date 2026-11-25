@@ -1919,5 +1919,13 @@
     "home.sell.one": "Livraison automatique depuis votre coffre",
     "home.sell.two": "Des frais plus bas à mesure que votre boutique progresse",
     "home.sell.three": "Retraits vers PayPal, Payoneer, USDT ou banque",
-    "home.sell.cta": "Commencer à vendre"
+    "home.sell.cta": "Commencer à vendre",
+    "header.browse": "Parcourir",
+    "header.search_short": "Rechercher jeux, recharges, cartes…",
+    "header.in_category": "Dans",
+    "megamenu.popular_in": "Populaires dans :label",
+    "megamenu.view_all_in": "Tout :label",
+    "megamenu.sell_title": "Du stock à vendre ?",
+    "megamenu.sell_body": "Ouvrez une boutique en quelques minutes et touchez des acheteurs du monde entier.",
+    "megamenu.empty": "Aucun jeu dans cette catégorie pour le moment."
 }

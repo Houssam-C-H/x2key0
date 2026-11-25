@@ -23,7 +23,7 @@ function monogram(name: string): string {
  * Cover art for a game: the licensed image when there is one, otherwise a generated tile (brand guidelines §6):
  * a gradient picked from the game's name, a large monogram and the category icon — never an empty box.
  */
-export function GameArt({ name, image, category, className = '' }: { name: string; image?: string | null; category?: string; className?: string }) {
+export function GameArt({ name, image, category, compact = false, className = '' }: { name: string; image?: string | null; category?: string; compact?: boolean; className?: string }) {
     if (image) {
         return <img src={image} alt="" loading="lazy" className={'h-full w-full object-cover ' + className} />;
     }
@@ -32,7 +32,11 @@ export function GameArt({ name, image, category, className = '' }: { name: strin
 
     return (
         <div aria-hidden="true" className={'relative h-full w-full overflow-hidden ' + className} style={style}>
-            <span className="absolute -bottom-3 -end-2 font-display text-[5.5rem] font-extrabold leading-none text-white/15 select-none">{monogram(name)}</span>
+            {compact ? (
+                <span className="absolute inset-0 flex items-center justify-center font-display text-sm font-extrabold text-white/95 select-none">{monogram(name)}</span>
+            ) : (
+                <span className="absolute -bottom-3 -end-2 font-display text-[5.5rem] font-extrabold leading-none text-white/15 select-none">{monogram(name)}</span>
+            )}
             {category && (
                 <span className="absolute start-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 text-white backdrop-blur-sm">
                     <Icon name={categoryIcon[category] ?? 'box'} size={18} />

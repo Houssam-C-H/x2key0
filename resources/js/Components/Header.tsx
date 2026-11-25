@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { useLocalePath, useShared, useT } from '@/lib/i18n';
 import { AccountMenu } from './AccountMenu';
+import { CategorySelect } from './CategorySelect';
 import { Icon } from './Icon';
 import { LocaleModal } from './LocaleModal';
 import { MegaMenu } from './MegaMenu';
@@ -11,7 +12,7 @@ import { MegaMenu } from './MegaMenu';
 export function Header() {
     const t = useT();
     const lp = useLocalePath();
-    const { auth, locale, currency, categoryTypes, app, inbox, chat } = useShared();
+    const { auth, locale, currency, app, inbox, chat } = useShared();
     const [menuOpen, setMenuOpen] = useState(false);
     const [localeOpen, setLocaleOpen] = useState(false);
 
@@ -19,16 +20,6 @@ export function Header() {
         <header className="sticky top-0 z-30 bg-surface-dark text-white">
             <div className="relative">
                 <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4">
-                    <button
-                        type="button"
-                        className="rounded-md p-2 hover:bg-white/10"
-                        aria-label={t('header.menu')}
-                        aria-expanded={menuOpen}
-                        onClick={() => setMenuOpen((v) => !v)}
-                    >
-                        <Icon name="menu" />
-                    </button>
-
                     <Link href={lp('/')} aria-label={app.name} className="shrink-0">
                         <span className="hidden sm:inline-flex">
                             <Logo tone="dark" size={30} label={app.name} />
@@ -38,32 +29,48 @@ export function Header() {
                         </span>
                     </Link>
 
-                    <form action={`/${locale}/search`} method="get" className="mx-2 hidden flex-1 md:flex" role="search">
+                    <button
+                        type="button"
+                        className={
+                            'flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-semibold transition lg:px-3.5 ' +
+                            (menuOpen ? 'bg-white text-ink' : 'bg-white/5 ring-1 ring-white/10 hover:bg-white/10')
+                        }
+                        aria-label={t('header.menu')}
+                        aria-expanded={menuOpen}
+                        onClick={() => setMenuOpen((v) => !v)}
+                    >
+                        <Icon name={menuOpen ? 'x' : 'grid'} size={18} />
+                        <span className="hidden lg:inline">{t('header.browse')}</span>
+                    </button>
+
+                    <form
+                        action={`/${locale}/search`}
+                        method="get"
+                        role="search"
+                        className="mx-1 hidden h-11 flex-1 items-stretch rounded-xl bg-white p-1 ring-2 ring-transparent transition focus-within:ring-brand-lavender md:flex"
+                    >
+                        <Icon name="search" size={18} className="ms-2.5 shrink-0 self-center text-muted" />
                         <input
                             name="q"
                             type="search"
-                            placeholder={t('header.search_placeholder')}
+                            placeholder={t('header.search_short')}
                             aria-label={t('header.search')}
-                            className="h-10 min-w-0 flex-1 rounded-s-md bg-white px-3 text-ink outline-none"
+                            className="min-w-0 flex-1 bg-transparent px-2.5 text-sm text-ink outline-none placeholder:text-muted"
                         />
-                        <select name="type" aria-label={t('header.all_categories')} className="h-10 max-w-44 border-s border-line bg-white px-2 text-ink">
-                            <option value="">{t('header.all_categories')}</option>
-                            {categoryTypes.map((c) => (
-                                <option key={c.code} value={c.code}>
-                                    {c.label}
-                                </option>
-                            ))}
-                        </select>
-                        <button type="submit" className="flex h-10 w-11 items-center justify-center rounded-e-md bg-primary hover:bg-primary-hover" aria-label={t('header.search')}>
-                            <Icon name="search" />
+                        <CategorySelect />
+                        <button type="submit" className="ms-1 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover">
+                            {t('header.search')}
                         </button>
                     </form>
 
                     <div className="ms-auto flex items-center gap-2">
+                        <Link href={lp('/search')} className="rounded-md p-2 hover:bg-white/10 md:hidden" aria-label={t('header.search')}>
+                            <Icon name="search" />
+                        </Link>
                         <button
                             type="button"
                             onClick={() => setLocaleOpen(true)}
-                            className="flex items-center gap-1.5 rounded-full border border-white/25 px-3 py-1.5 text-sm hover:bg-white/10"
+                            className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm text-white/85 ring-1 ring-white/15 hover:bg-white/10 hover:text-white"
                         >
                             <Icon name="globe" size={16} />
                             <span className="uppercase">{locale}</span>
@@ -93,10 +100,11 @@ export function Header() {
                             </>
                         ) : (
                             <>
-                                <Link href={lp('/register')} className="hidden rounded-full border border-white/60 px-4 py-1.5 text-sm font-semibold hover:bg-white/10 sm:inline-flex">
+                                <Link href={lp('/register')} className="hidden items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold text-white/85 hover:text-white xl:inline-flex">
+                                    <Icon name="store" size={16} />
                                     {t('header.become_seller')}
                                 </Link>
-                                <Link href={lp('/login')} className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold hover:bg-primary-hover">
+                                <Link href={lp('/login')} className="whitespace-nowrap rounded-full bg-gradient-to-r from-primary to-brand-magenta px-4 py-2 text-sm font-semibold shadow-lg shadow-primary/30 hover:brightness-110">
                                     {t('header.login_register')}
                                 </Link>
                             </>

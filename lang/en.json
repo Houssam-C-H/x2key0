@@ -1919,5 +1919,13 @@
     "home.sell.one": "Automatic delivery from your key vault",
     "home.sell.two": "Lower fees as your store levels up",
     "home.sell.three": "Withdraw to PayPal, Payoneer, USDT or bank",
-    "home.sell.cta": "Start selling"
+    "home.sell.cta": "Start selling",
+    "header.browse": "Browse",
+    "header.search_short": "Search games, top-ups, gift cards…",
+    "header.in_category": "In",
+    "megamenu.popular_in": "Popular in :label",
+    "megamenu.view_all_in": "All :label",
+    "megamenu.sell_title": "Have stock to sell?",
+    "megamenu.sell_body": "Open a store in minutes and reach buyers worldwide.",
+    "megamenu.empty": "No games in this category yet."
 }
