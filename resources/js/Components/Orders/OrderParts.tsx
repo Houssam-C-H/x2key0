@@ -92,8 +92,8 @@ export interface OrderDetail {
 }
 
 export const ORDER_STATUS_STYLE: Record<string, string> = {
-    pending_payment: 'bg-warning/15 text-warning',
-    payment_review: 'bg-warning/15 text-warning',
+    pending_payment: 'bg-warning/15 text-warning-ink',
+    payment_review: 'bg-warning/15 text-warning-ink',
     paid: 'bg-primary-soft text-primary',
     delivering: 'bg-primary-soft text-primary',
     delivered: 'bg-success/10 text-success',

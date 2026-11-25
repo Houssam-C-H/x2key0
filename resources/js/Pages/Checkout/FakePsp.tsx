@@ -22,7 +22,7 @@ export default function FakePsp({ id, amount, description, status, returnUrl }: 
         <div className="flex min-h-screen items-center justify-center bg-surface-dark px-4">
             <Head title={t('fake_psp.title')} />
             <div className="w-full max-w-sm space-y-5 rounded-xl bg-white p-6 shadow-xl">
-                <p className="rounded bg-warning/15 px-2 py-1 text-center text-xs font-bold uppercase text-warning">{t('fake_psp.banner')}</p>
+                <p className="rounded bg-warning/15 px-2 py-1 text-center text-xs font-bold uppercase text-warning-ink">{t('fake_psp.banner')}</p>
                 <div className="text-center">
                     <p className="text-sm text-muted">{description}</p>
                     <p className="text-3xl font-extrabold">{formatUsd(amount, locale)}</p>

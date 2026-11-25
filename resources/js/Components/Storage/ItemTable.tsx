@@ -24,7 +24,7 @@ interface Secret {
 
 const STATUS_STYLE: Record<string, string> = {
     available: 'bg-success/10 text-success',
-    reserved: 'bg-warning/15 text-warning',
+    reserved: 'bg-warning/15 text-warning-ink',
     assigned: 'bg-canvas text-muted',
     revoked: 'bg-danger/10 text-danger',
     invalid: 'bg-danger/10 text-danger',

@@ -1,3 +1,4 @@
+import { Logo } from '@/Components/Brand/Logo';
 import { useShared, useT } from '@/lib/i18n';
 
 /**
@@ -38,7 +39,10 @@ export function Footer() {
 
     return (
         <footer className="mt-16 bg-surface-dark text-white/80">
-            <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mx-auto max-w-7xl px-4 pt-10">
+                <Logo tone="dark" size={28} label={app.name} />
+            </div>
+            <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
                 {shown.map((col) => (
                     <div key={col.title}>
                         <h3 className="mb-3 text-sm font-bold tracking-wide text-white uppercase">{t(col.title)}</h3>

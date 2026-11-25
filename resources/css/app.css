@@ -1,19 +1,29 @@
 @import 'tailwindcss';
+/* Self-hosted brand fonts (docs/BRAND.md §4): no third-party requests, CSP font-src 'self'. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/sora';
+@import '@fontsource-variable/noto-sans-arabic';
 
 @source '../js/**/*.tsx';
 @source '../views/**/*.blade.php';
 
 /*
- * X2KEY design tokens (spec 1.0 roles, X2KEY brand values).
+ * X2KEY design tokens — the brand guidelines (docs/BRAND.md) are the source of truth for these values.
+ * Every text/background pair used for text meets WCAG 2.2 AA (4.5:1); see the contrast table in BRAND.md.
  * Use logical utilities (ms-/me-/ps-/pe-/start-/end-) everywhere so RTL works.
  */
 @theme {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Sora', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Inter Variable', 'Noto Sans Arabic Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Sora Variable', 'Inter Variable', 'Noto Sans Arabic Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-arabic: 'Noto Sans Arabic Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
     --color-primary: #5b3df5;
     --color-primary-hover: #4a2ee0;
     --color-primary-soft: #eeeaff;
+
+    /* Brand accents (logo gradient violet → magenta; lavender for accents on dark). */
+    --color-brand-magenta: #db2777;
+    --color-brand-lavender: #a594ff;
 
     --color-ink: #12121a;
     --color-muted: #6b6f80;
@@ -22,18 +32,19 @@
     --color-surface-dark: #0b0e1f;
     --color-surface-dark-2: #151a33;
 
-    --color-success: #16a34a;
+    --color-success: #15803d; /* 5.0:1 on white (was #16a34a, 3.3:1) */
     --color-danger: #e11d48;
-    --color-warning: #f59e0b;
+    --color-warning: #d97706; /* fills, borders, stars: 3.2:1 non-text */
+    --color-warning-ink: #b45309; /* warning text: 5.0:1 */
     --color-warning-soft: #fff7e6;
 
     /* One colour per category type (Hot Game cards, chips). */
-    --color-cat-currency: #f97316;
+    --color-cat-currency: #c2410c;
     --color-cat-items: #7c3aed;
     --color-cat-accounts: #334155;
-    --color-cat-gift: #0284c7;
+    --color-cat-gift: #0369a1;
     --color-cat-topup: #db2777;
-    --color-cat-games: #059669;
+    --color-cat-games: #047857;
 
     --radius-card: 6px;
     --radius-btn: 6px;
@@ -47,6 +58,14 @@
 
     body {
         @apply bg-white font-sans text-ink antialiased;
+    }
+
+    /* Arabic: Noto Sans Arabic for body and headings (Inter and Sora have no Arabic glyphs). */
+    [dir='rtl'] body,
+    [dir='rtl'] h1,
+    [dir='rtl'] h2,
+    [dir='rtl'] h3 {
+        font-family: var(--font-arabic);
     }
 
     h1,

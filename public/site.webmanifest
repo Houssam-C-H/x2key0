@@ -1,0 +1,15 @@
+{
+    "name": "X2KEY",
+    "short_name": "X2KEY",
+    "description": "Game currency, top-ups, keys, accounts and gift cards from independent sellers, with buyer protection.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0b0e1f",
+    "theme_color": "#0b0e1f",
+    "icons": [
+        { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
+        { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png" },
+        { "src": "/brand/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+        { "src": "/brand/x2key-mark.svg", "sizes": "any", "type": "image/svg+xml" }
+    ]
+}

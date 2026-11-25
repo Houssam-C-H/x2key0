@@ -1,3 +1,4 @@
+import { Logo } from '@/Components/Brand/Logo';
 import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { useLocalePath, useShared, useT } from '@/lib/i18n';
@@ -28,8 +29,13 @@ export function Header() {
                         <Icon name="menu" />
                     </button>
 
-                    <Link href={lp('/')} className="font-display text-xl font-extrabold tracking-tight">
-                        {app.name}
+                    <Link href={lp('/')} aria-label={app.name} className="shrink-0">
+                        <span className="hidden sm:inline-flex">
+                            <Logo tone="dark" size={30} label={app.name} />
+                        </span>
+                        <span className="sm:hidden">
+                            <Logo tone="dark" size={30} markOnly label={app.name} />
+                        </span>
                     </Link>
 
                     <form action={`/${locale}/search`} method="get" className="mx-2 hidden flex-1 md:flex" role="search">

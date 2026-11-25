@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="t">
+  <title id="t">X2KEY</title>
+  <defs>
+    <linearGradient id="x2k-g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b3df5"/>
+      <stop offset="1" stop-color="#db2777"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#x2k-g)"/>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- key: bow, shaft, two teeth — it is also the first stroke of the X -->
+    <circle cx="22" cy="22" r="7" stroke-width="5"/>
+    <path d="M27 27 45 45" stroke-width="6"/>
+    <path d="M39 39 43.5 34.5M43.5 43.5 48 39" stroke-width="5"/>
+    <!-- second stroke of the X -->
+    <path d="M45 19 19 45" stroke-width="6"/>
+  </g>
+</svg>

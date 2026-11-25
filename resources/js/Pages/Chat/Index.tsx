@@ -211,7 +211,7 @@ export default function Chat({ conversations, active, messages: initial, tab: in
                                             <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${m.mine ? 'bg-primary text-white' : 'bg-canvas'}`}>
                                                 <p className="whitespace-pre-wrap break-words">{m.text}</p>
                                                 {m.kind.startsWith('auto') && <p className="mt-1 text-[10px] opacity-70">{t('chat.auto_reply')}</p>}
-                                                {m.hidden && <p className="mt-1 text-[11px] font-semibold text-warning">{t('chat.contact_hidden')}</p>}
+                                                {m.hidden && <p className="mt-1 text-[11px] font-semibold text-warning-ink">{t('chat.contact_hidden')}</p>}
                                                 <time className="mt-1 block text-[10px] opacity-60" dateTime={m.at}>
                                                     {new Date(m.at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                                 </time>
