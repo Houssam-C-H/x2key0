@@ -22,6 +22,7 @@ use App\Domains\Engagement\Models\Favorite;
 use App\Domains\Engagement\Support\EngagementReader;
 use App\Domains\Identity\Models\User;
 use App\Domains\Offers\Models\Offer;
+use App\Domains\Offers\Support\OfferListing;
 use App\Domains\Offers\Support\OfferPresenter;
 use App\Http\Controllers\EngagementController;
 use App\Http\Support\Seo;
@@ -115,6 +116,8 @@ final class CatalogController
 
         // Unit categories (currency, accounts, boosting…) have no catalog products: list offer cards (spec 1.4.1).
         $offerResults = null;
+        $offerFacets = [];
+        $offerBounds = [];
         $serviceTypes = [];
         $activeService = null;
         if (! Product::query()->active()->where('game_category_id', $gameCategory->id)->exists()) {
@@ -143,13 +146,17 @@ final class CatalogController
             }
             $activeServiceId = $activeService?->id;
 
-            $page = Offer::query()->live()->where('offers.game_category_id', $gameCategory->id)
-                ->when($activeServiceId !== null, fn (Builder $q) => $q->where('offers.service_type_id', $activeServiceId))
-                ->when($query->text !== '', fn (Builder $q) => $q->where('offers.title', 'like', '%'.str_replace(['%', '_'], ['\\%', '\\_'], $query->text).'%'))
-                ->recommended()
-                ->with(OfferPresenter::publicRelations())
-                ->paginate(self::OFFERS_PER_PAGE)
-                ->withQueryString();
+            // Same filters as product listings, applied to the offers' attributes (title, facets, ranges, price, sort).
+            $listing = OfferListing::run(
+                $gameCategory,
+                $query,
+                self::OFFERS_PER_PAGE,
+                $activeServiceId,
+                OfferPresenter::publicRelations(),
+            );
+            $page = $listing['page'];
+            $offerFacets = $listing['facets'];
+            $offerBounds = $listing['bounds'];
             $offerResults = [
                 'items' => array_map(fn (Offer $o): array => OfferPresenter::card($o, $locale), $page->items()),
                 'total' => $page->total(),
@@ -169,7 +176,9 @@ final class CatalogController
             'gameCategory' => $info,
             'tabs' => $this->reader->categoryTabs($gameCategory->game, $locale, $gameCategory->id),
             'breadcrumbs' => $crumbs,
-            'filters' => $this->filters($gameCategory, $locale, $result->facets, $result->bounds),
+            'filters' => $offerResults !== null
+                ? $this->filters($gameCategory, $locale, $offerFacets, $offerBounds)
+                : $this->filters($gameCategory, $locale, $result->facets, $result->bounds),
             'query' => [
                 'q' => $query->text,
                 'facets' => $query->facets,

@@ -77,7 +77,7 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
         router.get(window.location.pathname, toParams(state, page, service) as never, { preserveScroll: page === 1, preserveState: true, replace: true });
     };
 
-    const showPrice = results.items.some((p) => p.priceCents !== null) || query.price.min !== null || query.price.max !== null;
+    const showPrice = offerResults !== null || results.items.some((p) => p.priceCents !== null) || query.price.min !== null || query.price.max !== null;
 
     return (
         <PublicLayout>
@@ -115,7 +115,7 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
                     <div className={`${filtersOpen ? 'fixed inset-0 z-40 overflow-y-auto bg-canvas p-4' : 'hidden'} w-full shrink-0 lg:static lg:block lg:w-72 lg:bg-transparent lg:p-0`}>
                         {filtersOpen && (
                             <button type="button" className="btn-primary mb-3 w-full lg:hidden" onClick={() => setFiltersOpen(false)}>
-                                {t('catalog.filter.show_results', { count: results.total })}
+                                {t('catalog.filter.show_results', { count: offerResults?.total ?? results.total })}
                             </button>
                         )}
                         <FilterSidebar filters={filters} state={query} onChange={(s) => visit(s)} showPrice={showPrice} />
@@ -126,7 +126,9 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
                             <button type="button" className="btn-outline-pill px-3 py-1.5 text-sm lg:hidden" onClick={() => setFiltersOpen(true)}>
                                 {t('catalog.filter.title')}
                             </button>
-                            <p className="text-sm text-muted">{t('catalog.results', { count: formatCount(results.total, locale) })}</p>
+                            <p className="text-sm text-muted">
+                                {offerResults !== null ? t('offer.listing_count', { count: formatCount(offerResults.total, locale) }) : t('catalog.results', { count: formatCount(results.total, locale) })}
+                            </p>
                             <div className="ms-auto flex items-center gap-2">
                                 <label className="flex items-center gap-2 text-sm">
                                     <span className="text-muted">{t('catalog.sort.label')}</span>
@@ -166,7 +168,6 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
                                 </div>
                             ) : (
                                 <>
-                                    <p className="mb-3 text-sm text-muted">{t('offer.listing_count', { count: formatCount(offerResults.total, locale) })}</p>
                                     <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
                                         {offerResults.items.map((o) => (
                                             <li key={o.id}>
