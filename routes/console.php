@@ -27,3 +27,4 @@ Schedule::command('marketing:settle')->dailyAt('03:30')->onOneServer();
 Schedule::command('affiliate:release-commissions')->hourly()->onOneServer();
 Schedule::command('levels:recompute')->dailyAt('04:30')->onOneServer();
 Schedule::command('home:refresh-trending')->hourly()->onOneServer();
+Schedule::command('accounts:process-deletions')->dailyAt('05:00')->onOneServer();

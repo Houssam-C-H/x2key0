@@ -43,6 +43,7 @@ use App\Http\Controllers\Seller\ViolationController;
 use App\Http\Controllers\Seller\WithdrawalController;
 use App\Http\Controllers\Settings\AccountController;
 use App\Http\Controllers\Settings\CertificationController;
+use App\Http\Controllers\Settings\DeleteAccountController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\TicketController;
 use App\Http\Middleware\ResolveLocale;
@@ -162,6 +163,7 @@ Route::middleware('auth')->group(function (): void {
         '/affiliate/assets' => fn () => Route::get('/affiliate/assets', [AffiliateController::class, 'assets'])->name('dash.affiliate.assets'),
         '/buy/comments' => fn () => Route::get('/buy/comments', [CommentController::class, 'index'])->name('dash.buy.comments'),
         '/seller/comments' => fn () => Route::get('/seller/comments', [SellerCommentController::class, 'index'])->name('dash.seller.store.comments'),
+        '/settings/delete-account' => fn () => Route::get('/settings/delete-account', [DeleteAccountController::class, 'show'])->name('dash.settings.delete'),
         '/buy/favorites' => fn () => Route::get('/buy/favorites', [EngagementController::class, 'favorites'])->name('dash.buy.favorites'),
         '/seller/withdrawals' => fn () => Route::get('/seller/withdrawals', [WithdrawalController::class, 'index'])->name('dash.seller.withdrawals.records'),
         '/seller/withdrawals/methods' => fn () => Route::get('/seller/withdrawals/methods', [WithdrawalController::class, 'methods'])->name('dash.seller.withdrawals.methods'),
@@ -325,6 +327,11 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/affiliate/links', [AffiliateController::class, 'link'])->middleware('throttle:30,1')->name('affiliate.links');
     Route::post('/affiliate/transfer', [AffiliateController::class, 'transfer'])->middleware(['recent.password', 'throttle:10,1'])->name('affiliate.transfer');
     Route::post('/affiliate/videos', [AffiliateController::class, 'submitVideo'])->middleware('throttle:20,1')->name('affiliate.videos.submit');
+
+    // Delete Account (spec 6.8): two factors, cool-off, cancel
+    Route::post('/settings/delete-account/code', [DeleteAccountController::class, 'code'])->middleware('throttle:5,10')->name('settings.delete.code');
+    Route::post('/settings/delete-account', [DeleteAccountController::class, 'store'])->middleware('throttle:10,10')->name('settings.delete.store');
+    Route::post('/settings/delete-account/cancel', [DeleteAccountController::class, 'cancel'])->name('settings.delete.cancel');
 
     // Coupon Center (spec 14.1): claim, buy with points, store code
     Route::post('/coupons/code', [CouponController::class, 'code'])->middleware('throttle:20,1')->name('coupons.code');

@@ -46,7 +46,9 @@ use App\Domains\Identity\Contracts\SmsSender;
 use App\Domains\Identity\Enums\StaffRole;
 use App\Domains\Identity\Listeners\RecordFailedLogin;
 use App\Domains\Identity\Listeners\RecordSuccessfulLogin;
+use App\Domains\Identity\Models\AccountDeletionRequest;
 use App\Domains\Identity\Models\User;
+use App\Domains\Identity\Policies\StaffReadOnlyPolicy;
 use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\Identity\Support\LogSmsSender;
 use App\Domains\Invoices\Models\Invoice;
@@ -211,6 +213,7 @@ final class AppServiceProvider extends ServiceProvider
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(Coupon::class, MarketingPolicy::class);
         Gate::policy(OrderComment::class, OrderCommentPolicy::class);
+        Gate::policy(AccountDeletionRequest::class, StaffReadOnlyPolicy::class);
         foreach ([HomeModule::class, HomeModuleItem::class, NewsArticle::class, HelpArticle::class, Page::class, SeoLinkRow::class] as $content) {
             Gate::policy($content, ContentPolicy::class);
         }

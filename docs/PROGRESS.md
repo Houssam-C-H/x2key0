@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M18 — Admin & risk completion, reports, account deletion (next). M1–M17 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** M19 — Launch hardening (next). M1–M18 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -22,8 +22,19 @@
 | M15 | Affiliate Program | ✅ code done | See checklist below; cash withdrawals for affiliates pending |
 | M16 | Reviews & community ratings | ✅ code done | See checklist below |
 | M17 | Home CMS, News, Help, footer pages | ✅ code done | See checklist below |
-| M18 | Admin & risk completion, reports | next | |
-| M19 | Launch hardening | not started | |
+| M18 | Admin & risk completion, reports | ✅ code done | See checklist below |
+| M19 | Launch hardening | next | |
+
+## M18 checklist
+- [x] **Account deletion** (spec 6.8, Settings › Delete Account): notice + agreement + exactly two different factors (e-mail code valid 10 min, Privacy Password, authenticator); blockers = any non-zero balance (credits, seller, affiliate, in transit), open orders as buyer or seller, open disputes, open withdrawals → `blocked` with the list; otherwise `scheduled` after `account_deletion_cooloff_days` (14) with cancel; the user keeps access during the cool-off
+- [x] `accounts:process-deletions` (daily): re-checks blockers, then anonymises (username, name, e-mail, phone, password, 2FA), revokes every session, bans the store, suspends the affiliate account; orders, journals and audit logs stay
+- [x] **Manual ledger adjustments** (spec 7.6): finance only, reason ≥ 10 characters, target account (user-owned with a user, or platform) against a platform offset from a fixed list; below `manual_adjustment_dual_approval_amount` (USD 100) posted at once, above it pending until another finance user approves (never your own); MANUAL_ADJUSTMENT journal, every step audited
+- [x] **Reports** (admin, finance): date range → GMV, orders paid/completed, platform revenue and take rate, refunds and refund rate, chargebacks (count, amount, ratio), dispute rate, coupon cost (EXP_PROMOTIONS), affiliate cost (EXP_AFFILIATE), margin per category type, top games, top sellers with disputes, and the work queues (payment review, risk flags, escalated disputes, tickets, certifications, offers to review, withdrawals, campaign applications, affiliate videos, adjustments)
+- [x] **Users** (admins): suspend / ban / reactivate with a reason (signs the user out), reset 2FA, sign out everywhere; staff never act on themselves; deleted accounts are final; all audited. **Account deletions** list for support
+- [x] **Orders**: timeline modal (every status change with actor and reason) and staff "Cancel & refund" for paid orders with nothing delivered (support, finance, admins)
+- [x] With M11–M17 staff now resolve payments, risk, disputes, chargebacks, tickets, withdrawals, violations, offers, reviews, campaigns, affiliates, content and money corrections from the admin without touching the database
+- [x] 8 new tests (`tests/Feature/Admin`): two-factor deletion, cancel, anonymisation, blockers incl. re-check at the end of the cool-off, seller store closed, dual approval (own request refused, rejection), adjustment validation, user moderation, report figures, admin access; Larastan max 0 errors; Pint; TS strict
+- [ ] Data export (GDPR, M19), SMS as a deletion factor, CSV export of reports, scheduled report e-mails, reconciliation dashboard (today: `ledger:reconcile` / `ledger:verify` commands and logs)
 
 ## M17 checklist
 - [x] Tables: home_modules (12 codes, order, on/off, title, item count), home_module_items (pins), news_articles, help_articles, pages (footer column), seo_link_rows; `game_categories.trend_score`, `games.hot_score`
@@ -332,6 +343,7 @@
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
+- 2026-11-25 — `main` fast-forwarded to M17. M18 account deletion, dual-approval ledger adjustments, reports, user moderation and order staff actions built (branch `m18-admin-risk`).
 - 2026-11-24 — `main` fast-forwarded to M16. M17 home CMS (12 modules, pins, trending job), News, Help center, CMS pages and footer, bookmark prompt built (branch `m17-home-content`).
 - 2026-11-24 — `main` fast-forwarded to M15. M16 reviews, community ratings and level recompute built (branch `m16-reviews`).
 - 2026-11-24 — `main` fast-forwarded to M14 (all milestone branches contained). M15 Affiliate Program built (branch `m15-affiliate`). Found while testing: a queued attribution cookie leaked into the next request handled by the same process, so the cookie is now attached to the redirect itself.

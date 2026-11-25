@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Orders;
 
+use App\Domains\Identity\Enums\StaffRole;
+use App\Domains\Identity\Models\User;
+use App\Domains\Orders\Enums\ActorType;
 use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Orders\Exceptions\CheckoutException;
 use App\Domains\Orders\Models\Order;
+use App\Domains\Orders\Models\OrderStatusHistory;
+use App\Domains\Orders\StateMachines\OrderStateMachine;
 use App\Domains\Payments\Actions\ReviewPayment;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Sellers\SellerProfiles\SellerProfileResource;
@@ -20,7 +25,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 use UnitEnum;
 
 /**
@@ -96,6 +103,15 @@ final class OrderResource extends Resource
                     ->visible(fn (Order $record): bool => $record->status === OrderStatus::PaymentReview && Gate::allows('review', $record))
                     ->schema([Textarea::make('reason')->label('Reason (internal)')->required()->maxLength(400)])
                     ->action(fn (Order $record, array $data) => self::run(fn () => app(ReviewPayment::class)->reject($record, SellerProfileResource::actor(), SellerProfileResource::reason($data)), 'Order cancelled; captured amount flagged for refund')),
+                // Timeline (spec Part 18 "Orders (timeline …)"): every status change with actor and reason.
+                Action::make('timeline')->icon(Heroicon::OutlinedClock)->color('gray')
+                    ->modalSubmitAction(false)->modalCancelActionLabel('Close')
+                    ->modalContent(fn (Order $record): HtmlString => self::timeline($record)),
+                // Staff cancel with a full refund to the original sources: paid, nothing delivered (spec 6.1).
+                Action::make('staff_cancel')->label('Cancel & refund')->color('danger')
+                    ->visible(fn (Order $record): bool => $record->status === OrderStatus::Paid && $record->item->delivered_qty === 0 && self::canCancel())
+                    ->schema([Textarea::make('reason')->label('Reason (shown in the order timeline)')->required()->maxLength(400)])
+                    ->action(fn (Order $record, array $data) => self::run(fn () => app(OrderStateMachine::class)->cancel($record, 'staff: '.SellerProfileResource::reason($data), ActorType::Staff, SellerProfileResource::actor()), 'Order cancelled and refunded')),
             ]);
     }
 
@@ -112,9 +128,24 @@ final class OrderResource extends Resource
         }
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    private static function canCancel(): bool
+    {
+        $user = Auth::user();
+
+        return $user instanceof User && ($user->hasStaffRole(StaffRole::Support) || $user->hasStaffRole(StaffRole::Finance) || $user->hasStaffRole(StaffRole::Admin));
+    }
+
+    private static function timeline(Order $order): HtmlString
+    {
+        $rows = OrderStatusHistory::query()->where('order_id', $order->id)->orderBy('id')->get();
+        $html = '<table class="w-full text-sm"><thead><tr><th class="text-start">When</th><th class="text-start">Status</th><th class="text-start">Actor</th><th class="text-start">Reason</th></tr></thead><tbody>';
+        foreach ($rows as $row) {
+            $html .= '<tr><td>'.e($row->created_at->toDateTimeString()).'</td><td>'.e(($row->from_status->value ?? '—').' → '.$row->to_status->value).'</td><td>'.e($row->actor_type->value.($row->actor_id !== null ? ' #'.$row->actor_id : '')).'</td><td>'.e((string) $row->reason).'</td></tr>';
+        }
+
+        return new HtmlString($html.'</tbody></table>');
+    }
+
     public static function getPages(): array
     {
         return ['index' => ListOrders::route('/')];

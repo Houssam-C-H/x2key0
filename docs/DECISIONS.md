@@ -61,6 +61,12 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-030 — Account deletion, manual adjustments, reports (2026-11-25)
+- **Deletion = anonymisation, not removal**: the user row stays (orders, journals and audit logs point at it) with every personal field replaced; the store is banned and the affiliate account suspended so nothing public refers to the person. The account keeps working during the cool-off so the user can cancel, and the blockers are checked again at the end because money or orders can appear meanwhile.
+- **Two different factors**, chosen by the user from e-mail code, Privacy Password and authenticator (SMS waits for a real SMS provider).
+- **Adjustments are journals, never balance edits**: target account against a platform offset from a short list; the threshold for a second approver is a setting; the requester can never approve their own adjustment, and rejected ones leave no journal.
+- **Reports are read live** from orders and the ledger for any date range (no stored aggregates yet); revenue = commission + buyer fees, the platform's share of the order.
+
 ## ADR-029 — Home CMS and content (2026-11-24)
 - **The home page is data**: `home_modules` decides which of the 12 sections show and in what order; the controller only adds the viewer's Browsing History. Shared module data is cached per locale and dropped by a version bump whenever any content model is saved, deleted, or the trending job runs, so staff edits show at once without cache keys to track.
 - **Automatic picks with pins on top**: each module has a rule (trend score, newest, featured, latest) and staff can pin items that always come first; pins of the wrong category type are ignored.
