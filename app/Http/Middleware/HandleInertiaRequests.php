@@ -12,6 +12,7 @@ use App\Domains\Identity\Models\User;
 use App\Domains\Messaging\Support\ChatPresenter;
 use App\Domains\Storage\Support\StockAlerts;
 use App\Http\Controllers\BookmarkPromptController;
+use App\Shared\Money\DisplayRates;
 use App\Shared\Navigation\DashboardMenuPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -42,6 +43,13 @@ final class HandleInertiaRequests extends Middleware
             'dir' => ResolveLocale::direction($locale),
             'locales' => ResolveLocale::localeOptions(),
             'currency' => $request->attributes->get('display_currency'),
+            // Approximate prices in the display currency (ADR-036); null = show USD. Charges always stay USD.
+            'fx' => function () use ($request): ?array {
+                $currency = $request->attributes->get('display_currency');
+                $rate = is_string($currency) ? app(DisplayRates::class)->for($currency) : null;
+
+                return $rate === null ? null : ['currency' => $currency, 'rate' => $rate];
+            },
             'currencies' => config('x2key.display_currencies'),
             'translations' => fn (): array => self::translations($locale),
             'categoryTypes' => array_map(
