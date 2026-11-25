@@ -61,6 +61,10 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-035 — Speed pass (2026-11-25)
+**Findings:** busiest pages run 0–25 queries and 4–45 ms of database time (home and game index are served from cache). Time on the local Docker setup is dominated by Xdebug and Docker-on-Windows file and network overhead, not by the application.
+**Decisions:** every single-column foreign key gets an index (PostgreSQL does not add them; 102 were missing — order items, payments, ledger postings, deliveries, disputes, tickets…), enforced by `tests/Feature/Ops/ForeignKeyIndexesTest` on PostgreSQL. `php artisan perf:pages` measures pages and flags repeated queries. Production settings (OPcache without Xdebug, Redis, `optimize` + `filament:optimize`, immutable caching and compression for hashed assets) are in docs/RUNBOOK.md §1.
+
 ## ADR-034 — Staff switch for a seller's Storage (2026-11-25)
 **Decision:** `seller_profiles.storage_enabled` (default on), changed only by `Storage\Actions\SetStorageAccess` from the admin Sellers list ("Storage off" / "Storage on", reason required, audited as `seller.storage_disabled|enabled`, merchant managers via the `moderate` gate).
 - Off: every Storage write (`SaveStorageGroup`, `ImportStorageItems`, `ManageStorageItems`) is refused through `StorageAccess::assertEnabled`; `RefreshStorageStock` counts the seller's groups as empty, so auto-delivery offers flip to `out_of_stock` through the normal stock sync and leave the storefront; no low-stock alerts are raised for empty-by-switch groups. Keys stay encrypted and untouched. Orders whose items were already reserved still auto-deliver (no stuck reservations).

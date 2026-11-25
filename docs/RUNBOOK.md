@@ -24,6 +24,13 @@ levels recompute, trending, account deletions, retention pruning, `ops:heartbeat
 
 **E-mail:** all mail uses the branded theme (resources/views/vendor/mail, logo `public/brand/x2key-logo-email.png`). Important inbox notifications are also e-mailed (`Notifier::EMAILED`; users can switch off order / store / ticket e-mails in Settings › Account, money, dispute and safety ones always go). Mail is queued, so a queue worker must run. Any SMTP provider works without code: e.g. Resend — `MAIL_MAILER=smtp`, `MAIL_HOST=smtp.resend.com`, `MAIL_PORT=465`, `MAIL_SCHEME=smtps`, `MAIL_USERNAME=resend`, `MAIL_PASSWORD=<API key>`, `MAIL_FROM_ADDRESS=no-reply@<your-domain>` (verify the domain's SPF/DKIM in the provider first).
 
+**Speed (production checklist):**
+- After each deploy: `php artisan optimize` and `php artisan filament:optimize` (config, routes, views, events, Filament components cached); `npm run build` assets are content-hashed.
+- PHP: OPcache on (`docker/opcache.ini`), `opcache.validate_timestamps=0` in production, **no Xdebug/PCOV** (they are dev-only and slow every request several times over), `APP_DEBUG=false`.
+- Cache, sessions and queues on Redis (`CACHE_STORE=redis`, `SESSION_DRIVER=redis`, `QUEUE_CONNECTION=redis`).
+- Web server: compress text responses (gzip/brotli) and send `Cache-Control: public, max-age=31536000, immutable` for `/build/*` and `/fonts/*` (hashed file names), e.g. nginx `location /build/ { expires max; add_header Cache-Control "public, immutable"; gzip_static on; }`.
+- `php artisan perf:pages [/path …]` prints queries, database time and total time per page and flags repeated queries; run it after big changes. Every foreign key has an index (`ForeignKeyIndexesTest` on PostgreSQL).
+
 ## 2. Health and alerts
 
 - `GET /up` — the framework is booting (load balancer check).
