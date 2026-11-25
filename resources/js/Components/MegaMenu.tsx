@@ -95,7 +95,7 @@ export function MegaMenu({ open, onClose }: Props) {
                                             <li key={g.href}>
                                                 <Link href={g.href} onClick={onClose} className="group flex items-center gap-3 rounded-xl p-2 transition hover:bg-canvas">
                                                     <span className="h-11 w-11 shrink-0 overflow-hidden rounded-lg">
-                                                        <GameArt name={g.name} compact />
+                                                        <GameArt name={g.name} image={g.icon} compact />
                                                     </span>
                                                     <span className="min-w-0 flex-1">
                                                         <span className="flex items-center gap-1.5 truncate text-sm font-semibold group-hover:text-primary">

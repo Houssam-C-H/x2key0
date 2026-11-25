@@ -48,7 +48,7 @@ export function HomeModuleView({ module }: { module: HomeModule }) {
         }
 
         case 'hot_game': {
-            const columns = ((d.columns as { type: string; label: string; href: string; games: { name: string; href: string; count: number }[] }[] | undefined) ?? []).filter((c) => c.games.length > 0);
+            const columns = ((d.columns as { type: string; label: string; href: string; games: { name: string; href: string; count: number; icon?: string | null }[] }[] | undefined) ?? []).filter((c) => c.games.length > 0);
             return columns.length === 0 ? null : (
                 <section className="mx-auto max-w-7xl px-4 pt-14">
                     <SectionHeading title={title} subtitle={t('home.hot.subtitle')} />
@@ -67,6 +67,9 @@ export function HomeModuleView({ module }: { module: HomeModule }) {
                                         <li key={g.href}>
                                             <Link href={g.href} className="group flex items-center gap-3 px-5 py-3 text-sm hover:bg-canvas">
                                                 <span className={'flex h-5 w-5 items-center justify-center rounded text-[11px] font-bold ' + (i === 0 ? 'bg-primary text-white' : 'bg-canvas text-muted')}>{i + 1}</span>
+                                                <span className="h-7 w-7 shrink-0 overflow-hidden rounded-md">
+                                                    <GameArt name={g.name} image={g.icon} compact />
+                                                </span>
                                                 <span className="flex-1 truncate font-medium group-hover:text-primary">{g.name}</span>
                                                 <span className="rounded-md bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-primary">{t('home.offers', { count: g.count })}</span>
                                             </Link>
@@ -142,7 +145,7 @@ export function HomeModuleView({ module }: { module: HomeModule }) {
             );
 
         case 'new_game': {
-            const links = ((d.columns as { game?: string; label: string; href: string }[][] | undefined) ?? []).flat().slice(0, 16);
+            const links = ((d.columns as { game?: string; label: string; href: string; icon?: string | null }[][] | undefined) ?? []).flat().slice(0, 16);
             return links.length === 0 ? null : (
                 <section className="mx-auto max-w-7xl px-4 pt-14">
                     <SectionHeading title={title} subtitle={t('home.new.subtitle')} />
@@ -151,7 +154,7 @@ export function HomeModuleView({ module }: { module: HomeModule }) {
                             <li key={l.href}>
                                 <Link href={l.href} className="group flex items-center gap-3 rounded-xl border border-line bg-white p-2 pe-3 transition hover:border-primary/40 hover:shadow-md">
                                     <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
-                                        <GameArt name={l.game ?? l.label} compact />
+                                        <GameArt name={l.game ?? l.label} image={l.icon} compact />
                                     </span>
                                     <span className="min-w-0 flex-1">
                                         <span className="block truncate text-sm font-semibold group-hover:text-primary">{l.game ?? l.label}</span>

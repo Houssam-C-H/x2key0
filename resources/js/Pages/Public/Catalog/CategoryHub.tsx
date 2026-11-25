@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
+import { GameArt } from '@/Components/Home/HomeParts';
 import { categoryIcon, Icon } from '@/Components/Icon';
 import { PublicLayout } from '@/Layouts/PublicLayout';
 import { useShared, useT } from '@/lib/i18n';
@@ -10,7 +11,7 @@ import type { Seo } from '@/types/catalog';
 interface Props {
     type: { code: string; name: string };
     types: { code: string; name: string; href: string; active: boolean }[];
-    games: { name: string; label: string; href: string; count: number; letter: string; hot: boolean }[];
+    games: { name: string; label: string; href: string; count: number; letter: string; hot: boolean; icon?: string | null }[];
     seo: Seo;
 }
 
@@ -56,7 +57,10 @@ export default function CategoryHub({ type, types, games, seo }: Props) {
                         <ul className="flex flex-wrap gap-2">
                             {trending.map((g) => (
                                 <li key={g.href}>
-                                    <Link href={g.href} className="rounded-full border border-primary px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary-soft">
+                                    <Link href={g.href} className="inline-flex items-center gap-2 rounded-full border border-primary py-1 pe-3 ps-1 text-sm font-semibold text-primary hover:bg-primary-soft">
+                                        <span className="h-6 w-6 overflow-hidden rounded-full">
+                                            <GameArt name={g.name} image={g.icon} compact />
+                                        </span>
                                         {g.name}
                                     </Link>
                                 </li>
@@ -79,10 +83,15 @@ export default function CategoryHub({ type, types, games, seo }: Props) {
                 <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                     {shown.map((g) => (
                         <li key={g.href}>
-                            <Link href={g.href} className="card flex h-full flex-col gap-1 p-4 hover:shadow-md">
-                                <span className="font-semibold">{g.name}</span>
-                                <span className="text-xs text-muted">{g.label}</span>
-                                <span className="mt-auto text-xs font-semibold text-primary">{t('catalog.listings', { count: formatCount(g.count, locale) })}</span>
+                            <Link href={g.href} className="card flex h-full items-center gap-3 p-3 hover:shadow-md">
+                                <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                                    <GameArt name={g.name} image={g.icon} compact />
+                                </span>
+                                <span className="flex min-w-0 flex-col gap-0.5">
+                                    <span className="truncate font-semibold">{g.name}</span>
+                                    <span className="truncate text-xs text-muted">{g.label}</span>
+                                    <span className="text-xs font-semibold text-primary">{t('catalog.listings', { count: formatCount(g.count, locale) })}</span>
+                                </span>
                             </Link>
                         </li>
                     ))}

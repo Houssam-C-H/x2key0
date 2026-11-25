@@ -100,7 +100,7 @@ final class CatalogController
         $crumbs = [['name' => __('dashboard.home'), 'href' => "/{$locale}"], ['name' => $name, 'href' => "/{$locale}/{$model->slug}"]];
 
         return Inertia::render('Public/Catalog/GameHub', [
-            'game' => ['name' => $name, 'slug' => $model->slug, 'publisher' => $model->publisher],
+            'game' => ['name' => $name, 'slug' => $model->slug, 'publisher' => $model->publisher, 'icon' => $model->iconUrl(), 'banner' => $model->heroUrl()],
             'tabs' => $tabs,
             'breadcrumbs' => $crumbs,
             'seo' => Seo::make($name, __('catalog.game_hub.description', ['game' => $name]), "/{$model->slug}", $locale, jsonLd: [Seo::breadcrumbList($crumbs)]),

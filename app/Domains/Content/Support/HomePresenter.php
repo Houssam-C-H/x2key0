@@ -17,7 +17,6 @@ use App\Domains\Reviews\Support\ReviewPresenter;
 use App\Domains\Sellers\Models\SellerProfile;
 use App\Shared\Support\Settings;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * The home page (spec 1.3) from `home_modules`: enabled modules in `sort` order, each with its data. Shared modules
@@ -111,7 +110,7 @@ final class HomePresenter
                     'name' => $gc->game->translate('name', $locale),
                     'href' => $gc->path($locale),
                     'count' => CatalogReader::count($gc),
-                    'icon' => self::asset($gc->game->icon_path),
+                    'icon' => $gc->game->iconUrl(),
                 ])->values()->all()),
             ];
         }
@@ -150,7 +149,7 @@ final class HomePresenter
     {
         $rows = GameCategory::query()->visible()->with(['game', 'type'])->orderByDesc('created_at')->orderByDesc('id')->limit(60)->get();
         $rows = self::pinFirst($rows, $module->pinnedIds(), static fn (GameCategory $gc): int => $gc->id)->take($module->limit(40));
-        $links = array_values($rows->map(static fn (GameCategory $gc): array => ['game' => $gc->game->translate('name', $locale), 'label' => $gc->label($locale), 'href' => $gc->path($locale)])->all());
+        $links = array_values($rows->map(static fn (GameCategory $gc): array => ['game' => $gc->game->translate('name', $locale), 'label' => $gc->label($locale), 'href' => $gc->path($locale), 'icon' => $gc->game->iconUrl()])->all());
 
         return ['columns' => array_chunk($links, max(1, (int) ceil(count($links) / 4)))];
     }
@@ -208,7 +207,7 @@ final class HomePresenter
             'label' => $gc->label($locale),
             'href' => $gc->path($locale),
             'count' => CatalogReader::count($gc),
-            'image' => self::asset($gc->game->cover_path),
+            'image' => $gc->game->coverUrl(),
             'from' => $from,
         ];
     }
@@ -267,7 +266,7 @@ final class HomePresenter
                 'offers' => Offer::query()->live()->count(),
                 'sellers' => SellerProfile::query()->public()->count(),
                 'games' => Game::query()->where('is_enabled', true)->count(),
-                'popular' => array_values($popular->map(static fn (Game $g): array => ['name' => $g->translate('name', $locale), 'href' => "/{$locale}/{$g->slug}"])->all()),
+                'popular' => array_values($popular->map(static fn (Game $g): array => ['name' => $g->translate('name', $locale), 'href' => "/{$locale}/{$g->slug}", 'icon' => $g->iconUrl()])->all()),
                 'types' => $types,
             ];
         });
@@ -306,7 +305,7 @@ final class HomePresenter
             return null;
         }
 
-        return str_starts_with($path, 'http') || str_starts_with($path, '/') ? $path : Storage::disk('public')->url($path);
+        return Game::publicUrl($path);
     }
 
     /**

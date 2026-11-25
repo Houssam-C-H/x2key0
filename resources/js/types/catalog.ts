@@ -40,6 +40,7 @@ export interface GameCard {
     hot: boolean;
     isNew: boolean;
     count: number;
+    icon?: string | null;
     categories: { code: string; label: string; href: string; count: number }[];
 }
 

@@ -179,7 +179,7 @@ it('shares the mega menu: enabled types, top games, counts; refreshed after edit
         $video = collect($columns)->firstWhere('code', 'video_games');
 
         return $video['href'] === '/en/catalog/video-games'
-            && $video['games'][0] === ['name' => 'Star Quest', 'href' => '/en/star-quest/video-games', 'count' => 6];
+            && $video['games'][0] === ['name' => 'Star Quest', 'href' => '/en/star-quest/video-games', 'count' => 6, 'icon' => null];
     }));
 
     $this->fx['game']->update(['name' => ['en' => 'Star Quest II']]);

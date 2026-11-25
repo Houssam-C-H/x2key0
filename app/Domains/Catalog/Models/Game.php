@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property int $id
@@ -90,6 +91,40 @@ final class Game extends Model
     }
 
     /** Index letter for the A–Z Game Index ("#" for digits and symbols). */
+    /** Square picture for lists and menus: the icon, else the cover (null → generated art on the site). */
+    public function iconUrl(): ?string
+    {
+        return self::publicUrl($this->icon_path) ?? self::publicUrl($this->cover_path);
+    }
+
+    /** Wide picture for cards: the cover, else the icon. */
+    public function coverUrl(): ?string
+    {
+        return self::publicUrl($this->cover_path) ?? self::publicUrl($this->icon_path);
+    }
+
+    /** Banner for the game page (null → brand gradient). */
+    public function heroUrl(): ?string
+    {
+        return self::publicUrl($this->hero_path);
+    }
+
+    /** Stored path → public URL; absolute URLs and site paths are kept. */
+    public static function publicUrl(?string $path): ?string
+    {
+        if ($path === null || $path === '') {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http') || str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        // Local public disk: a same-site path (works whatever APP_URL says, also behind proxies); other disks
+        // (S3, CDN) give their absolute URL.
+        return config('filesystems.disks.public.driver') === 'local' ? '/storage/'.ltrim($path, '/') : Storage::disk('public')->url($path);
+    }
+
     public function indexLetter(): string
     {
         $first = mb_strtoupper(mb_substr($this->translate('name', 'en'), 0, 1));

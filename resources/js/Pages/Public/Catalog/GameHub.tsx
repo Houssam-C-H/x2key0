@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { Breadcrumbs } from '@/Components/Catalog/Breadcrumbs';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
+import { GameArt } from '@/Components/Home/HomeParts';
 import { categoryIcon, Icon } from '@/Components/Icon';
 import { PublicLayout } from '@/Layouts/PublicLayout';
 import { useShared, useT } from '@/lib/i18n';
@@ -8,7 +9,7 @@ import { formatCount } from '@/lib/money';
 import type { CategoryTab, Crumb, Seo } from '@/types/catalog';
 
 interface Props {
-    game: { name: string; slug: string; publisher: string | null };
+    game: { name: string; slug: string; publisher: string | null; icon?: string | null; banner?: string | null };
     tabs: CategoryTab[];
     breadcrumbs: Crumb[];
     seo: Seo;
@@ -22,14 +23,17 @@ export default function GameHub({ game, tabs, breadcrumbs, seo }: Props) {
     return (
         <PublicLayout>
             <SeoHead seo={seo} />
-            <section className="bg-surface-dark text-white">
-                <div className="mx-auto max-w-7xl space-y-4 px-4 py-10">
+            <section
+                className="relative bg-surface-dark bg-cover bg-center text-white"
+                style={game.banner ? { backgroundImage: `linear-gradient(90deg, var(--color-surface-dark) 20%, color-mix(in srgb, var(--color-surface-dark) 40%, transparent)), url(${JSON.stringify(game.banner)})` } : undefined}
+            >
+                <div className="relative mx-auto max-w-7xl space-y-4 px-4 py-10">
                     <div className="[&_a]:text-white/70 [&_span]:text-white/90">
                         <Breadcrumbs items={breadcrumbs} />
                     </div>
                     <div className="flex items-center gap-4">
-                        <span aria-hidden="true" className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-cat-topup font-display text-3xl font-extrabold">
-                            {game.name.charAt(0)}
+                        <span className="h-16 w-16 shrink-0 overflow-hidden rounded-xl ring-2 ring-white/20">
+                            <GameArt name={game.name} image={game.icon} compact />
                         </span>
                         <div>
                             <h1 className="text-3xl font-extrabold">{game.name}</h1>

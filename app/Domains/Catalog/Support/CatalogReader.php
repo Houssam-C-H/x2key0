@@ -52,6 +52,7 @@ final class CatalogReader
                         'name' => $gc->game->translate('name', $locale),
                         'href' => $gc->path($locale),
                         'count' => self::count($gc),
+                        'icon' => $gc->game->iconUrl(),
                     ])->all()),
                 ];
             }
@@ -122,6 +123,7 @@ final class CatalogReader
                 'count' => self::count($gc),
                 'letter' => $gc->game->indexLetter(),
                 'hot' => $gc->game->is_hot,
+                'icon' => $gc->game->iconUrl(),
             ])
             ->sortBy(fn (array $row): string => mb_strtolower($row['name']))
             ->all());
@@ -224,6 +226,7 @@ final class CatalogReader
             'href' => "/{$locale}/{$game->slug}",
             'hot' => $game->is_hot,
             'isNew' => $game->is_new,
+            'icon' => $game->iconUrl(),
             'count' => array_sum(array_column($categories, 'count')),
             'categories' => $categories,
         ];

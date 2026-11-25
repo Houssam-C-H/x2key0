@@ -12,6 +12,7 @@ use App\Filament\Resources\Catalog\Games\RelationManagers\CategoriesRelationMana
 use App\Filament\Support\Translatable;
 use BackedEnum;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -19,6 +20,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TernaryFilter;
@@ -56,6 +58,22 @@ final class GameResource extends Resource
                 Toggle::make('is_new')->label('New'),
                 Translatable::input('name', 'Name'),
             ]),
+            // Pictures (only images the publisher allows for resale listings — docs/BRAND.md §6). Without one the
+            // site shows generated art with the game's initials.
+            Section::make('Pictures')->columns(3)->schema([
+                FileUpload::make('icon_path')->label('Icon (square)')
+                    ->image()->disk('public')->directory('games/icons')->visibility('public')
+                    ->imageAspectRatio('1:1')->automaticallyCropImagesToAspectRatio()->automaticallyResizeImagesToWidth('512')->automaticallyResizeImagesToHeight('512')
+                    ->maxSize(2048)->helperText('Menus, lists, chips. 512×512 PNG/JPG/WebP.'),
+                FileUpload::make('cover_path')->label('Cover (16:10)')
+                    ->image()->disk('public')->directory('games/covers')->visibility('public')
+                    ->imageAspectRatio('16:10')->automaticallyCropImagesToAspectRatio()->automaticallyResizeImagesToWidth('960')->automaticallyResizeImagesToHeight('600')
+                    ->maxSize(4096)->helperText('Game cards. 960×600.'),
+                FileUpload::make('hero_path')->label('Banner (16:5)')
+                    ->image()->disk('public')->directory('games/banners')->visibility('public')
+                    ->imageAspectRatio('16:5')->automaticallyCropImagesToAspectRatio()->automaticallyResizeImagesToWidth('1600')->automaticallyResizeImagesToHeight('500')
+                    ->maxSize(6144)->helperText('Top of the game page. 1600×500.'),
+            ]),
         ]);
     }
 
@@ -64,6 +82,7 @@ final class GameResource extends Resource
         return $table
             ->defaultSort('slug')
             ->columns([
+                ImageColumn::make('icon_path')->label('')->disk('public')->square()->size(36)->defaultImageUrl(null),
                 TextColumn::make('name.en')->label('Name')->searchable(query: fn (Builder $query, string $search) => $query->where('slug', 'like', '%'.str($search)->slug().'%')),
                 TextColumn::make('slug'),
                 TextColumn::make('categories_count')->counts('categories')->label('Categories'),

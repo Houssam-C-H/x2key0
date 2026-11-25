@@ -31,9 +31,9 @@ export function GameArt({ name, image, category, compact = false, className = ''
     const style = { backgroundImage: `radial-gradient(120% 90% at 100% 0%, hsl(${(hue + 50) % 360} 85% 60% / .55), transparent 60%), linear-gradient(135deg, hsl(${hue} 70% 42%), hsl(${(hue + 35) % 360} 65% 18%))` };
 
     return (
-        <div aria-hidden="true" className={'relative h-full w-full overflow-hidden ' + className} style={style}>
+        <div aria-hidden="true" className={'relative h-full w-full overflow-hidden ' + (compact ? '[container-type:size] ' : '') + className} style={style}>
             {compact ? (
-                <span className="absolute inset-0 flex items-center justify-center font-display text-sm font-extrabold text-white/95 select-none">{monogram(name)}</span>
+                <span className="absolute inset-0 flex items-center justify-center font-display text-[clamp(0.5rem,40cqw,1.25rem)] font-extrabold text-white/95 select-none">{monogram(name)}</span>
             ) : (
                 <span className="absolute -bottom-3 -end-2 font-display text-[5.5rem] font-extrabold leading-none text-white/15 select-none">{monogram(name)}</span>
             )}

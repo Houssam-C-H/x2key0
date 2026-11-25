@@ -42,7 +42,7 @@ export interface SharedProps {
     chat: { unread: number } | null;
     footer: { columns: Record<string, { label: string; href: string }[]>; seoLinks: { label: string; href: string }[] } | null;
     bookmarkPrompt: boolean;
-    megaMenu: { code: string; label: string; href: string; games: { name: string; href: string; count: number }[] }[];
+    megaMenu: { code: string; label: string; href: string; games: { name: string; href: string; count: number; icon?: string | null }[] }[];
     errors: Record<string, string>;
     [key: string]: unknown;
 }

@@ -18,6 +18,8 @@ Scheduled jobs (routes/console.php): payment sync and expiry, storage reservatio
 ledger verify/reconcile, disputes deadlines, tickets auto-close, coupons expiry, marketing billing, affiliate release,
 levels recompute, trending, account deletions, retention pruning, `ops:heartbeat` (every minute), `ops:check` (every 5 minutes).
 
+**Uploads:** run `php artisan storage:link` once per server (and after a fresh checkout) so admin uploads — game pictures, news covers — are served from `/storage/…`. Game pictures: Catalog › Games › a game › Pictures (icon 512×512, cover 960×600, banner 1600×500; only images the publisher allows for resale listings).
+
 ## 2. Health and alerts
 
 - `GET /up` — the framework is booting (load balancer check).

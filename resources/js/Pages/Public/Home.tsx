@@ -3,7 +3,7 @@ import { Fragment, useState } from 'react';
 import { LogoMark } from '@/Components/Brand/Logo';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
 import { type HomeModule, HomeModuleView } from '@/Components/Home/HomeModules';
-import { CATEGORY_TINT, HowItWorks, SectionHeading, TrustBar } from '@/Components/Home/HomeParts';
+import { CATEGORY_TINT, GameArt, HowItWorks, SectionHeading, TrustBar } from '@/Components/Home/HomeParts';
 import { categoryIcon, Icon } from '@/Components/Icon';
 import { PublicLayout } from '@/Layouts/PublicLayout';
 import { useLocalePath, useShared, useT } from '@/lib/i18n';
@@ -13,7 +13,7 @@ interface Hero {
     offers: number;
     sellers: number;
     games: number;
-    popular: { name: string; href: string }[];
+    popular: { name: string; href: string; icon?: string | null }[];
     types?: Record<string, number>;
 }
 
@@ -83,7 +83,10 @@ export default function Home({ modules = [], hero, seo }: { modules?: HomeModule
                                 <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
                                     <span className="text-white/70">{t('home.popular')}</span>
                                     {hero.popular.map((p) => (
-                                        <Link key={p.href} href={p.href} className="rounded-full bg-white/10 px-3 py-1 text-white/90 hover:bg-white hover:text-ink">
+                                        <Link key={p.href} href={p.href} className="inline-flex items-center gap-1.5 rounded-full bg-white/10 py-1 pe-3 ps-1 text-white/90 hover:bg-white hover:text-ink">
+                                            <span className="h-5 w-5 overflow-hidden rounded-full">
+                                                <GameArt name={p.name} image={p.icon} compact />
+                                            </span>
                                             {p.name}
                                         </Link>
                                     ))}

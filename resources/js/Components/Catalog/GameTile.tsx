@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { GameArt } from '@/Components/Home/HomeParts';
 import { useShared, useT } from '@/lib/i18n';
 import { formatCount } from '@/lib/money';
 import type { GameCard } from '@/types/catalog';
@@ -11,8 +12,8 @@ export function GameTile({ game }: { game: GameCard }) {
     return (
         <article className="card flex flex-col gap-3 p-4">
             <div className="flex items-center gap-3">
-                <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-surface-dark-2 font-display text-lg font-bold text-white">
-                    {game.name.charAt(0)}
+                <span className="h-11 w-11 shrink-0 overflow-hidden rounded-lg">
+                    <GameArt name={game.name} image={game.icon} compact />
                 </span>
                 <div className="min-w-0">
                     <Link href={game.href} className="block truncate font-bold hover:text-primary">
