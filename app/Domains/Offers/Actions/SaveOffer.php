@@ -6,6 +6,7 @@ namespace App\Domains\Offers\Actions;
 
 use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Product;
+use App\Domains\Catalog\Models\ServiceType;
 use App\Domains\Identity\Models\User;
 use App\Domains\Offers\Enums\DeliveryMethod;
 use App\Domains\Offers\Enums\Fulfillment;
@@ -31,7 +32,7 @@ use InvalidArgumentException;
  * price history, and hands status changes to OfferStateMachine.
  *
  * @phpstan-type OfferInput array{
- *     game_category_id: int, product_id: int|null, title: string|null, description: array<string, string|null>,
+ *     game_category_id: int, product_id: int|null, service_type_id: int|null, title: string|null, description: array<string, string|null>,
  *     delivery_method: string, fulfillment: string, storage_group_id: int|null, attribute_values: array<string, mixed>,
  *     unit_price_amount: int, min_qty: int, max_qty: int|null, unit_label: string|null, integer_multiple: bool,
  *     quantity_tiers: list<array{min_qty: int, unit_price_amount: int}>, delivery_time_minutes: int,
@@ -204,6 +205,34 @@ final class SaveOffer
         return $product;
     }
 
+    /**
+     * Service type (ADR-032): required when the category type has enabled service types, and must be one of them;
+     * otherwise none. A service switched off by staff can no longer be chosen (also on edit).
+     */
+    private function service(GameCategory $gameCategory, ?int $serviceTypeId): ?ServiceType
+    {
+        $available = ServiceType::availableFor($gameCategory->category_type_id);
+
+        if ($available->isEmpty()) {
+            if ($serviceTypeId !== null) {
+                throw OfferException::because('offer.error.unknown_service', field: 'service_type_id');
+            }
+
+            return null;
+        }
+
+        if ($serviceTypeId === null) {
+            throw OfferException::because('offer.error.service_required', field: 'service_type_id');
+        }
+
+        $service = $available->firstWhere('id', $serviceTypeId);
+        if ($service === null) {
+            throw OfferException::because('offer.error.unknown_service', field: 'service_type_id');
+        }
+
+        return $service;
+    }
+
     private function method(GameCategory $gameCategory, string $value): DeliveryMethod
     {
         $method = DeliveryMethod::tryFrom($value);
@@ -223,6 +252,8 @@ final class SaveOffer
      */
     private function values(SellerProfile $profile, GameCategory $gameCategory, ?Product $product, DeliveryMethod $method, array $input): array
     {
+        $service = $this->service($gameCategory, $input['service_type_id']);
+
         // Attributes: a catalog product carries its own; unit offers are checked against the schema.
         try {
             $attributes = $product !== null
@@ -298,7 +329,8 @@ final class SaveOffer
             'storage_group_id' => $groupId,
             'manual_stock_qty' => $manualStock,
             'attribute_values' => $attributes === [] ? null : $attributes,
-            'attributes_hash' => self::attributesHash($product?->id, $gameCategory->id, $method, $attributes),
+            'attributes_hash' => self::attributesHash($product?->id, $gameCategory->id, $method, $service === null ? $attributes : [...$attributes, '_service' => $service->id]),
+            'service_type_id' => $service?->id,
             'unit_price_amount' => $price,
             'currency' => 'USD',
             'min_qty' => $input['min_qty'],

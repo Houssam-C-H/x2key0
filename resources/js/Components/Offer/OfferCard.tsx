@@ -15,7 +15,8 @@ export function OfferCard({ offer }: { offer: OfferCardData }) {
 
     return (
         <Link href={offer.href} className="group card flex h-full flex-col overflow-hidden transition-shadow hover:shadow-md">
-            <h3 className="line-clamp-2 min-h-[2.75rem] px-3 pt-3 text-sm font-semibold group-hover:text-primary">{offer.title}</h3>
+            {offer.serviceType && <span className="mx-3 mt-3 self-start rounded-md bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-primary">{offer.serviceType}</span>}
+            <h3 className={'line-clamp-2 min-h-[2.75rem] px-3 text-sm font-semibold group-hover:text-primary ' + (offer.serviceType ? 'pt-1.5' : 'pt-3')}>{offer.title}</h3>
             <div className="relative mx-3 mt-2 aspect-[16/9] overflow-hidden rounded-md bg-gradient-to-br from-primary/80 to-surface-dark-2">
                 {offer.image ? (
                     <img src={offer.image} alt="" loading="lazy" className="h-full w-full object-cover" />

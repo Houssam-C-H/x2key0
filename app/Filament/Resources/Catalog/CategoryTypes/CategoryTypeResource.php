@@ -8,6 +8,7 @@ use App\Domains\Catalog\Enums\CategoryTypeCode;
 use App\Domains\Catalog\Models\CategoryType;
 use App\Filament\Resources\Catalog\CategoryTypes\Pages\EditCategoryType;
 use App\Filament\Resources\Catalog\CategoryTypes\Pages\ListCategoryTypes;
+use App\Filament\Resources\Catalog\CategoryTypes\RelationManagers\ServiceTypesRelationManager;
 use App\Filament\Support\Translatable;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -19,11 +20,13 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 /**
- * The 15 category types (spec 2.1 / D3): names, order, enabled. Never created or deleted (code depends on them).
+ * The 15 category types (spec 2.1 / D3): names, order, enabled, and their service types (ADR-032). Never created
+ * or deleted (code depends on them).
  */
 final class CategoryTypeResource extends Resource
 {
@@ -66,8 +69,17 @@ final class CategoryTypeResource extends Resource
                 TextColumn::make('name.en')->label('Name'),
                 ToggleColumn::make('is_enabled')->label('Enabled'),
                 TextColumn::make('game_categories_count')->counts('gameCategories')->label('Games'),
+                TextColumn::make('service_types_count')->counts(['serviceTypes' => fn (Builder $q) => $q->where('is_enabled', true)])->label('Services on'),
             ])
             ->recordActions([EditAction::make()]);
+    }
+
+    /**
+     * @return array<int, class-string>
+     */
+    public static function getRelations(): array
+    {
+        return [ServiceTypesRelationManager::class];
     }
 
     /**

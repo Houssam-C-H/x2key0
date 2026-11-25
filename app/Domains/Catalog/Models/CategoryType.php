@@ -50,6 +50,14 @@ final class CategoryType extends Model
     }
 
     /**
+     * @return HasMany<ServiceType, $this>
+     */
+    public function serviceTypes(): HasMany
+    {
+        return $this->hasMany(ServiceType::class)->orderBy('sort')->orderBy('id');
+    }
+
+    /**
      * @param  Builder<self>  $query
      */
     public function scopeEnabled(Builder $query): void

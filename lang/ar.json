@@ -1930,5 +1930,11 @@
     "megamenu.empty": "لا توجد ألعاب في هذه الفئة بعد.",
     "home.categories.title": "اختر الفئات",
     "home.categories.offers": "عرض",
-    "footer.tagline": "تداول سلع الألعاب الرقمية بثقة: مفاتيح وشحن وعملات وحسابات والمزيد، مع مدفوعات محمية ودعم حقيقي."
+    "footer.tagline": "تداول سلع الألعاب الرقمية بثقة: مفاتيح وشحن وعملات وحسابات والمزيد، مع مدفوعات محمية ودعم حقيقي.",
+    "service_type.filter": "نوع الخدمة",
+    "service_type.all": "الكل",
+    "offer.form.service_type": "نوع الخدمة",
+    "offer.form.service_type_hint": "اختر ما تبيعه. يصفّي المشترون العروض حسب نوع الخدمة.",
+    "offer.error.service_required": "اختر نوع خدمة لهذه الفئة.",
+    "offer.error.unknown_service": "نوع الخدمة هذا غير متاح في هذه الفئة."
 }

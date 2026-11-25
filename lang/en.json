@@ -1930,5 +1930,11 @@
     "megamenu.empty": "No games in this category yet.",
     "home.categories.title": "Select Categories",
     "home.categories.offers": "offers",
-    "footer.tagline": "Trade digital game goods with confidence: keys, top-ups, currency, accounts and more, with protected payments and real support."
+    "footer.tagline": "Trade digital game goods with confidence: keys, top-ups, currency, accounts and more, with protected payments and real support.",
+    "service_type.filter": "Service type",
+    "service_type.all": "All",
+    "offer.form.service_type": "Service type",
+    "offer.form.service_type_hint": "Choose what you are selling. Buyers filter offers by service type.",
+    "offer.error.service_required": "Choose a service type for this category.",
+    "offer.error.unknown_service": "This service type is not available in this category."
 }

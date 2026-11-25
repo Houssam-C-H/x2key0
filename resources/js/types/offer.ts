@@ -29,6 +29,7 @@ export interface OfferRow {
     priceCents: number;
     tiers: { minQty: number; priceCents: number }[];
     favorited: boolean;
+    serviceType: string | null;
 }
 
 /** Offer card (spec 1.4.1 card style 2). */
@@ -37,6 +38,7 @@ export interface OfferCardData {
     title: string;
     href: string;
     gameCategory: string;
+    serviceType: string | null;
     campaign: string | null;
     image: string | null;
     seller: OfferSeller;

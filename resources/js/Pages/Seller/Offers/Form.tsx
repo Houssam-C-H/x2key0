@@ -26,6 +26,7 @@ interface Category {
     methods: { value: string; auto: boolean; storageTypes: string[] }[];
     compulsoryInsuranceDays: number;
     products: { id: number; name: string }[];
+    services: { id: number; name: string; description: string | null }[];
 }
 
 type AttrValue = string | number | boolean | string[];
@@ -33,6 +34,7 @@ type AttrValue = string | number | boolean | string[];
 interface FormData {
     game_category_id: number | '';
     product_id: number | '';
+    service_type_id: number | '';
     title: string;
     description: Record<string, string>;
     delivery_method: string;
@@ -74,6 +76,7 @@ export default function OfferForm({ offer, services, category, storageGroups, op
     const form = useForm<FormData>({
         game_category_id: offer?.game_category_id ?? category?.id ?? '',
         product_id: offer?.product_id ?? '',
+        service_type_id: offer?.service_type_id ?? (category?.services.length === 1 ? (category.services[0]?.id ?? '') : ''),
         title: offer?.title ?? '',
         description: Object.fromEntries(locales.map((l) => [l.code, offer?.description[l.code] ?? ''])),
         delivery_method: offer?.delivery_method ?? category?.methods[0]?.value ?? '',
@@ -162,6 +165,30 @@ export default function OfferForm({ offer, services, category, storageGroups, op
                                     </select>
                                     {err('product_id') && <span className="text-sm text-danger">{err('product_id')}</span>}
                                 </label>
+                            )}
+                            {category && category.services.length > 0 && (
+                                <fieldset className="md:col-span-2">
+                                    <legend className="font-medium">{t('offer.form.service_type')}</legend>
+                                    <p className="mb-2 text-xs text-muted">{t('offer.form.service_type_hint')}</p>
+                                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                        {category.services.map((s) => {
+                                            const on = data.service_type_id === s.id;
+                                            return (
+                                                <label
+                                                    key={s.id}
+                                                    className={'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ' + (on ? 'border-primary bg-primary-soft' : 'border-line hover:border-primary/50')}
+                                                >
+                                                    <input type="radio" name="service_type_id" className="mt-1 accent-primary" checked={on} disabled={readOnly} onChange={() => setData('service_type_id', s.id)} />
+                                                    <span>
+                                                        <span className={'block text-sm font-semibold ' + (on ? 'text-primary' : '')}>{s.name}</span>
+                                                        {s.description && <span className="mt-0.5 block text-xs text-muted">{s.description}</span>}
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                    {err('service_type_id') && <span className="text-sm text-danger">{err('service_type_id')}</span>}
+                                </fieldset>
                             )}
                         </div>
                     )}

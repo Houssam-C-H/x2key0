@@ -61,6 +61,16 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-032 — Service types inside category types (2026-11-25)
+**Context:** Sellers list under our game×categories, but a category such as Boosting or Accounts mixes very different services (rank boost vs coaching, starter vs ranked-ready accounts). Staff must control which kinds of service may be sold.
+**Decision:** `service_types` belong to a **category type** (global, not per game): code, translated name and seller-facing description, sort, `is_enabled`. Managed in Filament on the category type screen ("Service types" tab: add, edit, reorder, on/off; delete only while no offer uses it — switch it off instead). Offers get a nullable `service_type_id`.
+- `SaveOffer` requires an **enabled** service type of the offer's category type when that type has any, and refuses one otherwise. Unlike the game×category, the service type may be changed on edit; a switched-off one cannot be kept on save.
+- `Offer::live()` excludes offers whose service type is switched off, so they leave listings, store, checkout and the offer page at once and come back when it is switched on again (no status change, no seller action).
+- The service type is part of the duplicate fingerprint (`attributes_hash`), so the same account listed as two different services is not a duplicate.
+- Offer listings (categories without catalog products) show service chips with live counts; `?service=<code>` filters. Offer cards and rows show the service name.
+- Defaults are seeded by `ServiceTypeSeeder` for Boosting, Accounts and Items only; it never overwrites staff changes. Categories with catalog products (top-up, gift cards, keys) have none unless staff add them.
+**Later:** per-game availability (e.g. hide "Placement matches" for games without ranked play) would be a pivot `game_category × service_type`; buyer-input or attribute schemas per service type if services need different fields.
+
 ## ADR-031 — Launch hardening (2026-11-25)
 - **Two CSPs**: the site gets a strict nonce-based policy (React/Inertia need no inline scripts; inline JSON is not executed); the Filament admin gets its own looser policy because Alpine.js evaluates expressions. Both forbid framing and plugins. A Report-Only switch lets operators trial changes.
 - **Rate limits in two layers**: a baseline on every write (per user, per IP for account-recovery endpoints) and the route-specific limits; numeric route limits are counted per route so one busy feature cannot lock a user out of another.

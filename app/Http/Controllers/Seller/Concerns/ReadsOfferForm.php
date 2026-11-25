@@ -31,6 +31,7 @@ trait ReadsOfferForm
         return [
             'game_category_id' => ['required', 'integer'],
             'product_id' => ['nullable', 'integer'],
+            'service_type_id' => ['nullable', 'integer'],
             'title' => [...$text, 'max:160'],
             'description' => ['array'],
             'description.*' => [...$text, 'max:5000'],
@@ -58,7 +59,7 @@ trait ReadsOfferForm
 
     /**
      * @return array{
-     *     game_category_id: int, product_id: int|null, title: string|null, description: array<string, string|null>,
+     *     game_category_id: int, product_id: int|null, service_type_id: int|null, title: string|null, description: array<string, string|null>,
      *     delivery_method: string, fulfillment: string, storage_group_id: int|null, attribute_values: array<string, mixed>,
      *     unit_price_amount: int, min_qty: int, max_qty: int|null, unit_label: string|null, integer_multiple: bool,
      *     quantity_tiers: list<array{min_qty: int, unit_price_amount: int}>, delivery_time_minutes: int,
@@ -93,6 +94,7 @@ trait ReadsOfferForm
         return [
             'game_category_id' => $request->integer('game_category_id'),
             'product_id' => $request->filled('product_id') ? $request->integer('product_id') : null,
+            'service_type_id' => $request->filled('service_type_id') ? $request->integer('service_type_id') : null,
             'title' => is_string($t = $request->input('title')) ? $t : null,
             'description' => $description,
             'delivery_method' => $request->string('delivery_method')->toString(),

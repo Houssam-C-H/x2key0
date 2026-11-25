@@ -1930,5 +1930,11 @@
     "megamenu.empty": "Aucun jeu dans cette catégorie pour le moment.",
     "home.categories.title": "Choisir une Catégorie",
     "home.categories.offers": "offres",
-    "footer.tagline": "Échangez vos biens de jeu numériques en toute confiance : clés, recharges, monnaie, comptes et plus, avec paiements protégés et support réel."
+    "footer.tagline": "Échangez vos biens de jeu numériques en toute confiance : clés, recharges, monnaie, comptes et plus, avec paiements protégés et support réel.",
+    "service_type.filter": "Type de service",
+    "service_type.all": "Tous",
+    "offer.form.service_type": "Type de service",
+    "offer.form.service_type_hint": "Choisissez ce que vous vendez. Les acheteurs filtrent les offres par type de service.",
+    "offer.error.service_required": "Choisissez un type de service pour cette catégorie.",
+    "offer.error.unknown_service": "Ce type de service n'est pas disponible dans cette catégorie."
 }

@@ -27,7 +27,7 @@ final class OfferPresenter
      */
     public static function publicRelations(): array
     {
-        return ['seller.level', 'seller.stats', 'seller.user:id,last_seen_at', 'storageGroup', 'gameCategory.game', 'gameCategory.type', 'product'];
+        return ['seller.level', 'seller.stats', 'seller.user:id,last_seen_at', 'storageGroup', 'gameCategory.game', 'gameCategory.type', 'product', 'serviceType'];
     }
 
     /**
@@ -46,6 +46,7 @@ final class OfferPresenter
             'href' => $offer->path($locale),
             'seller' => self::seller($offer, $locale),
             'campaign' => app(CampaignBadges::class)->for($offer->id),
+            'serviceType' => $offer->serviceType?->translate('name', $locale),
             'deliveryMethod' => $offer->delivery_method->value,
             'deliveryMinutes' => $offer->delivery_time_minutes,
             'auto' => $offer->fulfillment === Fulfillment::Auto,
@@ -74,6 +75,7 @@ final class OfferPresenter
             'title' => $offer->title,
             'href' => $offer->path($locale),
             'gameCategory' => $offer->gameCategory->title($locale),
+            'serviceType' => $offer->serviceType?->translate('name', $locale),
             'image' => $offer->product?->image_path,
             'seller' => self::seller($offer, $locale),
             'campaign' => app(CampaignBadges::class)->for($offer->id),
@@ -144,6 +146,7 @@ final class OfferPresenter
             'title' => $offer->title,
             'href' => $offer->path($locale),
             'service' => $offer->gameCategory->title($locale),
+            'serviceType' => $offer->serviceType?->translate('name', $locale),
             'status' => $offer->status->value,
             'statusReason' => $offer->status_reason,
             'duplicateOf' => $offer->duplicate_of_offer_id,

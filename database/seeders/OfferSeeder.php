@@ -8,6 +8,7 @@ use App\Domains\Catalog\Actions\RecountCatalog;
 use App\Domains\Catalog\Enums\AttributeType;
 use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Product;
+use App\Domains\Catalog\Models\ServiceType;
 use App\Domains\Identity\Actions\RegisterUser;
 use App\Domains\Identity\Models\User;
 use App\Domains\Offers\Actions\SaveOffer;
@@ -152,6 +153,17 @@ final class OfferSeeder extends Seeder
         $application->save();
     }
 
+    /** @var array<int, list<int>> enabled service type ids per category type */
+    private array $services = [];
+
+    /** A demo offer in a category type with service types names one of them (ADR-032). */
+    private function serviceFor(GameCategory $gameCategory): ?int
+    {
+        $ids = $this->services[$gameCategory->category_type_id] ??= array_values(ServiceType::availableFor($gameCategory->category_type_id)->map(static fn (ServiceType $s): int => $s->id)->all());
+
+        return $ids === [] ? null : $ids[mt_rand(0, count($ids) - 1)];
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
@@ -166,6 +178,7 @@ final class OfferSeeder extends Seeder
             'seller_profile_id' => $seller->id,
             'game_category_id' => $gameCategory->id,
             'product_id' => $product?->id,
+            'service_type_id' => $this->serviceFor($gameCategory),
             'title' => mb_substr($title, 0, 160),
             'description' => json_encode(['en' => 'Original demo listing. Delivered by the seller after payment; contact through order chat only.']),
             'delivery_method' => $method->value,

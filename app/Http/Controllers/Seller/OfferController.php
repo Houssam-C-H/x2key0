@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Seller;
 
 use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Product;
+use App\Domains\Catalog\Models\ServiceType;
 use App\Domains\Catalog\Schema\AttributeSchema;
 use App\Domains\Identity\Models\User;
 use App\Domains\Offers\Actions\BulkUpdateOffers;
@@ -70,7 +71,7 @@ final class OfferController
             $counts[$name] = self::applyTab($base(), $name, $expireSoon)->count();
         }
 
-        $query = self::applyTab($base(), $tab, $expireSoon)->with(['gameCategory.game', 'gameCategory.type', 'storageGroup']);
+        $query = self::applyTab($base(), $tab, $expireSoon)->with(['gameCategory.game', 'gameCategory.type', 'storageGroup', 'serviceType']);
         $query = match ($sort) {
             'latest' => $query->orderByDesc('offers.id'),
             'lowest' => $query->orderBy('offers.unit_price_amount')->orderByDesc('offers.id'),
@@ -230,6 +231,8 @@ final class OfferController
                 'attributes' => self::attributeFields($selected->attributeSchema(), $locale),
                 'methods' => array_map(static fn (DeliveryMethod $m): array => ['value' => $m->value, 'auto' => $m->supportsAutoDelivery(), 'storageTypes' => array_map(static fn ($t): string => $t->value, $m->storageTypes())], OfferRules::allowedMethods($selected)),
                 'compulsoryInsuranceDays' => OfferRules::compulsoryInsuranceDays($selected),
+                'services' => ServiceType::availableFor($selected->category_type_id)
+                    ->map(fn (ServiceType $s): array => ['id' => $s->id, 'name' => $s->translate('name', $locale), 'description' => $s->description === null ? null : $s->translate('description', $locale)])->all(),
                 'products' => Product::query()->active()->where('game_category_id', $selected->id)->orderBy('slug')->limit(500)->get()
                     ->map(fn (Product $p): array => ['id' => $p->id, 'name' => $p->translate('name', $locale)])->all(),
             ],
@@ -259,6 +262,7 @@ final class OfferController
             'statusReason' => $offer->status_reason,
             'game_category_id' => $offer->game_category_id,
             'product_id' => $offer->product_id,
+            'service_type_id' => $offer->service_type_id,
             'title' => $offer->title,
             'description' => $offer->description ?? [],
             'delivery_method' => $offer->delivery_method->value,

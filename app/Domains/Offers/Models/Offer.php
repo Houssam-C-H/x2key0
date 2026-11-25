@@ -6,6 +6,7 @@ namespace App\Domains\Offers\Models;
 
 use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Product;
+use App\Domains\Catalog\Models\ServiceType;
 use App\Domains\Offers\Enums\DeliveryMethod;
 use App\Domains\Offers\Enums\Fulfillment;
 use App\Domains\Offers\Enums\InsuranceMode;
@@ -36,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property int $seller_profile_id
  * @property int $game_category_id
  * @property int|null $product_id
+ * @property int|null $service_type_id
  * @property string $title
  * @property array<string, string>|null $description
  * @property DeliveryMethod $delivery_method
@@ -73,6 +75,7 @@ use Illuminate\Support\Carbon;
  * @property-read SellerProfile $seller
  * @property-read GameCategory $gameCategory
  * @property-read Product|null $product
+ * @property-read ServiceType|null $serviceType
  * @property-read StorageGroup|null $storageGroup
  * @property-read Offer|null $duplicateOf
  */
@@ -87,7 +90,7 @@ final class Offer extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'seller_profile_id', 'game_category_id', 'product_id', 'title', 'description', 'delivery_method', 'fulfillment',
+        'seller_profile_id', 'game_category_id', 'product_id', 'service_type_id', 'title', 'description', 'delivery_method', 'fulfillment',
         'storage_group_id', 'attribute_values', 'attributes_hash', 'currency', 'min_qty', 'max_qty', 'unit_label',
         'integer_multiple', 'quantity_tiers', 'delivery_time_minutes', 'manual_stock_qty', 'account_recovery_protection_days',
         'insurance_days', 'insurance_mode', 'sort_weight', 'acquisition_cost_amount', 'publish_mode', 'listing_days',
@@ -165,6 +168,14 @@ final class Offer extends Model
     }
 
     /**
+     * @return BelongsTo<ServiceType, $this>
+     */
+    public function serviceType(): BelongsTo
+    {
+        return $this->belongsTo(ServiceType::class);
+    }
+
+    /**
      * @return BelongsTo<StorageGroup, $this>
      */
     public function storageGroup(): BelongsTo
@@ -205,7 +216,9 @@ final class Offer extends Model
     {
         $query->where('offers.status', OfferStatus::Active)
             ->whereHas('seller', fn (Builder $q) => $q->public())
-            ->whereHas('gameCategory', fn (Builder $q) => $q->visible());
+            ->whereHas('gameCategory', fn (Builder $q) => $q->visible())
+            // A service type switched off by staff takes its offers off the storefront (ADR-032).
+            ->where(fn (Builder $q) => $q->whereNull('offers.service_type_id')->orWhereHas('serviceType', fn (Builder $s) => $s->where('is_enabled', true)));
     }
 
     /**

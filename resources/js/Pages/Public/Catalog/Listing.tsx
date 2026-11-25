@@ -25,14 +25,18 @@ interface Props {
     results: { items: ProductCardData[]; total: number; page: number; lastPage: number };
     /** Offer cards for game×categories without catalog products (currency, accounts, boosting…). */
     offerResults: Paged<OfferCardData> | null;
+    /** Service type chips (ADR-032) for offer listings; empty when the category type has none. */
+    serviceTypes?: { code: string; name: string; count: number }[];
+    activeService?: string | null;
     seo: Seo;
 }
 
 const VIEW_KEY = 'x2k_listing_view';
 
 /** Turns the listing state into the query string the server parses (ListingQuery::fromRequest). */
-function toParams(state: ListingState, page = 1): Record<string, unknown> {
+function toParams(state: ListingState, page = 1, service: string | null = null): Record<string, unknown> {
     const params: Record<string, unknown> = {};
+    if (service) params.service = service;
     if (state.q) params.q = state.q;
     const f: Record<string, string[]> = {};
     for (const [key, values] of Object.entries(state.facets)) {
@@ -58,7 +62,7 @@ function toParams(state: ListingState, page = 1): Record<string, unknown> {
     return params;
 }
 
-export default function Listing({ gameCategory, tabs, breadcrumbs, filters, query, sorts, results, offerResults, seo }: Props) {
+export default function Listing({ gameCategory, tabs, breadcrumbs, filters, query, sorts, results, offerResults, serviceTypes = [], activeService = null, seo }: Props) {
     const t = useT();
     const { locale } = useShared();
     const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -69,8 +73,8 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
         if (saved === 'grid' || saved === 'list') setView(saved);
     }, []);
 
-    const visit = (state: ListingState, page = 1) => {
-        router.get(window.location.pathname, toParams(state, page) as never, { preserveScroll: page === 1, preserveState: true, replace: true });
+    const visit = (state: ListingState, page = 1, service: string | null = activeService) => {
+        router.get(window.location.pathname, toParams(state, page, service) as never, { preserveScroll: page === 1, preserveState: true, replace: true });
     };
 
     const showPrice = results.items.some((p) => p.priceCents !== null) || query.price.min !== null || query.price.max !== null;
@@ -83,6 +87,29 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
                 <h1 className="text-2xl font-extrabold">{gameCategory.title}</h1>
                 <CategoryTabs tabs={tabs} />
                 {gameCategory.notice && <NoticeBox text={gameCategory.notice} />}
+
+                {serviceTypes.length > 0 && (
+                    <nav aria-label={t('service_type.filter')} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+                        {[{ code: null as string | null, name: t('service_type.all'), count: serviceTypes.reduce((n, s) => n + s.count, 0) }, ...serviceTypes].map((s) => {
+                            const on = s.code === activeService;
+                            return (
+                                <button
+                                    key={s.code ?? 'all'}
+                                    type="button"
+                                    aria-pressed={on}
+                                    onClick={() => visit(query, 1, s.code)}
+                                    className={
+                                        'inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ' +
+                                        (on ? 'border-primary bg-primary text-white' : 'border-line bg-white hover:border-primary hover:text-primary')
+                                    }
+                                >
+                                    {s.name}
+                                    <span className={'rounded-full px-1.5 text-[11px] ' + (on ? 'bg-white/20' : 'bg-canvas text-muted')}>{formatCount(s.count, locale)}</span>
+                                </button>
+                            );
+                        })}
+                    </nav>
+                )}
 
                 <div className="flex gap-6">
                     <div className={`${filtersOpen ? 'fixed inset-0 z-40 overflow-y-auto bg-canvas p-4' : 'hidden'} w-full shrink-0 lg:static lg:block lg:w-72 lg:bg-transparent lg:p-0`}>

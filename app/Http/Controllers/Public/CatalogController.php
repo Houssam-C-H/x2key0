@@ -12,6 +12,7 @@ use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Platform;
 use App\Domains\Catalog\Models\Product;
 use App\Domains\Catalog\Models\Region;
+use App\Domains\Catalog\Models\ServiceType;
 use App\Domains\Catalog\Search\CatalogSearch;
 use App\Domains\Catalog\Search\ListingQuery;
 use App\Domains\Catalog\Support\CatalogPresenter;
@@ -114,8 +115,36 @@ final class CatalogController
 
         // Unit categories (currency, accounts, boosting…) have no catalog products: list offer cards (spec 1.4.1).
         $offerResults = null;
+        $serviceTypes = [];
+        $activeService = null;
         if (! Product::query()->active()->where('game_category_id', $gameCategory->id)->exists()) {
+            // Service type chips (ADR-032): enabled services of this category type, with live offer counts here.
+            $available = ServiceType::availableFor($gameCategory->category_type_id);
+            if ($available->isNotEmpty()) {
+                $counts = [];
+                $rows = Offer::query()->live()->where('offers.game_category_id', $gameCategory->id)
+                    ->whereNotNull('offers.service_type_id')
+                    ->groupBy('offers.service_type_id')
+                    ->selectRaw('offers.service_type_id as sid, COUNT(*) as aggregate')
+                    ->toBase()->get();
+                foreach ($rows as $row) {
+                    $sid = $row->sid ?? null;
+                    $count = $row->aggregate ?? null;
+                    if (is_numeric($sid) && is_numeric($count)) {
+                        $counts[(int) $sid] = (int) $count;
+                    }
+                }
+                $activeService = $available->firstWhere('code', $request->string('service')->toString());
+                $serviceTypes = array_values($available->map(static fn (ServiceType $s): array => [
+                    'code' => $s->code,
+                    'name' => $s->translate('name', $locale),
+                    'count' => $counts[$s->id] ?? 0,
+                ])->all());
+            }
+            $activeServiceId = $activeService?->id;
+
             $page = Offer::query()->live()->where('offers.game_category_id', $gameCategory->id)
+                ->when($activeServiceId !== null, fn (Builder $q) => $q->where('offers.service_type_id', $activeServiceId))
                 ->when($query->text !== '', fn (Builder $q) => $q->where('offers.title', 'like', '%'.str_replace(['%', '_'], ['\\%', '\\_'], $query->text).'%'))
                 ->recommended()
                 ->with(OfferPresenter::publicRelations())
@@ -159,6 +188,8 @@ final class CatalogController
                 'lastPage' => $result->lastPage(),
             ],
             'offerResults' => $offerResults,
+            'serviceTypes' => $serviceTypes,
+            'activeService' => $activeService?->code,
             'seo' => Seo::make(
                 $info['title'],
                 __('catalog.listing.description', ['title' => $info['title'], 'count' => $result->total]),

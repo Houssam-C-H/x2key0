@@ -36,6 +36,7 @@ final class OfferFactory extends Factory
             'seller_profile_id' => SellerProfile::factory(),
             'game_category_id' => GameCategory::factory(),
             'product_id' => null,
+            'service_type_id' => null,
             'title' => rtrim(fake()->sentence(3), '.'),
             'description' => ['en' => fake()->sentence()],
             'delivery_method' => DeliveryMethod::DigitalKey,

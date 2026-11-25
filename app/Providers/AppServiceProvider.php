@@ -22,6 +22,7 @@ use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Platform;
 use App\Domains\Catalog\Models\Product;
 use App\Domains\Catalog\Models\Region;
+use App\Domains\Catalog\Models\ServiceType;
 use App\Domains\Catalog\Policies\CatalogPolicy;
 use App\Domains\Catalog\Search\CatalogSearch;
 use App\Domains\Catalog\Search\DatabaseCatalogSearch;
@@ -245,7 +246,7 @@ final class AppServiceProvider extends ServiceProvider
             Gate::policy($riskModel, OrderPolicy::class);
         }
 
-        foreach ([CategoryType::class, Game::class, GameCategory::class, Product::class, Platform::class, Region::class] as $catalogModel) {
+        foreach ([CategoryType::class, Game::class, GameCategory::class, Product::class, Platform::class, Region::class, ServiceType::class] as $catalogModel) {
             Gate::policy($catalogModel, CatalogPolicy::class);
             // Navigation caches (mega menu, Game Index) follow catalog edits immediately.
             $catalogModel::saved(static fn () => CatalogCache::flush());
