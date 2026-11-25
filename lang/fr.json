@@ -2016,5 +2016,7 @@
     "settings.emails.ticket": "Réponses aux tickets de support",
     "settings.emails.save": "Enregistrer",
     "settings.emails.saved": "Préférences e-mail enregistrées.",
-    "order.filter.toggle": "Filtres"
+    "order.filter.toggle": "Filtres",
+    "notify.checkout_abandoned.title": "Vous n’avez pas finalisé la commande :number",
+    "notify.checkout_abandoned.body": "« :title » vous attend toujours. Reprenez où vous en étiez : le paiement est protégé jusqu’à la livraison."
 }

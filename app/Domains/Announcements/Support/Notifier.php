@@ -28,6 +28,7 @@ final class Notifier
         'order_delivered' => 'order',
         'order_completed' => 'order',
         'order_cancelled' => 'order',
+        'checkout_abandoned' => 'order',
         'dispute_opened' => null,
         'dispute_reply' => null,
         'dispute_proposal' => null,
@@ -51,6 +52,9 @@ final class Notifier
         'seller_level_down' => 'merchant',
     ];
 
+    /** @var array<string, int> types e-mailed at most once per this many minutes per user (the inbox gets every one) */
+    public const array COOLDOWN_MINUTES = ['checkout_abandoned' => 24 * 60];
+
     /** Preferences shown in Settings › Account (all on by default). */
     public const array PREFERENCES = ['order', 'merchant', 'ticket'];
 
@@ -69,7 +73,7 @@ final class Notifier
             'created_at' => now(),
         ])->save();
 
-        if (array_key_exists($type, self::EMAILED)) {
+        if (array_key_exists($type, self::EMAILED) && ! self::coolingDown($userId, $type, $item->id)) {
             DB::afterCommit(static fn () => self::email($userId, $type, $data));
         }
 
@@ -92,6 +96,19 @@ final class Notifier
         }
 
         Mail::to($user)->queue(new NotificationMail($user, $type, $data));
+    }
+
+    /** True when the same type was already sent to this user inside its cooldown window. */
+    private static function coolingDown(int $userId, string $type, int $exceptId): bool
+    {
+        $minutes = self::COOLDOWN_MINUTES[$type] ?? 0;
+
+        return $minutes > 0 && InboxItem::query()
+            ->where('user_id', $userId)
+            ->where('notification_type', $type)
+            ->whereKeyNot($exceptId)
+            ->where('created_at', '>=', now()->subMinutes($minutes))
+            ->exists();
     }
 
     public static function wants(int $userId, string $preference): bool

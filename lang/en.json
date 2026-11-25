@@ -2016,5 +2016,7 @@
     "settings.emails.ticket": "Support ticket replies",
     "settings.emails.save": "Save e-mail preferences",
     "settings.emails.saved": "E-mail preferences saved.",
-    "order.filter.toggle": "Filters"
+    "order.filter.toggle": "Filters",
+    "notify.checkout_abandoned.title": "You did not finish your order :number",
+    "notify.checkout_abandoned.body": "“:title” is still waiting for you. Pick up where you left off: payment is protected until delivery."
 }

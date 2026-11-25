@@ -2016,5 +2016,7 @@
     "settings.emails.ticket": "ردود تذاكر الدعم",
     "settings.emails.save": "حفظ التفضيلات",
     "settings.emails.saved": "تم حفظ تفضيلات البريد.",
-    "order.filter.toggle": "عوامل التصفية"
+    "order.filter.toggle": "عوامل التصفية",
+    "notify.checkout_abandoned.title": "لم تُكمل طلبك :number",
+    "notify.checkout_abandoned.body": "«:title» ما زال بانتظارك. أكمل من حيث توقفت: الدفع محمي حتى التسليم."
 }

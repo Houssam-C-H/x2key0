@@ -7,6 +7,7 @@ namespace App\Domains\Announcements\Listeners;
 use App\Domains\Announcements\Support\Notifier;
 use App\Domains\Ledger\Events\HoldReleased;
 use App\Domains\Ledger\Models\Hold;
+use App\Domains\Offers\Models\Offer;
 use App\Domains\Orders\Events\OrderCancelled;
 use App\Domains\Orders\Events\OrderCompleted;
 use App\Domains\Orders\Events\OrderDelivered;
@@ -47,6 +48,21 @@ final class SendOrderNotifications
         if ($order->paid_at !== null) {
             Notifier::notify($order->seller->user_id, 'order_cancelled', 'order', [...self::data($order, true), 'reason' => $event->reason]);
         }
+        // An unpaid order that timed out is a checkout the buyer did not finish: remind them, pointing back to the
+        // offer while it is still on sale (e-mailed at most once a day, Notifier::COOLDOWN_MINUTES).
+        if ($order->paid_at === null && $event->reason === 'payment_expired') {
+            $order->loadMissing(['item', 'buyer']);
+            $offer = Offer::query()->withTrashed()->find($order->item->offer_id);
+            $live = $offer !== null && Offer::query()->live()->whereKey($offer->id)->exists();
+            Notifier::notify($order->buyer_id, 'checkout_abandoned', 'order', [
+                'number' => $order->number,
+                'title' => $offer !== null ? $offer->title : $order->number,
+                'href' => $live ? $offer->path($order->buyer->locale ?: 'en') : '/buy/orders/'.$order->public_id,
+            ]);
+
+            return;
+        }
+
         Notifier::notify($order->buyer_id, 'order_cancelled', 'order', [...self::data($order, false), 'reason' => $event->reason]);
     }
 
