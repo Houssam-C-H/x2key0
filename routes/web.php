@@ -112,6 +112,7 @@ Route::prefix('{locale}')
         Route::get('/games', [CatalogController::class, 'games'])->name('catalog.games');
         Route::get('/catalog/{type}', [CatalogController::class, 'categoryHub'])->where('type', '[a-z-]+')->name('catalog.type');
         Route::get('/search', [CatalogController::class, 'search'])->name('catalog.search');
+        Route::get('/search/suggest', [CatalogController::class, 'suggest'])->middleware('throttle:120,1')->name('catalog.suggest');
         Route::get('/affiliate', [AffiliateLandingController::class, 'show'])->name('affiliate.landing');
 
         // News, Help center, CMS pages (spec Part 20)

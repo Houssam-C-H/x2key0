@@ -179,6 +179,7 @@ final class CatalogReader
                 return false;
             })
             ->filter(fn (Game $game): bool => $game->categories->isNotEmpty())
+            ->sortByDesc(fn (Game $game): int => $game->is_hot ? 1 : 0)
             ->take(24)
             ->map(fn (Game $game): array => $this->gameCard($game, $locale))
             ->values()

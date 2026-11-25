@@ -2064,5 +2064,10 @@
     "protection.claim_intro": "Choose the order with a problem. You will describe it and add evidence on the next page.",
     "protection.claim_none": "You have no paid orders yet.",
     "protection.view_case": "View open case",
-    "protection.not_claimable": "Closed — contact support"
+    "protection.not_claimable": "Closed — contact support",
+    "search.recent": "Recent searches",
+    "search.kind.game": "Game",
+    "search.kind.category": "Category",
+    "search.kind.recent": "Recent",
+    "search.did_you_mean": "Did you mean"
 }

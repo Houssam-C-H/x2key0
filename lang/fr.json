@@ -2064,5 +2064,10 @@
     "protection.claim_intro": "Choisissez la commande concernée. Vous décrirez le problème et ajouterez des preuves à l’étape suivante.",
     "protection.claim_none": "Vous n’avez pas encore de commande payée.",
     "protection.view_case": "Voir le dossier ouvert",
-    "protection.not_claimable": "Clôturée — contactez le support"
+    "protection.not_claimable": "Clôturée — contactez le support",
+    "search.recent": "Recherches récentes",
+    "search.kind.game": "Jeu",
+    "search.kind.category": "Catégorie",
+    "search.kind.recent": "Récent",
+    "search.did_you_mean": "Vouliez-vous dire"
 }

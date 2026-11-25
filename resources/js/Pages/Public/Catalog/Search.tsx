@@ -1,19 +1,22 @@
+import { Link } from '@inertiajs/react';
 import { GameTile } from '@/Components/Catalog/GameTile';
 import { ProductCard } from '@/Components/Catalog/ProductCard';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
 import { PublicLayout } from '@/Layouts/PublicLayout';
-import { useT } from '@/lib/i18n';
+import { useLocalePath, useT } from '@/lib/i18n';
 import type { GameCard, ProductCardData, Seo } from '@/types/catalog';
 
 interface Props {
     q: string;
     type: string | null;
     results: { games: GameCard[]; products: ProductCardData[] };
+    didYouMean?: string | null;
     seo: Seo;
 }
 
 /** Header search results: matching games (with category links) and products. */
-export default function Search({ q, results, seo }: Props) {
+export default function Search({ q, results, didYouMean = null, seo }: Props) {
+    const lp = useLocalePath();
     const t = useT();
     const empty = results.games.length === 0 && results.products.length === 0;
 
@@ -28,6 +31,15 @@ export default function Search({ q, results, seo }: Props) {
                 {empty && q.length >= 2 && (
                     <div className="card p-8 text-center">
                         <p className="font-semibold">{t('catalog.search.none')}</p>
+                        {didYouMean && (
+                            <p className="mt-2">
+                                {t('search.did_you_mean')}{' '}
+                                <Link href={lp(`/search?q=${encodeURIComponent(didYouMean)}`)} className="font-semibold text-primary hover:underline">
+                                    {didYouMean}
+                                </Link>
+                                ?
+                            </p>
+                        )}
                         <p className="mt-1 text-sm text-muted">{t('catalog.search.none_hint')}</p>
                     </div>
                 )}

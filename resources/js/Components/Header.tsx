@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLocalePath, useShared, useT } from '@/lib/i18n';
 import { AccountMenu } from './AccountMenu';
 import { CategorySelect } from './CategorySelect';
+import { SearchSuggestions } from './SearchSuggestions';
 import { Icon } from './Icon';
 import { LocaleModal } from './LocaleModal';
 import { MegaMenu } from './MegaMenu';
@@ -50,13 +51,7 @@ export function Header() {
                         className="mx-1 hidden h-11 max-w-2xl flex-1 items-stretch rounded-xl border border-line bg-white p-1 transition focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10 md:flex"
                     >
                         <Icon name="search" size={18} className="ms-2.5 shrink-0 self-center text-muted" />
-                        <input
-                            name="q"
-                            type="search"
-                            placeholder={t('header.search_short')}
-                            aria-label={t('header.search')}
-                            className="min-w-0 flex-1 bg-transparent px-2.5 text-sm text-ink outline-none placeholder:text-muted"
-                        />
+                        <SearchSuggestions placeholder={t('header.search_short')} />
                         <CategorySelect />
                         <button type="submit" className="ms-1 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover">
                             {t('header.search')}

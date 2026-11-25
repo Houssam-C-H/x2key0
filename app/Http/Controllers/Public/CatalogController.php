@@ -17,6 +17,7 @@ use App\Domains\Catalog\Search\CatalogSearch;
 use App\Domains\Catalog\Search\ListingQuery;
 use App\Domains\Catalog\Support\CatalogPresenter;
 use App\Domains\Catalog\Support\CatalogReader;
+use App\Domains\Catalog\Support\SearchSuggest;
 use App\Domains\Engagement\Actions\RecordView;
 use App\Domains\Engagement\Models\Favorite;
 use App\Domains\Engagement\Support\EngagementReader;
@@ -29,6 +30,7 @@ use App\Http\Support\Seo;
 use App\Shared\Support\Translations;
 use Brick\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -78,17 +80,33 @@ final class CatalogController
         ]);
     }
 
-    public function search(Request $request, string $locale): Response
+    public function search(Request $request, SearchSuggest $suggest, string $locale): Response
     {
         $text = is_string($q = $request->query('q')) ? mb_substr(trim($q), 0, 100) : '';
         $type = is_string($t = $request->query('type')) ? CategoryTypeCode::tryFrom($t) : null;
+        $results = $this->reader->search($text, $type, $locale);
+
+        // Nothing found: a probable typo gets "Did you mean …?" (spec 1.2).
+        $didYouMean = $results['games'] === [] && $results['products'] === [] ? $suggest->didYouMean($text, $locale) : null;
 
         return Inertia::render('Public/Catalog/Search', [
             'q' => $text,
             'type' => $type?->value,
-            'results' => $this->reader->search($text, $type, $locale),
+            'results' => $results,
+            'didYouMean' => $didYouMean,
             'seo' => Seo::make(__('catalog.search.title'), __('catalog.search.title'), '/search', $locale, noindex: true),
         ]);
+    }
+
+    /** Search-as-you-type for the header (JSON): games with icons and matching categories. */
+    public function suggest(Request $request, SearchSuggest $suggest, string $locale): JsonResponse
+    {
+        $text = is_string($q = $request->query('q')) ? mb_substr(trim($q), 0, 100) : '';
+
+        return response()->json([
+            'games' => array_map(static fn (array $g): array => ['name' => $g['name'], 'href' => $g['href'], 'icon' => $g['icon']], $suggest->games($text, $locale)),
+            'categories' => $suggest->categories($text, $locale),
+        ])->header('Cache-Control', 'public, max-age=60');
     }
 
     public function game(Request $request, string $locale, string $game): Response

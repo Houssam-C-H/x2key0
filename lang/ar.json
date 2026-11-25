@@ -2064,5 +2064,10 @@
     "protection.claim_intro": "اختر الطلب الذي به مشكلة. ستصفها وتضيف الأدلة في الصفحة التالية.",
     "protection.claim_none": "ليس لديك طلبات مدفوعة بعد.",
     "protection.view_case": "عرض الحالة المفتوحة",
-    "protection.not_claimable": "مغلق — تواصل مع الدعم"
+    "protection.not_claimable": "مغلق — تواصل مع الدعم",
+    "search.recent": "عمليات البحث الأخيرة",
+    "search.kind.game": "لعبة",
+    "search.kind.category": "فئة",
+    "search.kind.recent": "حديث",
+    "search.did_you_mean": "هل تقصد"
 }
