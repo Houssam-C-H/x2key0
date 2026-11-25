@@ -35,7 +35,7 @@ export function MegaMenu({ open, onClose }: Props) {
 
     return (
         <>
-            <div className="fixed inset-0 top-16 z-30 bg-surface-dark/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+            <div className="fixed inset-0 top-[4.25rem] z-30 bg-surface-dark/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
             <div className="absolute inset-x-0 top-full z-40 px-0 md:px-4" role="dialog" aria-label={t('megamenu.title')}>
                 <div className="mx-auto max-h-[calc(100vh-5rem)] max-w-7xl overflow-y-auto bg-white text-ink shadow-2xl md:mt-2 md:rounded-2xl">
                     {columns.length === 0 || !current ? (
@@ -61,7 +61,7 @@ export function MegaMenu({ open, onClose }: Props) {
                                                         (on ? 'bg-white text-primary shadow-sm ring-1 ring-line' : 'text-ink/80 hover:bg-white hover:text-ink')
                                                     }
                                                 >
-                                                    <span className={'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition ' + (on ? 'bg-gradient-to-br from-primary to-brand-magenta text-white' : 'bg-white text-primary ring-1 ring-line')}>
+                                                    <span className={'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition ' + (on ? 'bg-gradient-to-br from-primary to-brand-deep text-white' : 'bg-white text-primary ring-1 ring-line')}>
                                                         <Icon name={categoryIcon[c.code] ?? 'box'} size={17} />
                                                     </span>
                                                     <span className="flex-1">{c.label}</span>
@@ -100,7 +100,7 @@ export function MegaMenu({ open, onClose }: Props) {
                                                     <span className="min-w-0 flex-1">
                                                         <span className="flex items-center gap-1.5 truncate text-sm font-semibold group-hover:text-primary">
                                                             <span className="truncate">{g.name}</span>
-                                                            {i < 3 && g.count > 0 && <Icon name="fire" size={14} className="shrink-0 text-brand-magenta" />}
+                                                            {i < 3 && g.count > 0 && <Icon name="fire" size={14} className="shrink-0 text-brand-deep" />}
                                                         </span>
                                                         {g.count > 0 && <span className="block text-xs text-muted">{t('home.offers', { count: g.count })}</span>}
                                                     </span>
@@ -126,7 +126,7 @@ export function MegaMenu({ open, onClose }: Props) {
                                         onClick={onClose}
                                         className="group flex items-center gap-3 rounded-xl bg-surface-dark px-4 py-3 text-white lg:ms-auto"
                                     >
-                                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-brand-magenta">
+                                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-brand-deep">
                                             <Icon name="store" size={18} />
                                         </span>
                                         <span>

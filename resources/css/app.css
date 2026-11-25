@@ -1,7 +1,10 @@
 @import 'tailwindcss';
 /* Self-hosted brand fonts (docs/BRAND.md §4): no third-party requests, CSP font-src 'self'. */
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/sora';
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';
+@import '@fontsource/poppins/800.css';
 @import '@fontsource-variable/noto-sans-arabic';
 
 @source '../js/**/*.tsx';
@@ -13,41 +16,44 @@
  * Use logical utilities (ms-/me-/ps-/pe-/start-/end-) everywhere so RTL works.
  */
 @theme {
-    --font-sans: 'Inter Variable', 'Noto Sans Arabic Variable', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Sora Variable', 'Inter Variable', 'Noto Sans Arabic Variable', ui-sans-serif, system-ui, sans-serif;
-    --font-arabic: 'Noto Sans Arabic Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Poppins', 'Noto Sans Arabic Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Poppins', 'Noto Sans Arabic Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-arabic: 'Noto Sans Arabic Variable', 'Poppins', ui-sans-serif, system-ui, sans-serif;
 
-    --color-primary: #5b3df5;
-    --color-primary-hover: #4a2ee0;
-    --color-primary-soft: #eeeaff;
+    /* X2KEY red. The logo uses the exact brand red (#ED1C24, 4.4:1 with white); UI fills and red text use the
+       slightly deeper primary so white-on-red and red-on-white both pass AA (5.1:1). */
+    --color-brand-red: #ed1c24;
+    --color-primary: #d91a21;
+    --color-primary-hover: #b9141a;
+    --color-primary-soft: #fef0f0;
 
-    /* Brand accents (logo gradient violet → magenta; lavender for accents on dark). */
-    --color-brand-magenta: #db2777;
-    --color-brand-lavender: #a594ff;
+    /* Accents: deep red for gradients (primary → deep), glow for red accents on dark surfaces (6.6:1 on surface-dark). */
+    --color-brand-deep: #7a0f14;
+    --color-brand-glow: #ff6b70;
 
-    --color-ink: #12121a;
-    --color-muted: #6b6f80;
-    --color-line: rgb(18 18 26 / 0.12);
-    --color-canvas: #f4f5fa;
-    --color-surface-dark: #0b0e1f;
-    --color-surface-dark-2: #151a33;
+    --color-ink: #111111;
+    --color-muted: #666666; /* 5.7:1 on white */
+    --color-line: rgb(17 17 17 / 0.1);
+    --color-canvas: #f6f6f6;
+    --color-surface-dark: #141414;
+    --color-surface-dark-2: #1f1f1f;
 
     --color-success: #15803d; /* 5.0:1 on white (was #16a34a, 3.3:1) */
-    --color-danger: #e11d48;
+    --color-danger: #be123c; /* distinct from the brand red */
     --color-warning: #d97706; /* fills, borders, stars: 3.2:1 non-text */
     --color-warning-ink: #b45309; /* warning text: 5.0:1 */
     --color-warning-soft: #fff7e6;
 
     /* One colour per category type (Hot Game cards, chips). */
     --color-cat-currency: #c2410c;
-    --color-cat-items: #7c3aed;
+    --color-cat-items: #6d28d9;
     --color-cat-accounts: #334155;
     --color-cat-gift: #0369a1;
-    --color-cat-topup: #db2777;
+    --color-cat-topup: #be185d;
     --color-cat-games: #047857;
 
-    --radius-card: 6px;
-    --radius-btn: 6px;
+    --radius-card: 10px;
+    --radius-btn: 8px;
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.08);
 }
 
@@ -60,7 +66,7 @@
         @apply bg-white font-sans text-ink antialiased;
     }
 
-    /* Arabic: Noto Sans Arabic for body and headings (Inter and Sora have no Arabic glyphs). */
+    /* Arabic: Noto Sans Arabic for body and headings (Poppins has no Arabic glyphs). */
     [dir='rtl'] body,
     [dir='rtl'] h1,
     [dir='rtl'] h2,

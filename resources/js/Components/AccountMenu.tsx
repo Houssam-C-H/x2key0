@@ -43,10 +43,10 @@ export function AccountMenu({ user }: { user: AuthUser }) {
                 aria-expanded={open}
                 aria-haspopup="menu"
                 aria-label={t('header.account')}
-                className="relative flex h-9 w-9 items-center justify-center rounded-full bg-primary font-bold uppercase"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full bg-primary font-bold text-white uppercase"
             >
                 {user.name.charAt(0)}
-                <span className="absolute -bottom-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-surface-dark bg-success" />
+                <span className="absolute -bottom-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-white bg-success" />
             </button>
 
             {open && (

@@ -243,15 +243,32 @@ final class HomePresenter
      */
     public function hero(string $locale): array
     {
-        /** @var array{offers: int, sellers: int, games: int, popular: list<array{name: string, href: string}>} */
+        /** @var array{offers: int, sellers: int, games: int, popular: list<array{name: string, href: string}>, types: array<string, int>} */
         return HomeCache::remember("hero.{$locale}", static function () use ($locale): array {
             $popular = Game::query()->where('is_enabled', true)->orderByDesc('hot_score')->orderByDesc('offer_count_cached')->limit(6)->get();
+
+            // Live offers per category type code (category cards under the hero).
+            $types = [];
+            $rows = Offer::query()->live()
+                ->join('game_categories as hero_gc', 'hero_gc.id', '=', 'offers.game_category_id')
+                ->join('category_types as hero_ct', 'hero_ct.id', '=', 'hero_gc.category_type_id')
+                ->groupBy('hero_ct.code')
+                ->selectRaw('hero_ct.code as code, COUNT(*) as aggregate')
+                ->toBase()->get();
+            foreach ($rows as $row) {
+                $code = $row->code ?? null;
+                $count = $row->aggregate ?? null;
+                if (is_string($code) && is_numeric($count)) {
+                    $types[$code] = (int) $count;
+                }
+            }
 
             return [
                 'offers' => Offer::query()->live()->count(),
                 'sellers' => SellerProfile::query()->public()->count(),
                 'games' => Game::query()->where('is_enabled', true)->count(),
                 'popular' => array_values($popular->map(static fn (Game $g): array => ['name' => $g->translate('name', $locale), 'href' => "/{$locale}/{$g->slug}"])->all()),
+                'types' => $types,
             ];
         });
     }

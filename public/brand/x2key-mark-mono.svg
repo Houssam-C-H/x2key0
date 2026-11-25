@@ -1,10 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="t">
-  <title id="t">X2KEY</title>
-  <!-- One-colour mark (print, stamps, watermarks): strokes only, takes the surrounding text colour. -->
-  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="22" cy="22" r="7" stroke-width="5"/>
-    <path d="M27 27 45 45" stroke-width="6"/>
-    <path d="M39 39 43.5 34.5M43.5 43.5 48 39" stroke-width="5"/>
-    <path d="M45 19 19 45" stroke-width="6"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="X2KEY"><path fill="currentColor" fill-rule="evenodd" d="M127.9 2.4L126.4 2.0L63.8 50.1L26.4 22.0L22.5 18.0L9.4 9.0L1.5 2.0L0.0 2.0L0.0 75.9L1.5 75.9L20.9 60.5L21.2 44.9L46.0 63.2L33.5 74.0L0.0 98.0L0.0 125.9L14.5 115.9L18.4 111.9L63.8 77.8L127.5 125.9L127.9 98.4L90.4 71.0L81.9 63.2L106.6 44.9L107.0 61.5L119.5 69.9L126.4 75.9L127.9 75.5Z"/><path fill="currentColor" fill-rule="evenodd" d="M27.0 127.4L100.9 127.9L64.1 98.9ZM29.0 0.0L40.4 9.9L63.8 27.0L98.9 0.5Z"/></svg>

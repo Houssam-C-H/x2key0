@@ -1927,5 +1927,8 @@
     "megamenu.view_all_in": "كل :label",
     "megamenu.sell_title": "لديك مخزون للبيع؟",
     "megamenu.sell_body": "افتح متجرًا في دقائق وتواصل مع مشترين حول العالم.",
-    "megamenu.empty": "لا توجد ألعاب في هذه الفئة بعد."
+    "megamenu.empty": "لا توجد ألعاب في هذه الفئة بعد.",
+    "home.categories.title": "اختر الفئات",
+    "home.categories.offers": "عرض",
+    "footer.tagline": "تداول سلع الألعاب الرقمية بثقة: مفاتيح وشحن وعملات وحسابات والمزيد، مع مدفوعات محمية ودعم حقيقي."
 }

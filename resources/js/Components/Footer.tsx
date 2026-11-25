@@ -1,4 +1,5 @@
 import { Logo } from '@/Components/Brand/Logo';
+import { Icon } from '@/Components/Icon';
 import { useShared, useT } from '@/lib/i18n';
 
 /**
@@ -38,18 +39,27 @@ export function Footer() {
     const seoLinks = footer?.seoLinks ?? [];
 
     return (
-        <footer className="mt-16 bg-surface-dark text-white/80">
-            <div className="mx-auto max-w-7xl px-4 pt-10">
-                <Logo tone="dark" size={28} label={app.name} />
-            </div>
-            <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
+        <footer className="mt-16 border-t border-line bg-white text-ink">
+            <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 lg:grid-cols-[1.3fr_repeat(4,1fr)]">
+                <div className="max-w-xs">
+                    <Logo size={30} label={app.name} />
+                    <p className="mt-4 text-sm leading-relaxed text-muted">{t('footer.tagline')}</p>
+                    <ul className="mt-5 flex flex-wrap gap-2 text-xs font-medium">
+                        {(['shield', 'lock', 'headset'] as const).map((i, n) => (
+                            <li key={i} className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-2.5 py-1 text-primary">
+                                <Icon name={i} size={13} />
+                                {t(['home.trust.protection', 'home.trust.payments', 'home.trust.support'][n] ?? '')}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
                 {shown.map((col) => (
                     <div key={col.title}>
-                        <h3 className="mb-3 text-sm font-bold tracking-wide text-white uppercase">{t(col.title)}</h3>
-                        <ul className="space-y-2 text-sm">
+                        <h3 className="mb-3 text-sm font-semibold">{t(col.title)}</h3>
+                        <ul className="space-y-2 text-sm text-muted">
                             {col.links.map((l) => (
                                 <li key={l.href}>
-                                    <a href={l.href} className="hover:text-white">
+                                    <a href={l.href} className="hover:text-primary">
                                         {l.label}
                                     </a>
                                 </li>
@@ -58,12 +68,12 @@ export function Footer() {
                     </div>
                 ))}
             </div>
-            <div className="border-t border-white/10">
-                <div className="mx-auto max-w-7xl space-y-2 px-4 py-6 text-xs text-white/60">
+            <div className="border-t border-line bg-canvas">
+                <div className="mx-auto max-w-7xl space-y-2 px-4 py-6 text-xs text-muted">
                     {seoLinks.length > 0 && (
                         <nav aria-label={t('footer.popular')} className="flex flex-wrap gap-x-4 gap-y-1">
                             {seoLinks.map((l) => (
-                                <a key={l.href} href={l.href} className="hover:text-white">
+                                <a key={l.href} href={l.href} className="hover:text-primary">
                                     {l.label}
                                 </a>
                             ))}

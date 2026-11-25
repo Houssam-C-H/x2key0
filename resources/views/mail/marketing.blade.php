@@ -14,8 +14,8 @@
                 <p style="margin:0 0 16px;">{{ __('marketing.mail.hello', ['name' => $name], $locale) }}</p>
 
                 @if ($coupon)
-                    <div style="margin:0 0 16px;padding:12px;border:2px dashed #5b3df5;border-radius:8px;text-align:center;">
-                        <strong style="font-size:18px;color:#5b3df5;">{{ $coupon['label'] }}</strong>
+                    <div style="margin:0 0 16px;padding:12px;border:2px dashed #d91a21;border-radius:8px;text-align:center;">
+                        <strong style="font-size:18px;color:#d91a21;">{{ $coupon['label'] }}</strong>
                         <div style="font-family:monospace;font-size:16px;margin-top:4px;">{{ $coupon['code'] }}</div>
                         <div style="font-size:12px;color:#6b6f80;margin-top:4px;">{{ __('marketing.mail.coupon', ['date' => $coupon['validTo'] ?? '—'], $locale) }}</div>
                     </div>
@@ -33,11 +33,11 @@
                 </table>
 
                 <p style="margin:20px 0 0;">
-                    <a href="{{ $store['url'] }}" style="display:inline-block;background:#5b3df5;color:#ffffff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold;">{{ __('marketing.mail.visit', [], $locale) }}</a>
+                    <a href="{{ $store['url'] }}" style="display:inline-block;background:#d91a21;color:#ffffff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold;">{{ __('marketing.mail.visit', [], $locale) }}</a>
                 </p>
                 <p style="margin:20px 0 0;font-size:12px;color:#6b6f80;">{{ __('marketing.mail.safety', [], $locale) }}</p>
                 <p style="margin:8px 0 0;font-size:12px;color:#6b6f80;">
-                    {{ __('marketing.mail.unsubscribe', [], $locale) }} <a href="{{ $settingsUrl }}" style="color:#5b3df5;">{{ $settingsUrl }}</a>
+                    {{ __('marketing.mail.unsubscribe', [], $locale) }} <a href="{{ $settingsUrl }}" style="color:#d91a21;">{{ $settingsUrl }}</a>
                 </p>
             </td>
         </tr>

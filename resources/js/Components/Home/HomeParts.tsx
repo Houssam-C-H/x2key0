@@ -46,22 +46,42 @@ export function GameArt({ name, image, category, compact = false, className = ''
     );
 }
 
-/** Section title row: title, optional subtitle, optional "View all" link. */
+/** Category type → brand tint (category cards, tinted chips). */
+export const CATEGORY_TINT: Record<string, string> = {
+    currency: 'var(--color-cat-currency)',
+    top_up: 'var(--color-cat-topup)',
+    items: 'var(--color-cat-items)',
+    boosting: 'var(--color-primary)',
+    accounts: 'var(--color-cat-accounts)',
+    video_games: 'var(--color-cat-games)',
+    gift_cards: 'var(--color-cat-gift)',
+    coupons_savings: 'var(--color-warning-ink)',
+};
+
+/**
+ * Section title row (brand: last word in red, a red rule to the edge): title, optional subtitle, optional
+ * "View all" link.
+ */
 export function SectionHeading({ title, subtitle, more, tone = 'light' }: { title: string; subtitle?: string; more?: string | null; tone?: 'light' | 'dark' }) {
     const t = useT();
+    const words = title.trim().split(/\s+/);
+    const last = words.length > 1 ? words.pop() : null;
 
     return (
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-            <div>
-                <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h2>
-                {subtitle && <p className={'mt-1 text-sm ' + (tone === 'dark' ? 'text-white/70' : 'text-muted')}>{subtitle}</p>}
+        <div className="mb-6">
+            <div className="flex items-center gap-5">
+                <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+                    {words.join(' ')} {last && <span className={tone === 'dark' ? 'text-brand-glow' : 'text-primary'}>{last}</span>}
+                </h2>
+                <span aria-hidden="true" className={'hidden h-px flex-1 sm:block ' + (tone === 'dark' ? 'bg-white/20' : 'bg-primary/60')} />
+                {more && (
+                    <Link href={more} className={'ms-auto inline-flex shrink-0 items-center gap-1 text-sm font-semibold sm:ms-0 ' + (tone === 'dark' ? 'text-white hover:text-brand-glow' : 'text-primary hover:text-primary-hover')}>
+                        {t('home.view_all')}
+                        <Icon name="arrow" size={16} className="rtl:rotate-180" />
+                    </Link>
+                )}
             </div>
-            {more && (
-                <Link href={more} className={'inline-flex items-center gap-1 text-sm font-semibold ' + (tone === 'dark' ? 'text-white hover:text-brand-lavender' : 'text-primary hover:text-primary-hover')}>
-                    {t('home.view_all')}
-                    <Icon name="arrow" size={16} className="rtl:rotate-180" />
-                </Link>
-            )}
+            {subtitle && <p className={'mt-1 text-sm ' + (tone === 'dark' ? 'text-white/70' : 'text-muted')}>{subtitle}</p>}
         </div>
     );
 }
@@ -111,20 +131,24 @@ export function GameCard({ tile, category, money }: { tile: GameTileData; catego
     const t = useT();
 
     return (
-        <Link href={tile.href} className="group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-white transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
-            <div className="aspect-[4/3] overflow-hidden">
+        <Link href={tile.href} className="group flex h-full flex-col rounded-xl border border-line bg-white p-2 transition hover:-translate-y-0.5 hover:border-primary hover:shadow-lg">
+            <div className="flex items-center gap-2 px-1.5 pb-2 pt-1">
+                <p className="line-clamp-1 flex-1 text-sm font-semibold">{tile.name}</p>
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[10px] font-semibold uppercase leading-none text-white">
+                    <Icon name="box" size={12} />
+                    {t('home.offers', { count: tile.count })}
+                </span>
+            </div>
+            <div className="aspect-[16/10] overflow-hidden rounded-lg">
                 <GameArt name={tile.name} image={tile.image} category={category} className="transition duration-300 group-hover:scale-105" />
             </div>
-            <div className="flex flex-1 flex-col gap-1 p-3">
-                <p className="line-clamp-1 font-semibold">{tile.name}</p>
-                <p className="text-xs text-muted">
-                    {tile.label} · {t('home.offers', { count: tile.count })}
-                </p>
+            <div className="flex items-center justify-between gap-2 px-1.5 pb-1 pt-2 text-xs">
+                <span className="truncate text-muted">{tile.label}</span>
                 {tile.from !== null && (
-                    <p className="mt-auto pt-1 text-sm">
+                    <span className="shrink-0">
                         <span className="text-muted">{t('home.from')} </span>
-                        <span className="font-bold text-ink">{money(tile.from)}</span>
-                    </p>
+                        <span className="text-sm font-bold text-ink">{money(tile.from)}</span>
+                    </span>
                 )}
             </div>
         </Link>
@@ -142,8 +166,8 @@ export function TrustBar() {
     ];
 
     return (
-        <section aria-label={t('home.trust.label')} className="border-b border-line bg-white">
-            <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-6 lg:grid-cols-4">
+        <section aria-label={t('home.trust.label')} className="mx-auto max-w-7xl px-4">
+            <ul className="grid grid-cols-2 gap-4 rounded-2xl border border-line bg-white p-5 lg:grid-cols-4">
                 {items.map((i) => (
                     <li key={i.key} className="flex items-start gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
@@ -176,7 +200,7 @@ export function HowItWorks() {
                 {steps.map((s, i) => (
                     <li key={s.key} className="relative rounded-2xl border border-line bg-white p-6">
                         <span className="absolute end-5 top-4 font-display text-5xl font-extrabold text-primary/10">{i + 1}</span>
-                        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-brand-magenta text-white">
+                        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-brand-deep text-white">
                             <Icon name={s.icon} size={22} />
                         </span>
                         <h3 className="mt-4 text-lg font-bold">{t('home.how.' + s.key)}</h3>

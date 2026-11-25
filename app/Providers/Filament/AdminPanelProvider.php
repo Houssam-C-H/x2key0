@@ -36,7 +36,7 @@ final class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->brandName('X2KEY Admin')
             ->colors([
-                'primary' => Color::hex('#5b3df5'),
+                'primary' => Color::hex('#d91a21'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

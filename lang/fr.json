@@ -1927,5 +1927,8 @@
     "megamenu.view_all_in": "Tout :label",
     "megamenu.sell_title": "Du stock à vendre ?",
     "megamenu.sell_body": "Ouvrez une boutique en quelques minutes et touchez des acheteurs du monde entier.",
-    "megamenu.empty": "Aucun jeu dans cette catégorie pour le moment."
+    "megamenu.empty": "Aucun jeu dans cette catégorie pour le moment.",
+    "home.categories.title": "Choisir une Catégorie",
+    "home.categories.offers": "offres",
+    "footer.tagline": "Échangez vos biens de jeu numériques en toute confiance : clés, recharges, monnaie, comptes et plus, avec paiements protégés et support réel."
 }

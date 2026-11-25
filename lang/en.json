@@ -1927,5 +1927,8 @@
     "megamenu.view_all_in": "All :label",
     "megamenu.sell_title": "Have stock to sell?",
     "megamenu.sell_body": "Open a store in minutes and reach buyers worldwide.",
-    "megamenu.empty": "No games in this category yet."
+    "megamenu.empty": "No games in this category yet.",
+    "home.categories.title": "Select Categories",
+    "home.categories.offers": "offers",
+    "footer.tagline": "Trade digital game goods with confidence: keys, top-ups, currency, accounts and more, with protected payments and real support."
 }
