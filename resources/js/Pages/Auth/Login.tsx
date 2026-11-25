@@ -9,7 +9,13 @@ export default function Login({ status }: { status?: string | null }) {
     const form = useForm({ login: '', password: '', remember: false });
 
     return (
-        <AuthLayout title={t('auth.login.title')} subtitle={t('auth.login.subtitle')}>
+        <AuthLayout
+            title={t('auth.login.heading')}
+            accent={t('auth.login.heading_accent')}
+            subtitle={t('auth.login.lead')}
+            panelTitle={t('auth.login.panel_title')}
+            panelText={t('auth.login.panel_text')}
+        >
             {status && <p className="mb-4 rounded-md bg-success/10 p-3 text-sm text-success">{status}</p>}
             <form
                 className="flex flex-col gap-4"
@@ -22,6 +28,7 @@ export default function Login({ status }: { status?: string | null }) {
                     label={t('auth.field.login')}
                     name="login"
                     autoComplete="username"
+                    placeholder={t('auth.login.login_placeholder')}
                     autoFocus
                     required
                     value={form.data.login}
@@ -33,6 +40,7 @@ export default function Login({ status }: { status?: string | null }) {
                     name="password"
                     type="password"
                     autoComplete="current-password"
+                    placeholder={t('auth.login.password_placeholder')}
                     required
                     value={form.data.password}
                     onChange={(e) => form.setData('password', e.target.value)}
@@ -40,21 +48,21 @@ export default function Login({ status }: { status?: string | null }) {
                 />
                 <div className="flex items-center justify-between text-sm">
                     <label className="flex items-center gap-2">
-                        <input type="checkbox" checked={form.data.remember} onChange={(e) => form.setData('remember', e.target.checked)} />
+                        <input type="checkbox" className="accent-primary" checked={form.data.remember} onChange={(e) => form.setData('remember', e.target.checked)} />
                         {t('auth.field.remember')}
                     </label>
-                    <Link href={lp('/forgot-password')} className="text-primary hover:underline">
+                    <Link href={lp('/forgot-password')} className="font-medium text-primary hover:underline">
                         {t('auth.login.forgot')}
                     </Link>
                 </div>
-                <button type="submit" className="btn-primary h-11" disabled={form.processing}>
+                <button type="submit" className="btn-primary h-12 rounded-xl text-base" disabled={form.processing}>
                     {t('auth.login.submit')}
                 </button>
             </form>
             <p className="mt-6 text-center text-sm text-muted">
                 {t('auth.login.no_account')}{' '}
                 <Link href={lp('/register')} className="font-semibold text-primary hover:underline">
-                    {t('auth.register.title')}
+                    {t('auth.login.sign_up')}
                 </Link>
             </p>
         </AuthLayout>

@@ -17,7 +17,13 @@ export default function Register({ referralCode }: { referralCode: string | null
     });
 
     return (
-        <AuthLayout title={t('auth.register.title')} subtitle={t('auth.register.subtitle')}>
+        <AuthLayout
+            title={t('auth.register.heading')}
+            accent={t('auth.register.heading_accent')}
+            subtitle={t('auth.register.subtitle')}
+            panelTitle={t('auth.register.panel_title')}
+            panelText={t('auth.register.panel_text')}
+        >
             <form
                 className="flex flex-col gap-4"
                 onSubmit={(e) => {

@@ -1947,5 +1947,19 @@
     "offer.form.apply_review": "Our team reviews applications. You can list in this game once it is approved.",
     "offer.form.apply_pending": "pending review",
     "offer.form.apply_submit": "Apply",
-    "offer.form.apply_manage": "See all my applications"
+    "offer.form.apply_manage": "See all my applications",
+    "auth.login.heading": "Log in to",
+    "auth.login.heading_accent": "your account",
+    "auth.login.lead": "Enter your details to access your account.",
+    "auth.login.panel_title": "Welcome back 👋",
+    "auth.login.panel_text": "Log in to keep exploring deals, manage your listings and stay covered by buyer protection.",
+    "auth.login.login_placeholder": "you@example.com or username",
+    "auth.login.password_placeholder": "Enter your password",
+    "auth.login.sign_up": "Sign up",
+    "auth.register.heading": "Create",
+    "auth.register.heading_accent": "your account",
+    "auth.register.panel_title": "Join X2KEY 🎮",
+    "auth.register.panel_text": "Buy keys, top-ups and in-game goods from verified sellers, or open your own store.",
+    "auth.panel.title": "Your account, protected",
+    "auth.panel.text": "Two-step verification, new-device alerts and buyer protection on every order."
 }

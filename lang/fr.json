@@ -1947,5 +1947,19 @@
     "offer.form.apply_review": "Notre équipe examine les demandes. Vous pourrez publier dans ce jeu une fois approuvé.",
     "offer.form.apply_pending": "en cours d’examen",
     "offer.form.apply_submit": "Postuler",
-    "offer.form.apply_manage": "Voir toutes mes demandes"
+    "offer.form.apply_manage": "Voir toutes mes demandes",
+    "auth.login.heading": "Connectez-vous à",
+    "auth.login.heading_accent": "votre compte",
+    "auth.login.lead": "Saisissez vos identifiants pour accéder à votre compte.",
+    "auth.login.panel_title": "Bon retour 👋",
+    "auth.login.panel_text": "Connectez-vous pour explorer les offres, gérer vos annonces et rester couvert par la protection acheteur.",
+    "auth.login.login_placeholder": "vous@exemple.com ou pseudo",
+    "auth.login.password_placeholder": "Saisissez votre mot de passe",
+    "auth.login.sign_up": "S'inscrire",
+    "auth.register.heading": "Créez",
+    "auth.register.heading_accent": "votre compte",
+    "auth.register.panel_title": "Rejoignez X2KEY 🎮",
+    "auth.register.panel_text": "Achetez clés, recharges et objets de jeu auprès de vendeurs vérifiés, ou ouvrez votre boutique.",
+    "auth.panel.title": "Votre compte, protégé",
+    "auth.panel.text": "Vérification en deux étapes, alertes de nouvel appareil et protection acheteur sur chaque commande."
 }

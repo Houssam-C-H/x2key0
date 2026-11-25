@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import paths from './logo-paths.json';
 
 /**
@@ -11,10 +12,10 @@ import paths from './logo-paths.json';
  */
 const INK = { light: 'var(--color-ink)', dark: '#ffffff' } as const;
 
-export function LogoMark({ size = 28, tone = 'light', className = '' }: { size?: number; tone?: 'light' | 'dark'; className?: string }) {
+export function LogoMark({ size = 28, tone = 'light', className = '', style }: { size?: number; tone?: 'light' | 'dark'; className?: string; style?: CSSProperties }) {
     const d = paths.mark;
     return (
-        <svg width={size} height={size} viewBox={`0 0 ${d.w} ${d.h}`} aria-hidden="true" className={'shrink-0 ' + className}>
+        <svg width={size} height={size} viewBox={`0 0 ${d.w} ${d.h}`} aria-hidden="true" className={'shrink-0 ' + className} style={style}>
             <path fill={INK[tone]} fillRule="evenodd" d={d.ink} />
             <path fill="var(--color-brand-red)" fillRule="evenodd" d={d.red} />
         </svg>

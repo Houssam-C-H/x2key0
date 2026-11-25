@@ -1947,5 +1947,19 @@
     "offer.form.apply_review": "يراجع فريقنا الطلبات. يمكنك النشر في هذه اللعبة بعد اعتمادها.",
     "offer.form.apply_pending": "قيد المراجعة",
     "offer.form.apply_submit": "تقديم الطلب",
-    "offer.form.apply_manage": "عرض كل طلباتي"
+    "offer.form.apply_manage": "عرض كل طلباتي",
+    "auth.login.heading": "سجّل الدخول إلى",
+    "auth.login.heading_accent": "حسابك",
+    "auth.login.lead": "أدخل بياناتك للوصول إلى حسابك.",
+    "auth.login.panel_title": "مرحبًا بعودتك 👋",
+    "auth.login.panel_text": "سجّل الدخول لمواصلة استكشاف العروض وإدارة إعلاناتك والبقاء تحت حماية المشتري.",
+    "auth.login.login_placeholder": "you@example.com أو اسم المستخدم",
+    "auth.login.password_placeholder": "أدخل كلمة المرور",
+    "auth.login.sign_up": "أنشئ حسابًا",
+    "auth.register.heading": "أنشئ",
+    "auth.register.heading_accent": "حسابك",
+    "auth.register.panel_title": "انضم إلى X2KEY 🎮",
+    "auth.register.panel_text": "اشترِ المفاتيح والشحن وعناصر الألعاب من بائعين موثّقين، أو افتح متجرك الخاص.",
+    "auth.panel.title": "حسابك محمي",
+    "auth.panel.text": "تحقق بخطوتين وتنبيهات الأجهزة الجديدة وحماية المشتري في كل طلب."
 }
