@@ -20,6 +20,8 @@ levels recompute, trending, account deletions, retention pruning, `ops:heartbeat
 
 **Uploads:** run `php artisan storage:link` once per server (and after a fresh checkout) so admin uploads — game pictures, news covers — are served from `/storage/…`. Game pictures: Catalog › Games › a game › Pictures (icon 512×512, cover 960×600, banner 1600×500; only images the publisher allows for resale listings).
 
+**Browser tests** (tests/e2e, Playwright with the installed Microsoft Edge): with the app running, `npm run e2e`. It first runs `php artisan e2e:prepare` (via `docker compose exec` by default; set `E2E_ARTISAN="php artisan"` and `BASE_URL=…` otherwise), which resets the accounts `e2e_buyer`, `e2e_seller`, `e2e_admin` and one test offer — it refuses to run in production. Every journey runs at desktop and phone size and fails if a page scrolls sideways. Report: `storage/e2e-report/index.html`.
+
 ## 2. Health and alerts
 
 - `GET /up` — the framework is booting (load balancer check).

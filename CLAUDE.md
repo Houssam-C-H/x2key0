@@ -17,7 +17,7 @@ Multi-vendor digital game goods marketplace, IA modelled on Z2U. Full spec: docs
 ## Dev environment (Windows)
 - Portable PHP 8.4 + Composer live in `C:\dev\tools` (not on PATH by default). In Git Bash: `export PATH="/c/dev/tools/php:/c/dev/tools:$PATH"`.
 - Local `.env` uses SQLite until Docker works; `.env.example` is the Sail/PostgreSQL config.
-- Commands: `composer test` · `composer stan` · `composer lint` / `composer fix` · `npm run typecheck` · `npm run build` (client + SSR) · `php artisan inertia:start-ssr`.
+- Commands: `composer test` · `composer stan` · `composer lint` / `composer fix` · `npm run typecheck` · `npm run build` (client + SSR) · `php artisan inertia:start-ssr` · `npm run e2e` (browser tests against the running app, desktop + phone; fixtures from `php artisan e2e:prepare`).
 - Sail (once Docker Desktop + WSL2 run): `cp .env.example .env && php artisan key:generate && ./vendor/bin/sail up -d`.
 - Local PostgreSQL 17 (portable, for the race tests in `tests/Concurrency` and CI parity): start with `C:\dev\tools\pgsql\bin\pg_ctl -D C:\dev\tools\pgsql-data -l C:\dev\tools\pgsql-data\server.log -o "-p 5433 -c listen_addresses=localhost" start`; run tests with `DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5433 DB_DATABASE=x2key_test DB_USERNAME=sail DB_PASSWORD=password php vendor/bin/pest`. On SQLite the race tests skip.
 - Local Meilisearch (portable, for the parity test or `CATALOG_SEARCH_DRIVER=meilisearch`): `C:\dev\tools\meilisearch\meilisearch.exe --db-path C:\dev\tools\meilisearch\data\ms --http-addr 127.0.0.1:7700 --no-analytics`. Without it, `MeilisearchParityTest` is skipped.

@@ -32,3 +32,6 @@ Thumbs.db
 /storage/phpstan
 /database/*.sqlite-wal
 /database/*.sqlite-shm
+
+/storage/e2e-report
+/storage/e2e-results
