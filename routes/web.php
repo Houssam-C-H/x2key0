@@ -31,6 +31,7 @@ use App\Http\Controllers\Public\ContentController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\StoreController;
+use App\Http\Controllers\Seller\AnalyticsController as SellerAnalyticsController;
 use App\Http\Controllers\Seller\CampaignController;
 use App\Http\Controllers\Seller\CommentController as SellerCommentController;
 use App\Http\Controllers\Seller\CouponController as SellerCouponController;
@@ -165,6 +166,7 @@ Route::middleware('auth')->group(function (): void {
         '/seller/store' => fn () => Route::get('/seller/store', [StoreSettingsController::class, 'show'])->name('dash.seller.store.mine'),
         '/seller/services' => fn () => Route::get('/seller/services', [ServiceApplicationController::class, 'index'])->name('dash.seller.store.services'),
         '/seller/info' => fn () => Route::get('/seller/info', [SellerInfoController::class, 'show'])->name('dash.seller.info'),
+        '/seller/analytics' => fn () => Route::get('/seller/analytics', SellerAnalyticsController::class)->name('dash.seller.analytics'),
         '/seller/contacts' => fn () => Route::get('/seller/contacts', MerchantContactsController::class)->name('dash.seller.contacts'),
         '/seller/offers' => fn () => Route::get('/seller/offers', [OfferController::class, 'index'])->name('dash.seller.offers'),
         '/seller/offers/create' => fn () => Route::get('/seller/offers/create', [OfferController::class, 'create'])->name('dash.seller.offers.create'),

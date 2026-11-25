@@ -38,6 +38,7 @@ final class DashboardMenu
             ]),
             self::group('seller', 'menu.seller', 'store', 'seller', [
                 self::leaf('seller.orders', 'menu.seller.orders', '/seller/orders', 'M8'),
+                self::leaf('seller.analytics', 'menu.seller.analytics', '/seller/analytics', 'M20'),
                 self::leaf('seller.offers.create', 'menu.seller.offers_create', '/seller/offers/create', 'M5'),
                 self::leaf('seller.offers', 'menu.seller.offers', '/seller/offers', 'M5'),
                 self::branch('seller.store', 'menu.seller.store', [
