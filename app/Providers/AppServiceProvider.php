@@ -103,11 +103,14 @@ use App\Shared\Support\Settings;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Meilisearch\Client as MeilisearchClient;
 use RuntimeException;
@@ -181,6 +184,10 @@ final class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Personal data export (spec Part 23): its own counter, 3 per hour per user (numeric `throttle:x,y` limits
+        // share one counter per user across routes).
+        RateLimiter::for('data-export', static fn (Request $request): Limit => Limit::perHour(3)->by('data-export:'.(is_scalar($id = $request->user()?->getAuthIdentifier()) ? 'u'.$id : 'ip'.$request->ip())));
+
         // Fail loudly in dev/test on lazy loading, silently discarded attributes and missing attributes.
         Model::shouldBeStrict(! $this->app->isProduction());
 

@@ -1874,5 +1874,8 @@
     "ledger.adjust.error.accounts": "حسابات المستخدمين تتطلب مستخدمًا؛ ويجب أن يكون الطرف المقابل حساب منصة آخر من القائمة.",
     "ledger.adjust.error.decided": "تم البت في هذه التسوية بالفعل.",
     "ledger.adjust.error.own": "يجب أن يوافق مستخدم مالي آخر على طلبك.",
-    "ledger.adjust.error.role": "لا يمكن تعديل الدفتر إلا لفريق المالية."
+    "ledger.adjust.error.role": "لا يمكن تعديل الدفتر إلا لفريق المالية.",
+    "settings.account.data": "بياناتك",
+    "settings.account.data_hint": "نزّل نسخة من بياناتك الشخصية لدى X2KEY (JSON)، أو احذف حسابك.",
+    "settings.account.data_download": "تنزيل بياناتي"
 }

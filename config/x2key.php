@@ -15,6 +15,27 @@ use App\Domains\Payments\Providers\StripePaymentProvider;
 
 return [
 
+    // Launch hardening (spec Part 23): send the CSP as Report-Only while trialling a change.
+    'security' => [
+        'csp_report_only' => (bool) env('CSP_REPORT_ONLY', false),
+    ],
+
+    // GET /health?token=… returns the detailed checks; without the token only the overall status (docs/RUNBOOK.md).
+    'ops' => [
+        'health_token' => env('HEALTH_TOKEN'),
+    ],
+
+    // Data retention per table (spec Part 23 "retention per table"), applied by `privacy:prune` daily.
+    // Money, orders, journals, disputes and audit logs are never pruned.
+    'retention_days' => [
+        'browsing_history' => 180,
+        'login_events' => 365,
+        'user_sessions_revoked' => 90,
+        'read_notifications' => 180,
+        'risk_flags_resolved' => 730,
+        'jobs_failed' => 30,
+    ],
+
     'brand' => [
         'name' => 'X2KEY',
     ],

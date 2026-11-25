@@ -18,6 +18,7 @@ use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\EngagementController;
 use App\Http\Controllers\FakePspController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\OpsController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PreferencesController;
 use App\Http\Controllers\Public\AffiliateLandingController;
@@ -58,6 +59,19 @@ Route::get('/', fn (Request $request) => redirect('/'.ResolveLocale::preferredLo
     ->name('root');
 
 Route::post('/preferences', PreferencesController::class)->name('preferences');
+
+// Uptime monitoring (docs/RUNBOOK.md) and crawler rules (spec 22: SEO).
+Route::get('/health', [OpsController::class, 'health'])->middleware('throttle:60,1')->name('ops.health');
+Route::get('/robots.txt', function () {
+    $lines = ['User-agent: *'];
+    foreach (['/admin', '/dashboard', '/buy/', '/seller/', '/settings/', '/chat', '/checkout', '/announcements', '/disputes', '/tickets', '/affiliate/', '/coupons/', '/invoices', '/r/', '/fake-psp/', '/webhooks/', '/health'] as $path) {
+        $lines[] = 'Disallow: '.$path;
+    }
+    $lines[] = '';
+    $lines[] = 'Sitemap: '.url('/sitemap.xml');
+
+    return response(implode("\n", $lines)."\n", 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+})->name('robots');
 Route::post('/bookmark-prompt/dismiss', BookmarkPromptController::class)->middleware('throttle:20,1')->name('bookmark.dismiss');
 
 // Affiliate referral links (spec Part 15 `/r/{code}`): count the click, set the first-click cookie, go on.
@@ -343,6 +357,8 @@ Route::middleware('auth')->group(function (): void {
 
     // Settings › Account
     Route::put('/settings/account', [AccountController::class, 'update'])->name('settings.account.update');
+    // Personal data download (spec Part 23, GDPR): recent password, a few times per hour
+    Route::get('/settings/account/export', [OpsController::class, 'export'])->middleware(['recent.password', 'throttle:data-export'])->name('settings.account.export');
 
     // Settings › Security
     Route::put('/settings/security/email', [SecurityController::class, 'changeEmail'])->name('settings.security.email');

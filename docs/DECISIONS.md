@@ -61,6 +61,13 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-031 — Launch hardening (2026-11-25)
+- **Two CSPs**: the site gets a strict nonce-based policy (React/Inertia need no inline scripts; inline JSON is not executed); the Filament admin gets its own looser policy because Alpine.js evaluates expressions. Both forbid framing and plugins. A Report-Only switch lets operators trial changes.
+- **Rate limits in two layers**: a baseline on every write (per user, per IP for account-recovery endpoints) and the route-specific limits; numeric route limits are counted per route so one busy feature cannot lock a user out of another.
+- **Health is an endpoint plus a log level**: `/health` for monitors, CRITICAL log lines for alerts, so any log pipeline (Slack, pager, e-mail) can page without extra code. The scheduler proves it is alive with a heartbeat.
+- **Retention prunes conveniences, never records**: money, orders, disputes, tickets, reviews and audit logs stay; personal data leaves through account deletion (anonymisation).
+- **Launch readiness is a checklist, not code**: legal texts, restore drill, load test and the staging soak are in docs/RUNBOOK.md §7.
+
 ## ADR-030 — Account deletion, manual adjustments, reports (2026-11-25)
 - **Deletion = anonymisation, not removal**: the user row stays (orders, journals and audit logs point at it) with every personal field replaced; the store is banned and the affiliate account suspended so nothing public refers to the person. The account keeps working during the cool-off so the user can cancel, and the blockers are checked again at the end because money or orders can appear meanwhile.
 - **Two different factors**, chosen by the user from e-mail code, Privacy Password and authenticator (SMS waits for a real SMS provider).

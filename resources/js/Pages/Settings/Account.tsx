@@ -129,6 +129,17 @@ export default function Account({ account, messengers, timezones }: Props) {
                 </div>
             </form>
 
+            <Panel title={t('settings.account.data')} description={t('settings.account.data_hint')}>
+                <div className="flex flex-wrap gap-3">
+                    <a href="/settings/account/export" className="btn-outline-pill px-4 py-2 text-sm">
+                        {t('settings.account.data_download')}
+                    </a>
+                    <a href="/settings/delete-account" className="px-4 py-2 text-sm text-danger hover:underline">
+                        {t('menu.settings.delete')}
+                    </a>
+                </div>
+            </Panel>
+
             <Panel title={t('settings.account.social')} description={t('settings.account.social_hint')}>
                 <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                     {SOCIAL.map((p) => (

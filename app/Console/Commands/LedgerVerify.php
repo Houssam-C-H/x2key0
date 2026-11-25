@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Domains\Ledger\Actions\VerifyLedger;
+use App\Shared\Ops\HealthCheck;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 final class LedgerVerify extends Command
@@ -17,6 +19,7 @@ final class LedgerVerify extends Command
     public function handle(VerifyLedger $verify): int
     {
         $problems = $verify->handle();
+        Cache::put(HealthCheck::LEDGER_KEY, ['problems' => count($problems), 'at' => now()->getTimestamp()], now()->addDays(2));
 
         if ($problems === []) {
             $this->info('Ledger consistent.');

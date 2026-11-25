@@ -28,3 +28,6 @@ Schedule::command('affiliate:release-commissions')->hourly()->onOneServer();
 Schedule::command('levels:recompute')->dailyAt('04:30')->onOneServer();
 Schedule::command('home:refresh-trending')->hourly()->onOneServer();
 Schedule::command('accounts:process-deletions')->dailyAt('05:00')->onOneServer();
+Schedule::command('privacy:prune')->dailyAt('05:30')->onOneServer();
+Schedule::command('ops:heartbeat')->everyMinute();
+Schedule::command('ops:check')->everyFiveMinutes()->onOneServer();

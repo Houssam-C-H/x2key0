@@ -1874,5 +1874,8 @@
     "ledger.adjust.error.accounts": "User accounts need a user; the offset must be another platform account from the list.",
     "ledger.adjust.error.decided": "This adjustment was already decided.",
     "ledger.adjust.error.own": "Another finance user must approve your own request.",
-    "ledger.adjust.error.role": "Only finance staff can adjust the ledger."
+    "ledger.adjust.error.role": "Only finance staff can adjust the ledger.",
+    "settings.account.data": "Your data",
+    "settings.account.data_hint": "Download a copy of the personal data X2KEY holds about you (JSON), or delete your account.",
+    "settings.account.data_download": "Download my data"
 }

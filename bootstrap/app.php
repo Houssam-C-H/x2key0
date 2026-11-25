@@ -8,6 +8,9 @@ use App\Http\Middleware\RequirePrivacyPassword;
 use App\Http\Middleware\RequireRecentPassword;
 use App\Http\Middleware\RequireStaffTwoFactor;
 use App\Http\Middleware\ResolveLocale;
+use App\Http\Middleware\RouteThrottle;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ThrottleWrites;
 use App\Http\Middleware\TrackUserSession;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -31,7 +34,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->redirectUsersTo('/dashboard');
 
+        // CSP, HSTS, nosniff, frame and permission policies on every response (spec Part 23).
+        $middleware->append(SecurityHeaders::class);
+
         $middleware->web(append: [
+            ThrottleWrites::class,
             ResolveLocale::class,
             TrackUserSession::class,
             HandleInertiaRequests::class,
@@ -45,6 +52,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff.2fa' => RequireStaffTwoFactor::class,
             'seller' => EnsureSeller::class,
             'recent.password' => RequireRecentPassword::class,
+            // One counter per route for `throttle:N,M` (spec Part 23).
+            'throttle' => RouteThrottle::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

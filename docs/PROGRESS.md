@@ -1,6 +1,6 @@
 # Progress
 
-**Current milestone:** M19 — Launch hardening (next). M1–M18 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
+**Current milestone:** launch preparation (people & infrastructure, see M19 open items and docs/RUNBOOK.md §7). M1–M19 code complete (follow-ups listed per milestone). Tests run locally on SQLite and on a portable PostgreSQL 17 (C:\dev\tools\pgsql); Docker/Sail still not running.
 
 | # | Milestone | Status | Notes |
 |---|---|---|---|
@@ -23,7 +23,19 @@
 | M16 | Reviews & community ratings | ✅ code done | See checklist below |
 | M17 | Home CMS, News, Help, footer pages | ✅ code done | See checklist below |
 | M18 | Admin & risk completion, reports | ✅ code done | See checklist below |
-| M19 | Launch hardening | next | |
+| M19 | Launch hardening | ✅ code done | See checklist below; staging soak, restore drill and legal texts need people |
+
+## M19 checklist
+- [x] **Security headers** on every response: CSP with a per-request script nonce (Vite tags carry it, no `unsafe-eval` / `unsafe-inline` scripts on the site), a separate looser CSP only for the Filament admin (Alpine needs `unsafe-eval`), `frame-ancestors 'none'` + X-Frame-Options, nosniff, strict-origin referrer, Permissions-Policy, COOP, HSTS in production over HTTPS; `CSP_REPORT_ONLY` to trial changes; secure session cookies by default in production
+- [x] **Rate limits**: baseline 120 writes/min per user and 10/min per IP on sign-up, password reset, password confirmation and 2FA setup; numeric `throttle:N,M` now counts per route (before, all routes shared one counter per user — 30 chat messages also blocked checkout); test that the spec's routes (checkout, reveal, chat, coupons, tickets, webhooks) keep a limit
+- [x] **GDPR data export**: Settings › Account › "Download my data" (recent password, 3/hour, audited) → JSON with profile, preferences, sign-ins, devices, sessions, orders, comments, chat messages, tickets, coupons, money and points statements, store, affiliate, withdrawals — never passwords, 2FA, vault payloads or payout numbers
+- [x] **Retention** (`privacy:prune`, daily, `x2key.retention_days`): browsing history 180 d, login events 365 d, revoked sessions 90 d, read notifications 180 d, resolved risk flags 730 d, failed jobs 30 d; records (money, orders, disputes, tickets, reviews, audit) kept
+- [x] **Health & alerts**: `/health` (200/503; details with `HEALTH_TOKEN`): database, cache, scheduler heartbeat (`ops:heartbeat` every minute), failed jobs, last `ledger:verify`, stuck payment events; `ops:check` every 5 min logs CRITICAL per failure for alert routing
+- [x] **SEO**: dynamic `robots.txt` (private areas disallowed, sitemap URL); news, help and pages in the sitemap (M17)
+- [x] **Legal pages**: all 16 of spec Part 23 seeded locally as drafts marked "Draft" (DMCA, GDPR, Pricing, Affiliate terms added)
+- [x] **Ops**: `docs/RUNBOOK.md` (processes, health, alerts and first steps, security checklist, backups/PITR, restore, load testing, privacy operations, launch checklist), `scripts/backup.sh`, `scripts/restore-drill.sh` (restore into a throwaway DB, `ledger:verify`, RTO), `tests/load/smoke.js` (k6: smoke / load / peak, p95 < 800 ms, < 1 % errors)
+- [x] 10 new tests (`tests/Feature/Ops`): CSP nonce and headers, admin policy, Report-Only, sensitive and baseline write limits, per-route counters, spec routes keep limits, data export (password, content, no secrets, audit), retention, health states and token, robots.txt; Larastan max 0 errors; Pint; TS strict
+- [ ] **Needs people / infrastructure, not code**: legal texts written with a lawyer, restore drill run and logged on the real backups, load test on staging, one-week staging soak, alert channel (Slack/pager) wired, ClamAV container, founder decisions D1–D12, real PSPs and KYC/SMS providers
 
 ## M18 checklist
 - [x] **Account deletion** (spec 6.8, Settings › Delete Account): notice + agreement + exactly two different factors (e-mail code valid 10 min, Privacy Password, authenticator); blockers = any non-zero balance (credits, seller, affiliate, in transit), open orders as buyer or seller, open disputes, open withdrawals → `blocked` with the list; otherwise `scheduled` after `account_deletion_cooloff_days` (14) with cancel; the user keeps access during the cool-off
@@ -343,6 +355,7 @@
 - 2026-11-23 — M9 completion & settlement built (branch `m9-completion-settlement`, on top of M8): confirm / auto-confirm, ORDER_SETTLEMENT, holds with insurance installments and rolling reserve, points on completion, announcement centre with bell badge, Credits / Points / Funding statements with CSV, seller balances. Bug found by tests and fixed: first read/star of an announcement crashed.
 - 2026-11-23 — M8 delivery & refunds built (branch `m8-delivery-refunds`, on top of M7): auto delivery from Storage, manual delivery per method, reveal with audit, Sold Orders, cancellations and proportional refunds, order timers. Bug found by tests and fixed: M5's unique index on `storage_items.assigned_order_item_id` blocked every multi-unit auto delivery.
 - 2026-11-23 — M7 ledger & points built (branch `m7-ledger`, on top of M6): PostJournal + triggers, credits wallet on the ledger, payment journals wired into checkout/capture/cancel/late capture, points ledger, verify/reconcile, property tests. Note: the local `.env` was replaced with the Sail version (Redis, Meilisearch, Mailpit hosts) — local test runs need `CATALOG_SEARCH_DRIVER=database SCOUT_DRIVER=null`.
+- 2026-11-25 — `main` fast-forwarded to M18. M19 launch hardening built (branch `m19-launch-hardening`): CSP/HSTS headers, baseline and per-route rate limits (bug found: numeric throttles shared one counter per user across routes), GDPR export, retention pruning, `/health` + alerts, robots.txt, RUNBOOK, backup/restore-drill scripts, k6 load test.
 - 2026-11-25 — `main` fast-forwarded to M17. M18 account deletion, dual-approval ledger adjustments, reports, user moderation and order staff actions built (branch `m18-admin-risk`).
 - 2026-11-24 — `main` fast-forwarded to M16. M17 home CMS (12 modules, pins, trending job), News, Help center, CMS pages and footer, bookmark prompt built (branch `m17-home-content`).
 - 2026-11-24 — `main` fast-forwarded to M15. M16 reviews, community ratings and level recompute built (branch `m16-reviews`).

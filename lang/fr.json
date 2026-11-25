@@ -1874,5 +1874,8 @@
     "ledger.adjust.error.accounts": "Les comptes utilisateur exigent un utilisateur ; la contrepartie doit être un autre compte plateforme de la liste.",
     "ledger.adjust.error.decided": "Cet ajustement a déjà été traité.",
     "ledger.adjust.error.own": "Un autre membre de la finance doit approuver votre demande.",
-    "ledger.adjust.error.role": "Seule l'équipe finance peut ajuster le grand livre."
+    "ledger.adjust.error.role": "Seule l'équipe finance peut ajuster le grand livre.",
+    "settings.account.data": "Vos données",
+    "settings.account.data_hint": "Téléchargez une copie des données personnelles détenues par X2KEY (JSON), ou supprimez votre compte.",
+    "settings.account.data_download": "Télécharger mes données"
 }

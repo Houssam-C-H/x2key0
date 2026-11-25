@@ -34,6 +34,10 @@ final class DemoContentSeeder extends Seeder
             ['seller-agreement', 'policies', ['en' => 'Seller agreement', 'fr' => 'Contrat vendeur', 'ar' => 'اتفاقية البائع'], self::DRAFT.'Rules for sellers: fees, holds, deliveries, disputes and violations.'],
             ['prohibited-items', 'policies', ['en' => 'Prohibited items', 'fr' => 'Articles interdits', 'ar' => 'المنتجات المحظورة'], self::DRAFT.'Items that cannot be sold on X2KEY.'],
             ['ip-policy', 'policies', ['en' => 'Intellectual property', 'fr' => 'Propriété intellectuelle', 'ar' => 'الملكية الفكرية'], self::DRAFT.'How rights holders can report content.'],
+            ['dmca', 'legal', ['en' => 'DMCA notice', 'fr' => 'Notification DMCA', 'ar' => 'إشعار DMCA'], self::DRAFT.'How to send a copyright takedown notice and a counter-notice.'],
+            ['gdpr', 'legal', ['en' => 'Your data rights (GDPR)', 'fr' => 'Vos droits (RGPD)', 'ar' => 'حقوقك في البيانات (GDPR)'], self::DRAFT.'Access, correction, export (Settings › Account › Download my data), deletion (Settings › Delete account) and objection.'],
+            ['pricing', 'policies', ['en' => 'Fees and pricing', 'fr' => 'Frais et tarifs', 'ar' => 'الرسوم والأسعار'], self::DRAFT.'Buyer service charge, seller commission by level, payout fees.'],
+            ['affiliate-terms', 'policies', ['en' => 'Affiliate terms', 'fr' => "Conditions d'affiliation", 'ar' => 'شروط التسويق بالعمولة'], self::DRAFT.'Commission basis, attribution window, prohibited promotion methods.'],
         ];
         foreach ($pages as $i => [$slug, $column, $title, $body]) {
             Page::query()->firstOrCreate(['slug' => $slug], ['title' => $title, 'body' => ['en' => $body], 'footer_column' => $column, 'sort' => $i, 'is_published' => true]);
