@@ -70,6 +70,12 @@ Then a one-week staging soak with the scheduler and queue running before go-live
 - **Retention**: `privacy:prune` daily per `config/x2key.php` `retention_days`. Money, orders, journals, disputes,
   tickets, reviews and audit logs are kept (legal records).
 
+## 6b. Two-step verification lockouts
+
+- **A user lost their authenticator:** they log in with a recovery code ("Use a recovery code" on the code screen). Without one, staff reset it in the admin panel: Users › the user › **Reset 2FA** (reason required, audited) after checking the person owns the account.
+- **The only admin is locked out** (staff cannot reset their own account): on the server run
+  `php artisan users:reset-two-factor <username> --reason="…"` (audited as a console action), then the admin sets 2FA up again before /admin opens.
+
 ## 7. Before launch (open items)
 
 - Legal texts written with a lawyer replace the draft pages (Terms, Buyer Protection, Seller Agreement, Prohibited
