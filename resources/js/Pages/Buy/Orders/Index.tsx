@@ -26,6 +26,11 @@ export default function PurchaseOrders({ orders, counts, tab, tabs }: { orders: 
 
     return (
         <DashboardLayout title={t('menu.buy.orders')}>
+            <p className="mb-3 text-end text-sm">
+                <Link href="/buy/claim" className="font-semibold text-primary hover:underline">
+                    {t('protection.claim_title')} →
+                </Link>
+            </p>
             <nav className="-mx-6 mb-4 flex gap-1 overflow-x-auto border-b border-line px-6" aria-label={t('menu.buy.orders')}>
                 {tabs.map((name) => (
                     <button

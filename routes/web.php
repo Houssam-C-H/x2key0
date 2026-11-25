@@ -9,6 +9,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\AuthPageController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\BookmarkPromptController;
+use App\Http\Controllers\Buy\BuyerClaimController;
 use App\Http\Controllers\Buy\CommentController;
 use App\Http\Controllers\Buy\FinanceController;
 use App\Http\Controllers\Buy\PurchaseOrderController;
@@ -117,6 +118,7 @@ Route::prefix('{locale}')
         Route::get('/news', [ContentController::class, 'news'])->name('news.index');
         Route::get('/news/{slug}', [ContentController::class, 'article'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('news.show');
         Route::get('/help', [ContentController::class, 'help'])->name('help.index');
+        Route::get('/buyer-protection', [ContentController::class, 'buyerProtection'])->name('buyer-protection');
         Route::get('/help/{slug}', [ContentController::class, 'helpArticle'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('help.show');
         Route::get('/page/{slug}', [ContentController::class, 'page'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('page.show');
         Route::get('/store/{slug}', [StoreController::class, 'show'])->where('slug', '[a-z0-9][a-z0-9-]*')->name('store.show');
@@ -322,6 +324,7 @@ Route::middleware('auth')->group(function (): void {
     });
 
     // Dispute Center (spec Part 10 / Part 20): open from an order, thread, proposals, escalation
+    Route::get('/buy/claim', BuyerClaimController::class)->name('buy.claim');
     Route::get('/orders/{publicId}/disputes/new', [DisputeController::class, 'create'])->where('publicId', '[0-9a-z]{26}')->name('disputes.create');
     Route::post('/orders/{publicId}/disputes', [DisputeController::class, 'store'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:10,1')->name('disputes.store');
     Route::prefix('/disputes/{publicId}')->where(['publicId' => '[0-9a-z]{26}'])->group(function (): void {

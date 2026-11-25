@@ -10,6 +10,7 @@ use App\Domains\Content\Models\Page;
 use App\Domains\Content\Support\ContentRenderer;
 use App\Domains\Content\Support\HomePresenter;
 use App\Http\Support\Seo;
+use App\Shared\Support\Settings;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -45,6 +46,16 @@ final class ContentController
             'related' => array_values(NewsArticle::query()->published()->whereKeyNot($article->id)->orderByDesc('published_at')->limit(3)->get()
                 ->map(static fn (NewsArticle $a): array => HomePresenter::article($a, $locale))->all()),
             'seo' => Seo::make($title, $article->excerpt === null ? $title : $article->translate('excerpt', $locale), "/news/{$article->slug}", $locale),
+        ]);
+    }
+
+    /** Buyer protection (designed page): how money is held, what is covered, how to claim. */
+    public function buyerProtection(Settings $settings, string $locale): Response
+    {
+        return Inertia::render('Public/BuyerProtection', [
+            'confirmationHours' => $settings->int('confirmation_window_hours'),
+            'serviceConfirmationHours' => $settings->int('confirmation_window_hours_services'),
+            'seo' => Seo::make((string) __('protection.title'), (string) __('protection.description'), '/buyer-protection', $locale),
         ]);
     }
 

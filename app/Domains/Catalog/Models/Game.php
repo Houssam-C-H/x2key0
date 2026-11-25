@@ -44,7 +44,7 @@ final class Game extends Model
     /** First URL segments that can never be game slugs (they are other public routes). */
     public const array RESERVED_SLUGS = [
         'login', 'register', 'forgot-password', 'reset-password', 'games', 'catalog', 'search',
-        'news', 'help', 'affiliate', 'page', 'store', 'offer', 'sitemap', 'api', 'admin',
+        'news', 'help', 'affiliate', 'page', 'store', 'offer', 'sitemap', 'api', 'admin', 'buyer-protection',
     ];
 
     protected $fillable = [

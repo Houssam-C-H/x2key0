@@ -7,7 +7,7 @@ import { useShared, useT } from '@/lib/i18n';
  * legal texts (written with a lawyer) arrive in M17/M19.
  */
 /** Built-in links that are sections of the site, not CMS pages. */
-const SECTION_PATHS: Record<string, string> = { help: '/help', affiliate: '/affiliate', news: '/news' };
+const SECTION_PATHS: Record<string, string> = { help: '/help', affiliate: '/affiliate', news: '/news', 'buyer-protection': '/buyer-protection' };
 
 export function Footer() {
     const t = useT();
@@ -34,7 +34,7 @@ export function Footer() {
     const keys: Record<string, string> = { 'footer.company': 'company', 'footer.support': 'support', 'footer.legal': 'legal', 'footer.policies': 'policies' };
     const shown = columns.map((col) => {
         const pages = cms[keys[col.title] ?? ''] ?? [];
-        return { title: col.title, links: pages.length > 0 ? pages.map((p) => ({ label: p.label, href: p.href })) : col.links.map(([label, slug]) => ({ label: t(label), href: '/' + locale + (SECTION_PATHS[slug] ?? '/page/' + slug) })) };
+        return { title: col.title, links: pages.length > 0 ? pages.map((p) => ({ label: p.label, href: p.href.replace(/\/page\/buyer-protection$/, '/buyer-protection') })) : col.links.map(([label, slug]) => ({ label: t(label), href: '/' + locale + (SECTION_PATHS[slug] ?? '/page/' + slug) })) };
     });
     const seoLinks = footer?.seoLinks ?? [];
 
