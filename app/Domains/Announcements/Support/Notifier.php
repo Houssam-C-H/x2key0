@@ -48,6 +48,7 @@ final class Notifier
         'ticket_reply' => 'ticket',
         'ticket_closed' => 'ticket',
         'low_stock' => 'merchant',
+        'price_drop' => 'deals',
         'seller_level_up' => 'merchant',
         'seller_level_down' => 'merchant',
     ];
@@ -56,7 +57,7 @@ final class Notifier
     public const array COOLDOWN_MINUTES = ['checkout_abandoned' => 24 * 60];
 
     /** Preferences shown in Settings › Account (all on by default). */
-    public const array PREFERENCES = ['order', 'merchant', 'ticket'];
+    public const array PREFERENCES = ['order', 'merchant', 'ticket', 'deals'];
 
     /**
      * @param  array<string, string|int>  $data

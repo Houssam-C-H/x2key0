@@ -20,6 +20,7 @@ use App\Domains\Catalog\Support\CatalogReader;
 use App\Domains\Catalog\Support\SearchSuggest;
 use App\Domains\Engagement\Actions\RecordView;
 use App\Domains\Engagement\Models\Favorite;
+use App\Domains\Engagement\Models\PriceAlert;
 use App\Domains\Engagement\Support\EngagementReader;
 use App\Domains\Identity\Models\User;
 use App\Domains\Offers\Models\Offer;
@@ -96,6 +97,18 @@ final class CatalogController
             'didYouMean' => $didYouMean,
             'seo' => Seo::make(__('catalog.search.title'), __('catalog.search.title'), '/search', $locale, noindex: true),
         ]);
+    }
+
+    /**
+     * Bell on product and offer-listing pages: the viewer's alert for this target, if any, and the lowest price.
+     *
+     * @return array{type: string, id: string, alertId: int|null, target: int|null, lowest: int|null}
+     */
+    private static function priceAlert(Request $request, string $type, string $id, string $column, int $targetId, ?int $lowest): array
+    {
+        $alert = $request->user() === null ? null : PriceAlert::query()->where('user_id', $request->user()->getAuthIdentifier())->where($column, $targetId)->first();
+
+        return ['type' => $type, 'id' => $id, 'alertId' => $alert?->id, 'target' => $alert?->target_amount, 'lowest' => $lowest];
     }
 
     /** Search-as-you-type for the header (JSON): games with icons and matching categories. */
@@ -215,6 +228,10 @@ final class CatalogController
                 'lastPage' => $result->lastPage(),
             ],
             'offerResults' => $offerResults,
+            'priceAlert' => $offerResults === null ? null : self::priceAlert(
+                $request, 'category', (string) $gameCategory->id, 'game_category_id', $gameCategory->id,
+                (($min = Offer::query()->live()->where('offers.game_category_id', $gameCategory->id)->min('offers.unit_price_amount')) !== null && is_numeric($min)) ? (int) $min : null,
+            ),
             'serviceTypes' => $serviceTypes,
             'activeService' => $activeService?->code,
             'seo' => Seo::make(
@@ -295,6 +312,7 @@ final class CatalogController
             'offers' => $rows,
             'deliveryMethods' => array_values(array_unique($offers->map(static fn (Offer $o): string => $o->delivery_method->value)->all())),
             'isFavorite' => $this->engagement->favoritedIds($viewerId, Favorite::PRODUCT, [$model->id]) !== [],
+            'priceAlert' => self::priceAlert($request, 'product', $model->public_id, 'product_id', $model->id, $model->lowest_price_amount_cached),
             'history' => array_values(array_filter($history, static fn (array $h): bool => ($h['id'] ?? null) !== $model->public_id)),
             'breadcrumbs' => $crumbs,
             'seo' => Seo::make(

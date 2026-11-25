@@ -7,6 +7,7 @@ import { NoticeBox } from '@/Components/Catalog/NoticeBox';
 import { Pagination } from '@/Components/Catalog/Pagination';
 import { ProductCard } from '@/Components/Catalog/ProductCard';
 import { OfferCard } from '@/Components/Offer/OfferCard';
+import { PriceAlertButton, type PriceAlertState } from '@/Components/Offer/PriceAlertButton';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
 import { Icon } from '@/Components/Icon';
 import { PublicLayout } from '@/Layouts/PublicLayout';
@@ -28,6 +29,7 @@ interface Props {
     /** Service type chips (ADR-032) for offer listings; empty when the category type has none. */
     serviceTypes?: { code: string; name: string; count: number }[];
     activeService?: string | null;
+    priceAlert?: PriceAlertState | null;
     seo: Seo;
 }
 
@@ -62,7 +64,7 @@ function toParams(state: ListingState, page = 1, service: string | null = null):
     return params;
 }
 
-export default function Listing({ gameCategory, tabs, breadcrumbs, filters, query, sorts, results, offerResults, serviceTypes = [], activeService = null, seo }: Props) {
+export default function Listing({ gameCategory, tabs, breadcrumbs, filters, query, sorts, results, offerResults, serviceTypes = [], activeService = null, priceAlert = null, seo }: Props) {
     const t = useT();
     const { locale } = useShared();
     const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -84,7 +86,10 @@ export default function Listing({ gameCategory, tabs, breadcrumbs, filters, quer
             <SeoHead seo={seo} />
             <div className="mx-auto max-w-7xl space-y-5 px-4 py-6">
                 <Breadcrumbs items={breadcrumbs} />
-                <h1 className="text-2xl font-extrabold">{gameCategory.title}</h1>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h1 className="text-2xl font-extrabold">{gameCategory.title}</h1>
+                    {priceAlert && <PriceAlertButton alert={priceAlert} />}
+                </div>
                 <CategoryTabs tabs={tabs} />
                 {gameCategory.notice && <NoticeBox text={gameCategory.notice} />}
 

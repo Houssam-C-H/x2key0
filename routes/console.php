@@ -31,4 +31,5 @@ Schedule::command('accounts:process-deletions')->dailyAt('05:00')->onOneServer()
 Schedule::command('privacy:prune')->dailyAt('05:30')->onOneServer();
 Schedule::command('ops:heartbeat')->everyMinute();
 Schedule::command('ops:check')->everyFiveMinutes()->onOneServer();
+Schedule::command('alerts:prices')->everyTenMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('ops:backup')->dailyAt('03:15')->onOneServer()->withoutOverlapping()->when(static fn (): bool => config()->boolean('x2key.ops.backups_required'));

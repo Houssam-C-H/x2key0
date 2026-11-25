@@ -25,6 +25,11 @@ export default function Favorites({ items }: { items: Item[] }) {
 
     return (
         <DashboardLayout title={t('menu.buy.favorites')}>
+            <p className="mb-3 text-end text-sm">
+                <Link href="/buy/price-alerts" className="font-semibold text-primary hover:underline">
+                    {t('price_alert.page_title')} →
+                </Link>
+            </p>
             {items.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <span className="flex h-14 w-14 items-center justify-center rounded-full bg-canvas text-2xl text-muted">♡</span>

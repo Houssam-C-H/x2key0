@@ -29,8 +29,8 @@ it('e-mails important notifications and keeps minor ones in the inbox only', fun
 });
 
 it('respects switched-off preferences but always sends money, dispute and safety e-mails', function (): void {
-    $this->actingAs($this->user)->put('/settings/account/emails', ['order' => false, 'merchant' => true, 'ticket' => true])->assertSessionHasNoErrors();
-    $this->get('/settings/account')->assertInertia(fn (Assert $page) => $page->where('account.emails', ['order' => false, 'merchant' => true, 'ticket' => true]));
+    $this->actingAs($this->user)->put('/settings/account/emails', ['order' => false, 'merchant' => true, 'ticket' => true, 'deals' => true])->assertSessionHasNoErrors();
+    $this->get('/settings/account')->assertInertia(fn (Assert $page) => $page->where('account.emails', ['order' => false, 'merchant' => true, 'ticket' => true, 'deals' => true]));
 
     Notifier::notify($this->user->id, 'order_completed', 'order', ['number' => 'X2K-2']);
     Notifier::notify($this->user->id, 'dispute_opened', 'dispute', ['number' => 'X2K-2']);

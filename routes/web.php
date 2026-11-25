@@ -12,6 +12,7 @@ use App\Http\Controllers\BookmarkPromptController;
 use App\Http\Controllers\Buy\BuyerClaimController;
 use App\Http\Controllers\Buy\CommentController;
 use App\Http\Controllers\Buy\FinanceController;
+use App\Http\Controllers\Buy\PriceAlertController;
 use App\Http\Controllers\Buy\PurchaseOrderController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CheckoutController;
@@ -326,6 +327,9 @@ Route::middleware('auth')->group(function (): void {
 
     // Dispute Center (spec Part 10 / Part 20): open from an order, thread, proposals, escalation
     Route::get('/buy/claim', BuyerClaimController::class)->name('buy.claim');
+    Route::get('/buy/price-alerts', [PriceAlertController::class, 'index'])->name('buy.price-alerts');
+    Route::post('/price-alerts', [PriceAlertController::class, 'store'])->middleware('throttle:30,1')->name('price-alerts.store');
+    Route::delete('/price-alerts/{alert}', [PriceAlertController::class, 'destroy'])->whereNumber('alert')->name('price-alerts.destroy');
     Route::get('/orders/{publicId}/disputes/new', [DisputeController::class, 'create'])->where('publicId', '[0-9a-z]{26}')->name('disputes.create');
     Route::post('/orders/{publicId}/disputes', [DisputeController::class, 'store'])->where('publicId', '[0-9a-z]{26}')->middleware('throttle:10,1')->name('disputes.store');
     Route::prefix('/disputes/{publicId}')->where(['publicId' => '[0-9a-z]{26}'])->group(function (): void {

@@ -5,6 +5,7 @@ import { NoticeBox } from '@/Components/Catalog/NoticeBox';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
 import { BuyBox } from '@/Components/Offer/BuyBox';
 import { FavoriteButton } from '@/Components/Offer/FavoriteButton';
+import { PriceAlertButton, type PriceAlertState } from '@/Components/Offer/PriceAlertButton';
 import { HistoryStrip } from '@/Components/Offer/HistoryStrip';
 import { OffersTable } from '@/Components/Offer/OffersTable';
 import { PublicLayout } from '@/Layouts/PublicLayout';
@@ -20,6 +21,7 @@ interface Props {
     offers: OfferRow[];
     deliveryMethods: string[];
     isFavorite: boolean;
+    priceAlert?: PriceAlertState;
     history: HistoryItem[];
     breadcrumbs: Crumb[];
     seo: Seo;
@@ -29,7 +31,7 @@ interface Props {
  * Catalog product page (spec 1.5): buy box with the recommended offer, "Other sellers" table, description,
  * Browsing History strip.
  */
-export default function Product({ product, gameCategory, gameCategoryHref, offers, deliveryMethods, isFavorite, history, breadcrumbs, seo }: Props) {
+export default function Product({ product, gameCategory, gameCategoryHref, offers, deliveryMethods, isFavorite, history, breadcrumbs, seo, priceAlert }: Props) {
     const t = useT();
     const { locale } = useShared();
     const [selectedId, setSelectedId] = useState<string | null>(offers[0]?.id ?? null);
@@ -53,6 +55,7 @@ export default function Product({ product, gameCategory, gameCategoryHref, offer
                             <div className="flex-1 space-y-3">
                                 <div className="flex items-start gap-3">
                                     <h1 className="flex-1 text-2xl font-extrabold">{product.name}</h1>
+                                    {priceAlert && <PriceAlertButton alert={priceAlert} />}
                                     <FavoriteButton type="product" id={product.id} active={isFavorite} />
                                 </div>
                                 <div className="flex flex-wrap gap-2 text-xs">
