@@ -114,6 +114,14 @@
     @apply btn text-ink hover:bg-canvas;
 }
 
+/* Horizontal rails: scroll-snap without a visible scrollbar (arrow buttons drive them). */
+@utility no-scrollbar {
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
 @utility field {
     @apply w-full rounded-[var(--radius-btn)] border border-line bg-white px-3 py-2 outline-none focus:border-primary;
 }

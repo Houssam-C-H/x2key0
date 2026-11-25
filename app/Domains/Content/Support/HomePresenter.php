@@ -11,8 +11,10 @@ use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Support\CatalogReader;
 use App\Domains\Content\Models\HomeModule;
 use App\Domains\Content\Models\NewsArticle;
+use App\Domains\Offers\Models\Offer;
 use App\Domains\Payments\Models\PaymentMethod;
 use App\Domains\Reviews\Support\ReviewPresenter;
+use App\Domains\Sellers\Models\SellerProfile;
 use App\Shared\Support\Settings;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -105,12 +107,12 @@ final class HomePresenter
                 'type' => $code->value,
                 'label' => __($code->labelKey()),
                 'href' => "/{$locale}/catalog/".str_replace('_', '-', $code->value),
-                'games' => array_values($rows->map(fn (GameCategory $gc): array => [
+                'games' => array_values($rows->filter(fn (GameCategory $gc): bool => CatalogReader::count($gc) > 0)->map(fn (GameCategory $gc): array => [
                     'name' => $gc->game->translate('name', $locale),
                     'href' => $gc->path($locale),
                     'count' => CatalogReader::count($gc),
                     'icon' => self::asset($gc->game->icon_path),
-                ])->all()),
+                ])->values()->all()),
             ];
         }
 
@@ -131,8 +133,10 @@ final class HomePresenter
             ->orderByDesc('trend_score')->orderByDesc('offer_count_cached')->limit(40)->get();
         $rows = self::pinFirst($rows, $module->pinnedIds(), static fn (GameCategory $gc): int => $gc->id, $type->id)->take($module->limit($default));
 
+        $prices = self::lowestPrices(array_values($rows->pluck('id')->all()));
+
         return [
-            'tiles' => array_values($rows->map(fn (GameCategory $gc): array => self::tile($gc, $locale))->all()),
+            'tiles' => array_values($rows->map(fn (GameCategory $gc): array => self::tile($gc, $locale, $prices[$gc->id] ?? null))->all()),
             'more' => "/{$locale}/catalog/".str_replace('_', '-', $code->value),
         ];
     }
@@ -146,7 +150,7 @@ final class HomePresenter
     {
         $rows = GameCategory::query()->visible()->with(['game', 'type'])->orderByDesc('created_at')->orderByDesc('id')->limit(60)->get();
         $rows = self::pinFirst($rows, $module->pinnedIds(), static fn (GameCategory $gc): int => $gc->id)->take($module->limit(40));
-        $links = array_values($rows->map(static fn (GameCategory $gc): array => ['label' => $gc->label($locale), 'href' => $gc->path($locale)])->all());
+        $links = array_values($rows->map(static fn (GameCategory $gc): array => ['game' => $gc->game->translate('name', $locale), 'label' => $gc->label($locale), 'href' => $gc->path($locale)])->all());
 
         return ['columns' => array_chunk($links, max(1, (int) ceil(count($links) / 4)))];
     }
@@ -197,7 +201,7 @@ final class HomePresenter
     /**
      * @return array<string, mixed>
      */
-    private static function tile(GameCategory $gc, string $locale): array
+    private static function tile(GameCategory $gc, string $locale, ?int $from): array
     {
         return [
             'name' => $gc->game->translate('name', $locale),
@@ -205,7 +209,51 @@ final class HomePresenter
             'href' => $gc->path($locale),
             'count' => CatalogReader::count($gc),
             'image' => self::asset($gc->game->cover_path),
+            'from' => $from,
         ];
+    }
+
+    /**
+     * Lowest live offer price per game×category ("from $X" on tiles).
+     *
+     * @param  list<mixed>  $ids
+     * @return array<int, int>
+     */
+    private static function lowestPrices(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $out = [];
+        foreach (Offer::query()->live()->whereIn('offers.game_category_id', $ids)
+            ->groupBy('offers.game_category_id')->selectRaw('offers.game_category_id as gc, MIN(offers.unit_price_amount) as low')->toBase()->get() as $row) {
+            if (is_numeric($row->gc ?? null) && is_numeric($row->low ?? null)) {
+                $out[(int) $row->gc] = (int) $row->low;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Hero figures and popular searches (social proof above the fold), cached with the modules.
+     *
+     * @return array{offers: int, sellers: int, games: int, popular: list<array{name: string, href: string}>}
+     */
+    public function hero(string $locale): array
+    {
+        /** @var array{offers: int, sellers: int, games: int, popular: list<array{name: string, href: string}>} */
+        return HomeCache::remember("hero.{$locale}", static function () use ($locale): array {
+            $popular = Game::query()->where('is_enabled', true)->orderByDesc('hot_score')->orderByDesc('offer_count_cached')->limit(6)->get();
+
+            return [
+                'offers' => Offer::query()->live()->count(),
+                'sellers' => SellerProfile::query()->public()->count(),
+                'games' => Game::query()->where('is_enabled', true)->count(),
+                'popular' => array_values($popular->map(static fn (Game $g): array => ['name' => $g->translate('name', $locale), 'href' => "/{$locale}/{$g->slug}"])->all()),
+            ];
+        });
     }
 
     /**

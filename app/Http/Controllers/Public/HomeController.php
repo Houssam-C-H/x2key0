@@ -35,6 +35,7 @@ final class HomeController
 
         return Inertia::render('Public/Home', [
             'modules' => $modules,
+            'hero' => $home->hero($locale),
             'seo' => Seo::make((string) __('home.hero_tagline'), (string) __('home.hero_subtitle'), '/', $locale),
         ]);
     }
