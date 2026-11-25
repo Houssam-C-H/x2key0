@@ -7,6 +7,8 @@ namespace App\Domains\Certification\Actions;
 use App\Domains\Certification\Enums\CertificationStatus;
 use App\Domains\Certification\Models\Certification;
 use App\Domains\Identity\Models\User;
+use App\Domains\Sellers\Models\SellerProfile;
+use App\Domains\Sellers\Support\SellerBadges;
 use DomainException;
 
 /**
@@ -25,6 +27,12 @@ final class ReviewCertification
             'reviewed_by' => $reviewer?->id,
             'rejected_reason' => null,
         ])->save();
+
+        // The store's public "ID verified" badge follows at once.
+        $profileId = SellerProfile::query()->where('user_id', $certification->user_id)->value('id');
+        if (is_int($profileId)) {
+            SellerBadges::forget($profileId);
+        }
     }
 
     public function reject(Certification $certification, ?User $reviewer, string $reason): void

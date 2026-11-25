@@ -9,6 +9,7 @@ use App\Domains\Catalog\Support\CatalogPresenter;
 use App\Domains\Messaging\Support\Presence;
 use App\Domains\Offers\Enums\Fulfillment;
 use App\Domains\Offers\Models\Offer;
+use App\Domains\Sellers\Support\SellerBadges;
 use App\Shared\Support\Translations;
 
 /**
@@ -166,14 +167,18 @@ final class OfferPresenter
     }
 
     /**
-     * @return array{name: string, href: string, stars: int, levelName: string|null, positiveRateBps: int|null, logoUrl: string|null}
+     * @return array{name: string, badges: list<string>, years: int, sales: int, href: string, stars: int, levelName: string|null, positiveRateBps: int|null, logoUrl: string|null, online: bool}
      */
     private static function seller(Offer $offer, string $locale): array
     {
         $seller = $offer->seller;
+        $trust = SellerBadges::for($seller);
 
         return [
             'name' => $seller->store_name,
+            'badges' => $trust['badges'],
+            'years' => $trust['years'],
+            'sales' => $trust['sales'],
             'href' => $seller->path($locale),
             'stars' => $seller->level->stars ?? 0,
             'levelName' => $seller->level?->translate('name', $locale),

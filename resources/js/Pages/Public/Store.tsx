@@ -5,6 +5,7 @@ import { ReviewCard, type ReviewRow } from '@/Components/Reviews/ReviewParts';
 import { Breadcrumbs } from '@/Components/Catalog/Breadcrumbs';
 import { SeoHead } from '@/Components/Catalog/SeoHead';
 import { OfferCard } from '@/Components/Offer/OfferCard';
+import { SellerBadgeChips } from '@/Components/Offer/SellerLine';
 import { bpsToPercent, LevelBadge } from '@/Components/Seller/LevelBadge';
 import { PublicLayout } from '@/Layouts/PublicLayout';
 import { useShared, useT } from '@/lib/i18n';
@@ -22,6 +23,7 @@ interface Props {
         notice: string | null;
         country: string | null;
         level: SellerLevel | null;
+        trust?: { badges: string[]; years: number; sales: number };
         memberSince: string | null;
         online: boolean;
         onVacation: boolean;
@@ -66,6 +68,7 @@ export default function Store({ store, services, coupons, reviews, featured, off
                             <h1 className="text-3xl font-extrabold">{store.name}</h1>
                             <div className="flex flex-wrap items-center gap-2 text-sm text-white/75">
                                 {store.level && <LevelBadge level={store.level} light />}
+                                {store.trust && <SellerBadgeChips badges={store.trust.badges} years={store.trust.years} />}
                                 {store.memberSince && <span>{t('seller.public.member_since', { date: new Date(store.memberSince).toLocaleDateString(locale) })}</span>}
                                 {store.country && <span>· {store.country}</span>}
                                 <span className="inline-flex items-center gap-1">

@@ -2022,5 +2022,10 @@
     "offer.tiers.title": "اشترِ أكثر ووفّر أكثر",
     "offer.tiers.from_qty": ":qty+ وحدة",
     "offer.tiers.each": ":price للوحدة",
-    "offer.tiers.nudge": "أضف :more لتدفع :price للوحدة."
+    "offer.tiers.nudge": "أضف :more لتدفع :price للوحدة.",
+    "seller.badge.verified": "هوية موثّقة",
+    "seller.badge.top_rated": "الأعلى تقييمًا",
+    "seller.badge.fast": "تسليم سريع",
+    "seller.badge.years": ":count سنة على X2KEY",
+    "seller.badge.sales": ":count عملية بيع"
 }

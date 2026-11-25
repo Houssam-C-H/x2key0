@@ -6,6 +6,9 @@ export interface OfferSeller {
     positiveRateBps: number | null;
     logoUrl: string | null;
     online: boolean;
+    badges?: string[];
+    years?: number;
+    sales?: number;
 }
 
 /** Buy box / "Other sellers" row (spec 1.5). */

@@ -13,6 +13,7 @@ use App\Domains\Offers\Support\OfferPresenter;
 use App\Domains\Reviews\Support\ReviewPresenter;
 use App\Domains\Sellers\Enums\SellerStatus;
 use App\Domains\Sellers\Models\SellerProfile;
+use App\Domains\Sellers\Support\SellerBadges;
 use App\Domains\Sellers\Support\SellerPresenter;
 use App\Http\Support\Seo;
 use Illuminate\Http\Request;
@@ -58,6 +59,7 @@ final class StoreController
                 'notice' => ($notice = $profile->translate('store_notice', $locale)) === '' ? null : $notice,
                 'country' => $profile->country,
                 'level' => SellerPresenter::level($profile->level, $locale),
+                'trust' => SellerBadges::for($profile),
                 'memberSince' => $profile->user->created_at->toIso8601String(),
                 'online' => app(Presence::class)->online($profile->user->last_seen_at),
                 'onVacation' => $profile->status === SellerStatus::Vacation,

@@ -2022,5 +2022,10 @@
     "offer.tiers.title": "Achetez plus, payez moins",
     "offer.tiers.from_qty": ":qty+ unités",
     "offer.tiers.each": ":price l’unité",
-    "offer.tiers.nudge": "Ajoutez-en :more pour payer :price l’unité."
+    "offer.tiers.nudge": "Ajoutez-en :more pour payer :price l’unité.",
+    "seller.badge.verified": "Identité vérifiée",
+    "seller.badge.top_rated": "Très bien noté",
+    "seller.badge.fast": "Livraison rapide",
+    "seller.badge.years": ":count an(s) sur X2KEY",
+    "seller.badge.sales": ":count ventes"
 }

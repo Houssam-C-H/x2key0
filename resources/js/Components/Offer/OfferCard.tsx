@@ -3,7 +3,7 @@ import { useShared, useT } from '@/lib/i18n';
 import { formatUsd } from '@/lib/money';
 import { deliveryTime } from '@/lib/offer';
 import type { OfferCardData } from '@/types/offer';
-import { SellerStars } from './SellerLine';
+import { SellerBadgeChips, SellerStars } from './SellerLine';
 
 /**
  * Offer card (spec 1.4.1, card style 2): title on top, image area with insurance and delivery-time badges,
@@ -35,7 +35,10 @@ export function OfferCard({ offer }: { offer: OfferCardData }) {
             </div>
             <div className="mt-auto flex items-center gap-2 p-3">
                 <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-semibold">{offer.seller.name}</span>
+                    <span className="flex items-center gap-1">
+                        <span className="truncate text-xs font-semibold">{offer.seller.name}</span>
+                        <SellerBadgeChips badges={offer.seller.badges} compact />
+                    </span>
                     <SellerStars stars={offer.seller.stars} />
                 </span>
                 <span className="text-end font-bold">
