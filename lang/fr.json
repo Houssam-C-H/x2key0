@@ -2110,5 +2110,16 @@
     "analytics.col.offer": "Offre",
     "analytics.col.yours": "Votre prix",
     "analytics.col.lowest": "Plus bas concurrent",
-    "analytics.col.units": "Unités"
+    "analytics.col.units": "Unités",
+    "offer.csv.export": "Exporter CSV",
+    "offer.csv.import": "Importer CSV",
+    "offer.csv.importing": "Import…",
+    "offer.csv.result": ":created créée(s), :updated mise(s) à jour, :errors erreur(s).",
+    "offer.csv.errors": ":count ligne(s) non importée(s)",
+    "offer.csv.line": "Ligne :line",
+    "offer.csv.bad_header": "La première ligne doit être l’en-tête d’Exporter CSV (avec au moins title et unit_price).",
+    "offer.csv.too_many": "Seules les :max premières lignes sont importées à la fois.",
+    "offer.csv.unknown_id": "Aucune offre de votre boutique n’a cet id.",
+    "offer.csv.not_number": "« :column » doit être un nombre.",
+    "offer.csv.required": "« :column » est requis pour une nouvelle offre."
 }

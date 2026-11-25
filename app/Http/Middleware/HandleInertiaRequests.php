@@ -86,6 +86,8 @@ final class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn (): mixed => $request->session()->get('success'),
                 'error' => fn (): mixed => $request->session()->get('error'),
+                // Row errors of the last offer CSV import (Seller Center › Active offers).
+                'csvErrors' => fn (): mixed => $request->session()->get('csvErrors'),
             ],
         ];
     }

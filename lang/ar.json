@@ -2110,5 +2110,16 @@
     "analytics.col.offer": "العرض",
     "analytics.col.yours": "سعرك",
     "analytics.col.lowest": "أدنى سعر منافس",
-    "analytics.col.units": "الوحدات"
+    "analytics.col.units": "الوحدات",
+    "offer.csv.export": "تصدير CSV",
+    "offer.csv.import": "استيراد CSV",
+    "offer.csv.importing": "جارٍ الاستيراد…",
+    "offer.csv.result": "تم إنشاء :created، وتحديث :updated، و:errors خطأ.",
+    "offer.csv.errors": "لم يتم استيراد :count صف",
+    "offer.csv.line": "السطر :line",
+    "offer.csv.bad_header": "يجب أن يكون السطر الأول رأس ملف التصدير (يحتوي على title وunit_price على الأقل).",
+    "offer.csv.too_many": "يتم استيراد أول :max صفًا فقط في كل مرة.",
+    "offer.csv.unknown_id": "لا يوجد عرض في متجرك بهذا المعرّف.",
+    "offer.csv.not_number": "\":column\" يجب أن يكون رقمًا.",
+    "offer.csv.required": "\":column\" مطلوب لعرض جديد."
 }

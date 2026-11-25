@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Pagination } from '@/Components/Catalog/Pagination';
 import { DashboardLayout, Panel } from '@/Layouts/DashboardLayout';
@@ -111,6 +111,7 @@ export default function OffersIndex({ offers, counts, services, filters, tabs, s
                             {s.title} <span className="text-muted">· {t('catalog.offers', { count: s.count })}</span>
                         </button>
                     ))}
+                    <OfferCsvTools />
                     <Link href="/seller/offers/create" className="btn-primary ms-auto px-4 py-1.5 text-sm">
                         + {t('menu.seller.offers_create')}
                     </Link>
@@ -324,5 +325,50 @@ export default function OffersIndex({ offers, counts, services, filters, tabs, s
                 </div>
             </section>
         </DashboardLayout>
+    );
+}
+
+/** CSV export (download) and import (upload; row errors listed after the redirect). */
+function OfferCsvTools() {
+    const t = useT();
+    const form = useForm<{ file: File | null }>({ file: null });
+    const { props } = usePage<{ flash: { csvErrors?: { line: number; message: string }[] } }>();
+    const errors = props.flash.csvErrors ?? [];
+
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+            <a href="/seller/offers/export" className="btn-outline-pill px-3 py-1.5 text-sm">
+                {t('offer.csv.export')}
+            </a>
+            <label className="btn-outline-pill cursor-pointer px-3 py-1.5 text-sm">
+                {form.processing ? t('offer.csv.importing') : t('offer.csv.import')}
+                <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="sr-only"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        if (!file) return;
+                        form.setData('file', file);
+                        form.transform(() => ({ file }));
+                        form.post('/seller/offers/import', { forceFormData: true, preserveScroll: true });
+                        e.target.value = '';
+                    }}
+                />
+            </label>
+            {form.errors.file && <span className="text-xs text-danger">{form.errors.file}</span>}
+            {errors.length > 0 && (
+                <details className="w-full rounded-lg bg-danger/5 p-2 text-xs text-danger">
+                    <summary className="cursor-pointer font-semibold">{t('offer.csv.errors', { count: errors.length })}</summary>
+                    <ul className="mt-1 space-y-0.5">
+                        {errors.map((e) => (
+                            <li key={e.line + e.message}>
+                                {t('offer.csv.line', { line: e.line })}: {e.message}
+                            </li>
+                        ))}
+                    </ul>
+                </details>
+            )}
+        </div>
     );
 }

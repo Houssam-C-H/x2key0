@@ -38,6 +38,7 @@ use App\Http\Controllers\Seller\CouponController as SellerCouponController;
 use App\Http\Controllers\Seller\MarketingEmailController;
 use App\Http\Controllers\Seller\MerchantContactsController;
 use App\Http\Controllers\Seller\OfferController;
+use App\Http\Controllers\Seller\OfferCsvController;
 use App\Http\Controllers\Seller\OnboardingController;
 use App\Http\Controllers\Seller\SellerInfoController;
 use App\Http\Controllers\Seller\ServiceApplicationController;
@@ -254,6 +255,8 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/seller/offers/{offer}/edit', [OfferController::class, 'edit'])->whereNumber('offer')->name('seller.offers.edit');
         Route::put('/seller/offers/{offer}', [OfferController::class, 'update'])->whereNumber('offer')->middleware('throttle:60,1')->name('seller.offers.update');
         Route::post('/seller/offers/bulk', [OfferController::class, 'bulk'])->middleware('throttle:30,1')->name('seller.offers.bulk');
+        Route::get('/seller/offers/export', [OfferCsvController::class, 'export'])->middleware('throttle:10,1')->name('seller.offers.export');
+        Route::post('/seller/offers/import', [OfferCsvController::class, 'import'])->middleware('throttle:10,1')->name('seller.offers.import');
         Route::patch('/seller/offers/{offer}/inline', [OfferController::class, 'inline'])->whereNumber('offer')->middleware('throttle:120,1')->name('seller.offers.inline');
         // Sold Orders (spec 1.8 / 6.1 / 8.2)
         Route::prefix('/seller/orders/{publicId}')->where(['publicId' => '[0-9a-z]{26}'])->group(function (): void {
