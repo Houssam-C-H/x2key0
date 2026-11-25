@@ -40,8 +40,8 @@ export function Footer() {
 
     return (
         <footer className="mt-16 border-t border-line bg-white text-ink">
-            <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 lg:grid-cols-[1.3fr_repeat(4,1fr)]">
-                <div className="max-w-xs">
+            <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-8 px-4 py-12 lg:grid-cols-[1.3fr_repeat(4,1fr)] lg:gap-10">
+                <div className="col-span-2 max-w-xs lg:col-span-1">
                     <Logo size={30} label={app.name} />
                     <p className="mt-4 text-sm leading-relaxed text-muted">{t('footer.tagline')}</p>
                     <ul className="mt-5 flex flex-wrap gap-2 text-xs font-medium">

@@ -46,7 +46,29 @@ export default function PurchaseOrders({ orders, counts, tab, tabs }: { orders: 
                     <p className="font-semibold">{t('common.no_results')}</p>
                 </div>
             ) : (
-                <div className="overflow-x-auto">
+                <>
+                <ul className="space-y-2 md:hidden">
+                    {orders.items.map((o) => (
+                        <li key={o.publicId}>
+                            <Link href={`/buy/orders/${o.publicId}`} className="block rounded-xl border border-line p-3 hover:border-primary/40">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="font-semibold text-primary">{o.number}</span>
+                                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ORDER_STATUS_STYLE[o.status] ?? ''}`}>{t(`order.status.${o.status}`)}</span>
+                                </div>
+                                <p className="mt-1 truncate text-sm">
+                                    {o.title} × {o.quantity}
+                                </p>
+                                <div className="mt-1 flex items-center justify-between text-xs text-muted">
+                                    <span className="truncate">
+                                        {o.seller} · {new Date(o.createdAt).toLocaleDateString(locale)}
+                                    </span>
+                                    <span className="text-sm font-bold text-ink">{formatUsd(o.total, locale)}</span>
+                                </div>
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+                <div className="hidden overflow-x-auto md:block">
                     <table className="w-full min-w-[640px] text-sm">
                         <thead className="text-xs uppercase text-muted">
                             <tr>
@@ -79,6 +101,7 @@ export default function PurchaseOrders({ orders, counts, tab, tabs }: { orders: 
                         </tbody>
                     </table>
                 </div>
+                </>
             )}
             <div className="mt-4">
                 <Pagination page={orders.page} lastPage={orders.lastPage} onPage={(p) => visit(tab, p)} />

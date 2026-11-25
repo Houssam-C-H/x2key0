@@ -2015,5 +2015,6 @@
     "settings.emails.merchant": "Boutique (stock bas, changement de niveau)",
     "settings.emails.ticket": "Réponses aux tickets de support",
     "settings.emails.save": "Enregistrer",
-    "settings.emails.saved": "Préférences e-mail enregistrées."
+    "settings.emails.saved": "Préférences e-mail enregistrées.",
+    "order.filter.toggle": "Filtres"
 }

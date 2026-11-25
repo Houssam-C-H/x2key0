@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useShared, useT } from '@/lib/i18n';
 import { formatUsd } from '@/lib/money';
 import { deliveryTime, unitPriceFor } from '@/lib/offer';
@@ -25,6 +25,12 @@ export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents
     const step = offer.integerMultiple ? offer.minQty : 1;
     const max = Math.max(offer.minQty, Math.min(offer.maxQty ?? offer.stock, offer.stock));
     const [qty, setQty] = useState(offer.minQty);
+
+    // Room under the page for the sticky buy bar on phones (removed when the page changes).
+    useEffect(() => {
+        document.body.classList.add('pb-24', 'lg:pb-0');
+        return () => document.body.classList.remove('pb-24', 'lg:pb-0');
+    }, []);
     const unit = unitPriceFor(qty, offer.priceCents, offer.tiers);
     const soldOut = offer.stock < offer.minQty;
 
@@ -95,6 +101,26 @@ export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents
                     {t('offer.more_offers', { count: otherCount, price: formatUsd(otherFromCents, locale) ?? '' })}
                 </a>
             )}
+
+            {/* Phones/tablets: the price and Buy now stay at the bottom of the screen. */}
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pt-3 shadow-[0_-4px_16px_rgb(0_0_0/0.06)] backdrop-blur lg:hidden" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
+                <div className="mx-auto flex max-w-xl items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-lg font-extrabold leading-tight">{formatUsd(unit * qty, locale)}</p>
+                        <p className="truncate text-xs text-muted">
+                            {qty} × {offer.unitLabel ?? '1'}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        className="btn-primary h-11 px-6"
+                        disabled={soldOut}
+                        onClick={() => router.visit(auth.user ? `/checkout?offer=${offer.id}&qty=${qty}` : `/${locale}/login`)}
+                    >
+                        {t('catalog.product.buy_now')}
+                    </button>
+                </div>
+            </div>
 
             <dl className="grid grid-cols-2 gap-2 border-t border-line pt-3 text-sm">
                 <dt className="text-muted">{t('offer.delivery_method')}</dt>

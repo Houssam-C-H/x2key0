@@ -48,6 +48,7 @@ export default function SoldOrders({ orders, counts, tab, tabs, filters, games, 
     const t = useT();
     const { locale } = useShared();
     const [f, setF] = useState<Filters>(filters);
+    const [filtersOpen, setFiltersOpen] = useState(false);
     const money = (c: number | null) => (c === null ? '—' : (formatUsd(c, locale) ?? ''));
 
     const visit = (nextTab: string, next: Filters, page = 1) =>
@@ -83,8 +84,13 @@ export default function SoldOrders({ orders, counts, tab, tabs, filters, games, 
                     ))}
                 </nav>
 
+                <div className="px-4 pt-4 md:hidden">
+                    <button type="button" className="btn-outline-pill w-full justify-center py-2 text-sm" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((v) => !v)}>
+                        {t('order.filter.toggle')}
+                    </button>
+                </div>
                 <form
-                    className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4"
+                    className={(filtersOpen ? 'grid' : 'hidden') + ' gap-3 p-4 sm:grid-cols-2 md:grid lg:grid-cols-4'}
                     onSubmit={(e) => {
                         e.preventDefault();
                         visit(tab, f);
@@ -146,7 +152,29 @@ export default function SoldOrders({ orders, counts, tab, tabs, filters, games, 
                             <p className="font-semibold">{t('common.no_results')}</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
+                        <>
+                        <ul className="space-y-2 md:hidden">
+                            {orders.items.map((o) => (
+                                <li key={o.publicId}>
+                                    <Link href={`/seller/orders/${o.publicId}`} className="block rounded-xl border border-line p-3 hover:border-primary/40">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="font-semibold text-primary">{o.number}</span>
+                                            <StatusBadge status={o.status} substatus={o.substatus} />
+                                        </div>
+                                        <p className="mt-1 truncate text-sm">
+                                            {o.title} × {o.quantity}
+                                        </p>
+                                        <div className="mt-1 flex items-center justify-between text-xs text-muted">
+                                            <span className="truncate">
+                                                {t(`category.${o.type}`)} · {o.paidAt ? new Date(o.paidAt).toLocaleDateString(locale) : ''}
+                                            </span>
+                                            <span className="text-sm font-bold text-ink">{money(o.total)}</span>
+                                        </div>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="hidden overflow-x-auto md:block">
                             <table className="w-full min-w-[860px] text-sm">
                                 <thead className="text-xs uppercase text-muted">
                                     <tr>
@@ -184,6 +212,7 @@ export default function SoldOrders({ orders, counts, tab, tabs, filters, games, 
                                 </tbody>
                             </table>
                         </div>
+                        </>
                     )}
                     <div className="mt-4">
                         <Pagination page={orders.page} lastPage={orders.lastPage} onPage={(p) => visit(tab, filters, p)} />

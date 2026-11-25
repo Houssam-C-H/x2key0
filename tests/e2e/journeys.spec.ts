@@ -20,7 +20,7 @@ test('buyer buys an offer and pays on the test payment page', async ({ page }) =
     const f = fx();
     await login(page, f.buyer);
     await page.goto(f.offerPath);
-    await page.getByRole('button', { name: /Buy now/i }).click();
+    await page.getByRole('button', { name: /Buy now/i }).first().click();
     await page.waitForURL(/\/checkout\?/);
     await expectNoHorizontalScroll(page);
 
