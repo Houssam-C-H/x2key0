@@ -72,6 +72,8 @@ test('admin logs in with two-step verification and opens the panel', async ({ pa
     await login(page, f.admin, f.totpSecret);
     await page.goto('/admin');
     await expect(page.getByRole('heading', { name: /Dashboard/i })).toBeVisible();
+    await expect(page.getByText('Work queues')).toBeVisible();
+    await page.screenshot({ path: 'storage/e2e-results/admin-dashboard.png', fullPage: true });
     await page.goto('/admin/sellers/stores');
     await expect(page.getByText('E2E Store')).toBeVisible();
 });

@@ -44,8 +44,15 @@ export async function login(page: Page, username: string, twoFactorSecret?: stri
     await page.locator('form').filter({ has: page.locator('input[name=password]') }).getByRole('button', { name: 'Log in' }).click();
     if (twoFactorSecret) {
         await page.waitForURL('**/two-factor-challenge');
-        await page.locator('input[name=code]').fill(totp(twoFactorSecret));
-        await page.locator('form').filter({ has: page.locator('input[name=code]') }).locator('button[type=submit]').click();
+        // A code is refused if it was already used (replay protection), e.g. by the previous test in the same
+        // 30-second window: then wait for the next window and try once more.
+        for (let attempt = 0; attempt < 2; attempt++) {
+            await page.locator('input[name=code]').fill(totp(twoFactorSecret));
+            await page.locator('form').filter({ has: page.locator('input[name=code]') }).locator('button[type=submit]').click();
+            const left = await page.waitForURL((u) => !u.pathname.includes('two-factor'), { timeout: 8_000 }).then(() => true, () => false);
+            if (left) break;
+            await page.waitForTimeout(30_000 - (Date.now() % 30_000) + 1_000);
+        }
     }
     await page.waitForURL((url) => !url.pathname.endsWith('/login') && !url.pathname.includes('two-factor'));
 }
