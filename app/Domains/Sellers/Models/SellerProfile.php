@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Storage;
  * @property int|null $seller_level_id
  * @property bool $level_locked
  * @property bool $payouts_enabled
+ * @property bool $storage_enabled
  * @property int|null $merchant_manager_id
  * @property array<string, string|null>|null $auto_reply
  * @property array<string, string>|null $store_notice
@@ -60,7 +61,7 @@ final class SellerProfile extends Model
 
     protected $fillable = [
         'user_id', 'store_name', 'slug', 'logo_path', 'banner_path', 'bio', 'country',
-        'seller_level_id', 'level_locked', 'payouts_enabled', 'merchant_manager_id',
+        'seller_level_id', 'level_locked', 'payouts_enabled', 'storage_enabled', 'merchant_manager_id',
         'auto_reply', 'store_notice',
     ];
 
@@ -76,6 +77,7 @@ final class SellerProfile extends Model
             'store_notice' => 'array',
             'level_locked' => 'boolean',
             'payouts_enabled' => 'boolean',
+            'storage_enabled' => 'boolean',
             'vacation_until' => 'datetime',
             'activated_at' => 'datetime',
         ];

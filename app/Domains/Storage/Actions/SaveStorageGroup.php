@@ -9,6 +9,7 @@ use App\Domains\Sellers\Models\SellerProfile;
 use App\Domains\Storage\Enums\StorageItemType;
 use App\Domains\Storage\Exceptions\StorageException;
 use App\Domains\Storage\Models\StorageGroup;
+use App\Domains\Storage\Support\StorageAccess;
 
 /**
  * Storage Category: create a group or change its name / low-stock threshold (spec 5.5). The item type is
@@ -20,6 +21,7 @@ final class SaveStorageGroup
 
     public function create(SellerProfile $profile, string $name, StorageItemType $type, int $threshold): StorageGroup
     {
+        StorageAccess::assertEnabled($profile);
         self::assertCanWrite($profile);
         $name = self::name($profile, $name);
 
@@ -33,6 +35,8 @@ final class SaveStorageGroup
 
     public function update(StorageGroup $group, string $name, StorageItemType $type, int $threshold): StorageGroup
     {
+        $group->loadMissing('seller');
+        StorageAccess::assertEnabled($group->seller);
         $group->loadMissing('seller');
         self::assertCanWrite($group->seller);
 

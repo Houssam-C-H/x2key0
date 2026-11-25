@@ -9,6 +9,7 @@ use App\Domains\Offers\Enums\Fulfillment;
 use App\Domains\Offers\Exceptions\OfferException;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\StateMachines\OfferStateMachine;
+use App\Domains\Sellers\Models\SellerProfile;
 use App\Domains\Storage\Enums\StorageItemStatus;
 use App\Domains\Storage\Models\LowStockAlert;
 use App\Domains\Storage\Models\StorageGroup;
@@ -25,11 +26,14 @@ final class RefreshStorageStock
 
     public function handle(StorageGroup $group): StorageGroup
     {
-        $group = DB::transaction(function () use ($group): StorageGroup {
+        // Storage switched off by staff (ADR-034): nothing is available, so linked offers go out of stock.
+        $enabled = SellerProfile::query()->whereKey($group->seller_profile_id)->value('storage_enabled') !== false;
+
+        $group = DB::transaction(function () use ($group, $enabled): StorageGroup {
             /** @var StorageGroup $locked */
             $locked = StorageGroup::query()->lockForUpdate()->findOrFail($group->id);
 
-            $available = $locked->items()
+            $available = ! $enabled ? 0 : $locked->items()
                 ->where('status', StorageItemStatus::Available)
                 ->whereNull('flagged_at')
                 ->count();
@@ -58,7 +62,7 @@ final class RefreshStorageStock
                 continue; // changed concurrently; the scheduled run re-checks
             }
 
-            if ($offer->status->tracksStock() && $group->isLow()) {
+            if ($offer->status->tracksStock() && $group->isLow() && $enabled) { // no "low stock" noise while switched off
                 $alerting[] = $offer->id;
 
                 $open = LowStockAlert::query()->where('offer_id', $offer->id)->open()->exists();

@@ -1997,5 +1997,12 @@
     "security.two_factor.copy_codes": "Copier les codes",
     "security.two_factor.download_codes": "Télécharger .txt",
     "security.two_factor.recovery_where": "Téléphone perdu ? Sur l’écran du code de connexion, choisissez « Utiliser un code de récupération » et saisissez l’un de ces codes.",
-    "security.two_factor.codes_file_title": "Codes de récupération X2KEY — chacun ne sert qu’une fois"
+    "security.two_factor.codes_file_title": "Codes de récupération X2KEY — chacun ne sert qu’une fois",
+    "storage.error.disabled": "Votre Stockage a été désactivé par X2KEY. Contactez le support marchand.",
+    "storage.disabled_banner": "Le Stockage est désactivé pour votre boutique par X2KEY : vous ne pouvez ni ajouter ni modifier d’articles, et les offres livrées depuis le Stockage sont en rupture. Vos clés restent protégées.",
+    "storage.disabled_contact": "Contacter le support marchand",
+    "notify.storage_disabled.title": "Votre Stockage a été désactivé",
+    "notify.storage_disabled.body": "X2KEY a désactivé le Stockage de votre boutique. Les offres livrées depuis le Stockage sont en rupture jusqu’à sa réactivation.",
+    "notify.storage_enabled.title": "Votre Stockage est réactivé",
+    "notify.storage_enabled.body": "Le Stockage est de nouveau disponible et vos offres sont de nouveau en stock."
 }

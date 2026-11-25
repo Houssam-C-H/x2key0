@@ -1997,5 +1997,12 @@
     "security.two_factor.copy_codes": "نسخ الرموز",
     "security.two_factor.download_codes": "تنزيل .txt",
     "security.two_factor.recovery_where": "فقدت هاتفك؟ في شاشة رمز الدخول اختر \"استخدام رمز استرداد بدلاً من ذلك\" واكتب أحد هذه الرموز.",
-    "security.two_factor.codes_file_title": "رموز استرداد X2KEY — كل رمز يعمل مرة واحدة"
+    "security.two_factor.codes_file_title": "رموز استرداد X2KEY — كل رمز يعمل مرة واحدة",
+    "storage.error.disabled": "تم إيقاف المخزن الخاص بك من قبل X2KEY. تواصل مع دعم التجار.",
+    "storage.disabled_banner": "المخزن متوقف لمتجرك من قبل X2KEY: لا يمكنك إضافة العناصر أو تعديلها، والعروض المسلَّمة من المخزن نفدت. مفاتيحك محفوظة بأمان.",
+    "storage.disabled_contact": "تواصل مع دعم التجار",
+    "notify.storage_disabled.title": "تم إيقاف مخزنك",
+    "notify.storage_disabled.body": "أوقف X2KEY المخزن لمتجرك. العروض المسلَّمة من المخزن نافدة حتى إعادة تفعيله.",
+    "notify.storage_enabled.title": "تمت إعادة تفعيل مخزنك",
+    "notify.storage_enabled.body": "المخزن متاح مجددًا وعادت عروضك إلى المخزون."
 }

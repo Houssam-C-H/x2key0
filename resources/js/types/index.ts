@@ -37,6 +37,7 @@ export interface SharedProps {
     flash: { success: string | null; error: string | null };
     menu: DashboardMenu | null;
     stockAlert: { count: number; titles: string[] } | null;
+    storageDisabled?: boolean;
     inbox: { unread: number } | null;
     chat: { unread: number } | null;
     footer: { columns: Record<string, { label: string; href: string }[]>; seoLinks: { label: string; href: string }[] } | null;

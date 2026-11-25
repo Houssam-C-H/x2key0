@@ -10,6 +10,7 @@ use App\Domains\Sellers\Enums\SellerStatus;
 use App\Domains\Sellers\Models\SellerLevel;
 use App\Domains\Sellers\Models\SellerProfile;
 use App\Domains\Sellers\StateMachines\SellerProfileStateMachine;
+use App\Domains\Storage\Actions\SetStorageAccess;
 use App\Filament\Resources\Sellers\SellerProfiles\Pages\EditSellerProfile;
 use App\Filament\Resources\Sellers\SellerProfiles\Pages\ListSellerProfiles;
 use App\Filament\Resources\Sellers\SellerProfiles\RelationManagers\ContactsRelationManager;
@@ -25,8 +26,10 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -101,10 +104,12 @@ final class SellerProfileResource extends Resource
                 TextColumn::make('level.code')->label('Level')->badge(),
                 TextColumn::make('merchantManager.name')->label('Manager')->placeholder('—'),
                 TextColumn::make('activated_at')->label('Activated')->since()->sortable(),
+                IconColumn::make('storage_enabled')->label('Storage')->boolean()->tooltip(fn (SellerProfile $record): string => $record->storage_enabled ? 'Storage on' : 'Storage switched off'),
             ])
             ->filters([
                 SelectFilter::make('status')->options(collect(SellerStatus::cases())->mapWithKeys(fn (SellerStatus $s): array => [$s->value => ucfirst($s->value)])->all()),
                 SelectFilter::make('seller_level_id')->label('Level')->relationship('level', 'code'),
+                TernaryFilter::make('storage_enabled')->label('Storage'),
             ])
             ->recordActions([
                 EditAction::make(),
@@ -127,6 +132,28 @@ final class SellerProfileResource extends Resource
                     ->action(function (SellerProfile $record): void {
                         app(SellerProfileStateMachine::class)->reinstate($record, self::actor());
                         Notification::make()->title('Store reinstated')->success()->send();
+                    }),
+                // Storage switch (ADR-034): off = no Storage writes, Storage offers out of stock; on = restored.
+                Action::make('storage_off')
+                    ->label('Storage off')
+                    ->color('warning')
+                    ->icon(Heroicon::OutlinedArchiveBoxXMark)
+                    ->visible(fn (SellerProfile $record): bool => $record->storage_enabled && Gate::allows('moderate', $record))
+                    ->modalDescription('The seller cannot add or change Storage items and every offer delivered from Storage goes out of stock. Keys stay encrypted; orders already reserved still deliver.')
+                    ->schema([Textarea::make('reason')->label('Reason (audit log)')->required()->maxLength(500)])
+                    ->action(function (SellerProfile $record, array $data): void {
+                        app(SetStorageAccess::class)->handle($record, false, self::actor(), self::reason($data));
+                        Notification::make()->title('Storage switched off')->warning()->send();
+                    }),
+                Action::make('storage_on')
+                    ->label('Storage on')
+                    ->color('success')
+                    ->icon(Heroicon::OutlinedArchiveBox)
+                    ->visible(fn (SellerProfile $record): bool => ! $record->storage_enabled && Gate::allows('moderate', $record))
+                    ->schema([Textarea::make('reason')->label('Reason (audit log)')->required()->maxLength(500)])
+                    ->action(function (SellerProfile $record, array $data): void {
+                        app(SetStorageAccess::class)->handle($record, true, self::actor(), self::reason($data));
+                        Notification::make()->title('Storage switched on; stock recounted')->success()->send();
                     }),
                 Action::make('ban')
                     ->color('danger')

@@ -63,6 +63,7 @@ export function DashboardLayout({ title, children, bare = false }: Props) {
                     </div>
 
                     <Flash />
+                    <StorageDisabledBanner />
 
                     {bare ? (
                         <div className="space-y-6">
@@ -94,6 +95,24 @@ export function Panel({ title, description, children, id }: { title: string; des
             {description && <p className="mt-1 text-sm text-muted">{description}</p>}
             <div className="mt-4">{children}</div>
         </section>
+    );
+}
+
+/** Storage switched off by staff (ADR-034): shown on the seller's Storage pages. */
+function StorageDisabledBanner() {
+    const t = useT();
+    const { storageDisabled } = useShared();
+    const onStorage = typeof window !== 'undefined' && window.location.pathname.startsWith('/seller/storage');
+
+    if (!storageDisabled || !onStorage) return null;
+
+    return (
+        <div role="alert" className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
+            <p className="min-w-0 flex-1">{t('storage.disabled_banner')}</p>
+            <Link href="/seller/contacts" className="font-semibold underline">
+                {t('storage.disabled_contact')}
+            </Link>
+        </div>
     );
 }
 

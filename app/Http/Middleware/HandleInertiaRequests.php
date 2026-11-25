@@ -81,6 +81,8 @@ final class HandleInertiaRequests extends Middleware
             'stockAlert' => fn (): ?array => $user instanceof User && $request->route('locale') === null && $user->sellerProfile?->status->opensSellerCenter() === true
                 ? StockAlerts::bar($user->sellerProfile->id)
                 : null,
+            // Storage switched off by staff (ADR-034): banner on the seller's Storage pages.
+            'storageDisabled' => fn (): bool => $user instanceof User && $request->route('locale') === null && $user->sellerProfile !== null && ! $user->sellerProfile->storage_enabled,
             'flash' => [
                 'success' => fn (): mixed => $request->session()->get('success'),
                 'error' => fn (): mixed => $request->session()->get('error'),

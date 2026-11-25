@@ -40,6 +40,7 @@ final class SellerProfileFactory extends Factory
             'seller_level_id' => fn (): int => self::entryLevelId(),
             'level_locked' => false,
             'payouts_enabled' => false,
+            'storage_enabled' => true,
             'merchant_manager_id' => null,
             'auto_reply' => null,
             'store_notice' => null,

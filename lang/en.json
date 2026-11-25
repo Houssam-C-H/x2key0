@@ -1997,5 +1997,12 @@
     "security.two_factor.copy_codes": "Copy codes",
     "security.two_factor.download_codes": "Download .txt",
     "security.two_factor.recovery_where": "Lost your phone? On the login code screen choose \"Use a recovery code instead\" and type one of these.",
-    "security.two_factor.codes_file_title": "X2KEY recovery codes — each works once"
+    "security.two_factor.codes_file_title": "X2KEY recovery codes — each works once",
+    "storage.error.disabled": "Your Storage has been switched off by X2KEY. Contact Merchant support.",
+    "storage.disabled_banner": "Storage is switched off for your store by X2KEY: you cannot add or change items, and offers delivered from Storage are out of stock. Your keys are kept safe.",
+    "storage.disabled_contact": "Contact Merchant support",
+    "notify.storage_disabled.title": "Your Storage was switched off",
+    "notify.storage_disabled.body": "X2KEY switched off Storage for your store. Offers delivered from Storage are out of stock until it is back on.",
+    "notify.storage_enabled.title": "Your Storage is back on",
+    "notify.storage_enabled.body": "Storage is available again and your Storage offers are back in stock."
 }

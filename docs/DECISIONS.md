@@ -61,6 +61,12 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-034 — Staff switch for a seller's Storage (2026-11-25)
+**Decision:** `seller_profiles.storage_enabled` (default on), changed only by `Storage\Actions\SetStorageAccess` from the admin Sellers list ("Storage off" / "Storage on", reason required, audited as `seller.storage_disabled|enabled`, merchant managers via the `moderate` gate).
+- Off: every Storage write (`SaveStorageGroup`, `ImportStorageItems`, `ManageStorageItems`) is refused through `StorageAccess::assertEnabled`; `RefreshStorageStock` counts the seller's groups as empty, so auto-delivery offers flip to `out_of_stock` through the normal stock sync and leave the storefront; no low-stock alerts are raised for empty-by-switch groups. Keys stay encrypted and untouched. Orders whose items were already reserved still auto-deliver (no stuck reservations).
+- On: all groups are recounted and offers flip back to `active`.
+- The seller gets an inbox notification both ways and a banner on the Storage pages.
+
 ## ADR-033 — Social login: Google and Facebook (2026-11-25)
 **Context:** Buyers expect "Continue with Google / Facebook"; it must not weaken account security.
 **Decision:** Laravel Socialite, providers `google` and `facebook`, each enabled only when its client id and secret are set (`SocialSignIn::enabled()`; otherwise no button and the routes 404). Identities live in the existing `social_accounts` table (provider + provider user id, unique per user and provider), plus the linked e-mail and `last_used_at`.

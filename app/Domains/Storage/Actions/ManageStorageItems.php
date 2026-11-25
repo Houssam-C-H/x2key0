@@ -11,6 +11,7 @@ use App\Domains\Storage\Enums\StorageItemStatus;
 use App\Domains\Storage\Exceptions\StorageException;
 use App\Domains\Storage\Models\StorageGroup;
 use App\Domains\Storage\Models\StorageItem;
+use App\Domains\Storage\Support\StorageAccess;
 use App\Shared\Audit\AuditLogger;
 use Illuminate\Support\Facades\DB;
 
@@ -40,6 +41,7 @@ final class ManageStorageItems
      */
     public function handle(SellerProfile $profile, User $actor, string $operation, array $itemIds): int
     {
+        StorageAccess::assertEnabled($profile);
         if ($profile->status === SellerStatus::Suspended) {
             throw StorageException::because('seller.error.suspended');
         }

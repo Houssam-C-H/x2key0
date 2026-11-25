@@ -13,6 +13,7 @@ use App\Domains\Storage\Exceptions\StorageException;
 use App\Domains\Storage\Models\StorageGroup;
 use App\Domains\Storage\Models\StorageImportBatch;
 use App\Domains\Storage\Models\StorageItem;
+use App\Domains\Storage\Support\StorageAccess;
 use App\Shared\Audit\AuditLogger;
 use App\Shared\Support\Settings;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,7 @@ final class ImportStorageItems
     {
         $group->loadMissing('seller');
         $profile = $group->seller;
+        StorageAccess::assertEnabled($profile);
 
         if ($profile->status === SellerStatus::Suspended) {
             throw StorageException::because('seller.error.suspended');
