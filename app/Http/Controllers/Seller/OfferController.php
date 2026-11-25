@@ -222,7 +222,12 @@ final class OfferController
 
         return Inertia::render('Seller/Offers/Form', [
             'offer' => $offer === null ? null : $this->formValues($offer),
-            'services' => $services->map(fn (GameCategory $gc): array => SellerPresenter::service($gc, $locale))->all(),
+            // Create offer steps: category type first, then the game inside it (OfferTargetPicker).
+            'services' => $services->map(fn (GameCategory $gc): array => [
+                ...SellerPresenter::service($gc, $locale),
+                'typeCode' => $gc->type->code->value,
+                'game' => $gc->game->translate('name', $locale),
+            ])->all(),
             'category' => $selected === null ? null : [
                 'id' => $selected->id,
                 'title' => $selected->title($locale),

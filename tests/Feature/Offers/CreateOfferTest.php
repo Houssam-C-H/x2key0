@@ -190,3 +190,10 @@ it('hides other sellers\' offers and refuses writes from suspended stores', func
     $this->fx['profile']->forceFill(['status' => SellerStatus::Suspended])->save();
     $this->post('/seller/offers', OfferFixture::payload($this->fx))->assertSessionHasErrors('offer');
 });
+
+it('gives each approved service its category type and game name for the category-first picker', function (): void {
+    $this->get('/seller/offers/create')->assertInertia(fn (Assert $page) => $page
+        ->has('services', 2)
+        ->where('services', fn ($services): bool => collect($services)->pluck('typeCode')->sort()->values()->all() === ['accounts', 'video_games']
+            && collect($services)->every(fn (array $s): bool => $s['game'] === $this->fx['catalog']['game']->translate('name', 'en'))));
+});

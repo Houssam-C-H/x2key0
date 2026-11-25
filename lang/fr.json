@@ -635,7 +635,7 @@
     "offer.form.legal": "Les annonces d’articles interdits, de comptes ou de clés volés et toute coordonnée sont supprimées et peuvent entraîner la suspension du compte.",
     "offer.form.reason": "Note de l'examinateur : :reason",
     "offer.form.selling": "Article vendu",
-    "offer.form.selling_help": "Choisissez l'un de vos services approuvés, puis le produit du catalogue s'il existe.",
+    "offer.form.selling_help": "Choisissez la catégorie, puis le jeu, puis le produit ou le type de service.",
     "offer.form.no_services": "Vous n'avez encore aucun service approuvé. Faites d'abord une demande :",
     "offer.form.service": "Jeu et catégorie",
     "offer.form.choose_service": "Choisir…",
@@ -1936,5 +1936,13 @@
     "offer.form.service_type": "Type de service",
     "offer.form.service_type_hint": "Choisissez ce que vous vendez. Les acheteurs filtrent les offres par type de service.",
     "offer.error.service_required": "Choisissez un type de service pour cette catégorie.",
-    "offer.error.unknown_service": "Ce type de service n'est pas disponible dans cette catégorie."
+    "offer.error.unknown_service": "Ce type de service n'est pas disponible dans cette catégorie.",
+    "offer.form.step_category": "Choisissez une catégorie",
+    "offer.form.step_game": "Choisissez le jeu dans :category",
+    "offer.form.step_details": "Que vendez-vous dans :title ?",
+    "offer.form.approved_games": ":count jeux approuvés",
+    "offer.form.find_game": "Trouver un jeu",
+    "offer.form.no_games_in_category": "Vous n'êtes encore approuvé pour aucun jeu dans :category.",
+    "offer.form.apply_for_games": "Postuler pour des jeux",
+    "offer.form.target_locked": "La catégorie et le jeu ne peuvent pas changer sur une offre existante."
 }
