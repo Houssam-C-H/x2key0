@@ -2018,5 +2018,9 @@
     "settings.emails.saved": "E-mail preferences saved.",
     "order.filter.toggle": "Filters",
     "notify.checkout_abandoned.title": "You did not finish your order :number",
-    "notify.checkout_abandoned.body": "“:title” is still waiting for you. Pick up where you left off: payment is protected until delivery."
+    "notify.checkout_abandoned.body": "“:title” is still waiting for you. Pick up where you left off: payment is protected until delivery.",
+    "offer.tiers.title": "Buy more, save more",
+    "offer.tiers.from_qty": ":qty+ units",
+    "offer.tiers.each": ":price each",
+    "offer.tiers.nudge": "Add :more more to pay :price each."
 }

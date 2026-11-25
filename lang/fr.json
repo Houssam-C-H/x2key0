@@ -2018,5 +2018,9 @@
     "settings.emails.saved": "Préférences e-mail enregistrées.",
     "order.filter.toggle": "Filtres",
     "notify.checkout_abandoned.title": "Vous n’avez pas finalisé la commande :number",
-    "notify.checkout_abandoned.body": "« :title » vous attend toujours. Reprenez où vous en étiez : le paiement est protégé jusqu’à la livraison."
+    "notify.checkout_abandoned.body": "« :title » vous attend toujours. Reprenez où vous en étiez : le paiement est protégé jusqu’à la livraison.",
+    "offer.tiers.title": "Achetez plus, payez moins",
+    "offer.tiers.from_qty": ":qty+ unités",
+    "offer.tiers.each": ":price l’unité",
+    "offer.tiers.nudge": "Ajoutez-en :more pour payer :price l’unité."
 }

@@ -19,6 +19,54 @@ interface Props {
  * Buy box (spec 1.5): seller, stock label, quantity − / +, unit price, total, MSRP, Buy Now, fee note.
  * Buy Now opens checkout with the chosen quantity; guests sign in first.
  */
+/**
+ * "Buy more, save more" (spec 1.5 quantity tiers): every tier with its unit price and saving, the active one
+ * highlighted, clickable to set the quantity, and a nudge towards the next tier.
+ */
+function QuantityTiers({ base, tiers, qty, max, onPick }: { base: number; tiers: { minQty: number; priceCents: number }[]; qty: number; max: number; onPick: (qty: number) => void }) {
+    const t = useT();
+    const { locale } = useShared();
+    const rows = [{ minQty: 1, priceCents: base }, ...[...tiers].sort((a, b) => a.minQty - b.minQty)];
+    const active = rows.reduce((current, row) => (qty >= row.minQty ? row : current), rows[0]!);
+    const next = rows.find((row) => row.minQty > qty && row.minQty <= max);
+
+    return (
+        <div className="rounded-xl border border-primary/20 bg-primary-soft/50 p-3">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-primary">{t('offer.tiers.title')}</p>
+            <ul className="space-y-1">
+                {rows.map((row) => {
+                    const saving = base > 0 ? Math.round(((base - row.priceCents) / base) * 100) : 0;
+                    const on = row === active;
+                    return (
+                        <li key={row.minQty}>
+                            <button
+                                type="button"
+                                disabled={row.minQty > max}
+                                onClick={() => onPick(row.minQty)}
+                                className={
+                                    'flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-sm transition disabled:opacity-40 ' +
+                                    (on ? 'bg-white font-semibold shadow-sm ring-1 ring-primary/30' : 'hover:bg-white/70')
+                                }
+                            >
+                                <span>{t('offer.tiers.from_qty', { qty: row.minQty })}</span>
+                                <span className="flex items-center gap-2">
+                                    <span>{t('offer.tiers.each', { price: formatUsd(row.priceCents, locale) ?? '' })}</span>
+                                    {saving > 0 && <span className="rounded-md bg-success/10 px-1.5 py-0.5 text-[11px] font-bold text-success">−{saving}%</span>}
+                                </span>
+                            </button>
+                        </li>
+                    );
+                })}
+            </ul>
+            {next && (
+                <p className="mt-2 text-xs text-ink/80">
+                    {t('offer.tiers.nudge', { more: next.minQty - qty, price: formatUsd(next.priceCents, locale) ?? '' })}
+                </p>
+            )}
+        </div>
+    );
+}
+
 export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents = null, recommended = false }: Props) {
     const t = useT();
     const { locale, auth } = useShared();
@@ -72,13 +120,13 @@ export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents
                 </span>
             </div>
             {offer.tiers.length > 0 && (
-                <ul className="flex flex-wrap gap-2 text-xs">
-                    {offer.tiers.map((tier) => (
-                        <li key={tier.minQty} className="rounded-full bg-canvas px-2 py-0.5">
-                            {t('offer.tier', { qty: tier.minQty, price: formatUsd(tier.priceCents, locale) ?? '' })}
-                        </li>
-                    ))}
-                </ul>
+                <QuantityTiers
+                    base={offer.priceCents}
+                    tiers={offer.tiers}
+                    qty={qty}
+                    max={max}
+                    onPick={(n) => setQty(clamp(n))}
+                />
             )}
 
             <div>

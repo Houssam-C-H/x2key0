@@ -88,6 +88,7 @@ final class E2ePrepare extends Command
             'fulfillment' => Fulfillment::Manual,
             'manual_stock_qty' => 999,
             'unit_price_amount' => 199,
+            'quantity_tiers' => [['min_qty' => 5, 'unit_price_amount' => 179], ['min_qty' => 10, 'unit_price_amount' => 159]],
             'expires_at' => now()->addDays(30),
             'published_at' => now(),
         ])->save();

@@ -2018,5 +2018,9 @@
     "settings.emails.saved": "تم حفظ تفضيلات البريد.",
     "order.filter.toggle": "عوامل التصفية",
     "notify.checkout_abandoned.title": "لم تُكمل طلبك :number",
-    "notify.checkout_abandoned.body": "«:title» ما زال بانتظارك. أكمل من حيث توقفت: الدفع محمي حتى التسليم."
+    "notify.checkout_abandoned.body": "«:title» ما زال بانتظارك. أكمل من حيث توقفت: الدفع محمي حتى التسليم.",
+    "offer.tiers.title": "اشترِ أكثر ووفّر أكثر",
+    "offer.tiers.from_qty": ":qty+ وحدة",
+    "offer.tiers.each": ":price للوحدة",
+    "offer.tiers.nudge": "أضف :more لتدفع :price للوحدة."
 }
