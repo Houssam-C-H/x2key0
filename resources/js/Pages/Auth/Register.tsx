@@ -1,9 +1,10 @@
 import { Link, useForm } from '@inertiajs/react';
+import { SocialButtons } from '@/Components/Auth/SocialButtons';
 import { Field } from '@/Components/Field';
 import { AuthLayout } from '@/Layouts/AuthLayout';
 import { useLocalePath, useShared, useT } from '@/lib/i18n';
 
-export default function Register({ referralCode }: { referralCode: string | null }) {
+export default function Register({ referralCode, socialProviders = [] }: { referralCode: string | null; socialProviders?: string[] }) {
     const t = useT();
     const lp = useLocalePath();
     const { locale } = useShared();
@@ -101,6 +102,7 @@ export default function Register({ referralCode }: { referralCode: string | null
                     {t('auth.register.submit')}
                 </button>
             </form>
+            <SocialButtons providers={socialProviders} />
             <p className="mt-6 text-center text-sm text-muted">
                 {t('auth.register.have_account')}{' '}
                 <Link href={lp('/login')} className="font-semibold text-primary hover:underline">

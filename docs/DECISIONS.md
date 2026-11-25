@@ -61,6 +61,15 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-033 — Social login: Google and Facebook (2026-11-25)
+**Context:** Buyers expect "Continue with Google / Facebook"; it must not weaken account security.
+**Decision:** Laravel Socialite, providers `google` and `facebook`, each enabled only when its client id and secret are set (`SocialSignIn::enabled()`; otherwise no button and the routes 404). Identities live in the existing `social_accounts` table (provider + provider user id, unique per user and provider), plus the linked e-mail and `last_used_at`.
+- **Sign-in order** (`Identity\Actions\SocialSignIn`): a linked identity logs its user in (even if the e-mail changed at the provider); else an existing account with the same e-mail is linked **only when the provider vouches for the e-mail** (Google `email_verified`; Facebook returns confirmed e-mails only), otherwise the user is told to log in with the password and connect from Settings — so nobody takes over an account by opening a provider account with someone else's address; else a new account is created through `RegisterUser` (generated free username, random unknown password, e-mail verified when the provider says so) and `Registered` fires (affiliate attribution).
+- Accounts with two-step verification still pass the Fortify 2FA challenge (`login.id` in the session). Suspended/banned/deleting accounts are refused. Logins fire Laravel's `Login` event, so sessions, devices and login history are recorded as for password logins.
+- Settings › Security › Connected accounts: connect (the redirect remembers it was started by a signed-in user) and disconnect. An identity linked to another X2KEY account is refused. The password keeps working; social-only users set one with "Forgot password".
+- Continuing with a provider on the sign-up or login page means accepting the Terms and Privacy policy (shown under the buttons).
+**Setup:** docs/RUNBOOK.md §8.
+
 ## ADR-032 — Service types inside category types (2026-11-25)
 **Context:** Sellers list under our game×categories, but a category such as Boosting or Accounts mixes very different services (rank boost vs coaching, starter vs ranked-ready accounts). Staff must control which kinds of service may be sold.
 **Decision:** `service_types` belong to a **category type** (global, not per game): code, translated name and seller-facing description, sort, `is_enabled`. Managed in Filament on the category type screen ("Service types" tab: add, edit, reorder, on/off; delete only while no offer uses it — switch it off instead). Offers get a nullable `service_type_id`.

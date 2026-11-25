@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domains\Identity\Actions\SocialSignIn;
 use App\Domains\Identity\Models\User;
 use App\Shared\Support\SafePath;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +22,7 @@ final class AuthPageController
     {
         return Inertia::render('Auth/Login', [
             'status' => $request->session()->get('status'),
+            'socialProviders' => SocialSignIn::enabled(),
         ]);
     }
 
@@ -29,6 +31,7 @@ final class AuthPageController
         $ref = $request->query('ref');
 
         return Inertia::render('Auth/Register', [
+            'socialProviders' => SocialSignIn::enabled(),
             'referralCode' => is_string($ref) && preg_match('/^[A-Za-z0-9_-]{1,64}$/', $ref) === 1 ? $ref : null,
         ]);
     }

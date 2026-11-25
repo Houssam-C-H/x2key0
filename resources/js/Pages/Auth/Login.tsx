@@ -1,9 +1,10 @@
 import { Link, useForm } from '@inertiajs/react';
+import { SocialButtons } from '@/Components/Auth/SocialButtons';
 import { Field } from '@/Components/Field';
 import { AuthLayout } from '@/Layouts/AuthLayout';
 import { useLocalePath, useT } from '@/lib/i18n';
 
-export default function Login({ status }: { status?: string | null }) {
+export default function Login({ status, socialProviders = [] }: { status?: string | null; socialProviders?: string[] }) {
     const t = useT();
     const lp = useLocalePath();
     const form = useForm({ login: '', password: '', remember: false });
@@ -59,6 +60,7 @@ export default function Login({ status }: { status?: string | null }) {
                     {t('auth.login.submit')}
                 </button>
             </form>
+            <SocialButtons providers={socialProviders} />
             <p className="mt-6 text-center text-sm text-muted">
                 {t('auth.login.no_account')}{' '}
                 <Link href={lp('/register')} className="font-semibold text-primary hover:underline">

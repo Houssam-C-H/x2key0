@@ -1,4 +1,5 @@
 import { router, useForm } from '@inertiajs/react';
+import { PROVIDER_LABEL, ProviderLogo } from '@/Components/Auth/SocialButtons';
 import { Field } from '@/Components/Field';
 import { DashboardLayout, Panel } from '@/Layouts/DashboardLayout';
 import { useT } from '@/lib/i18n';
@@ -18,6 +19,7 @@ interface Props {
     privacyPassword: { set: boolean; setAt: string | null };
     sessions: { id: number; device: string; ip: string | null; lastActiveAt: string; current: boolean }[];
     loginHistory: { id: number; device: string; ip: string | null; succeeded: boolean; at: string }[];
+    social: { provider: string; email: string | null; linked: boolean }[];
 }
 
 export default function Security(props: Props) {
@@ -30,6 +32,7 @@ export default function Security(props: Props) {
             <PhonePanel phone={props.phone} />
             <TwoFactorPanel twoFactor={props.twoFactor} passwordConfirmed={props.passwordConfirmed} />
             <PrivacyPasswordPanel privacy={props.privacyPassword} />
+            <SocialPanel social={props.social} />
             <SessionsPanel sessions={props.sessions} />
             <HistoryPanel history={props.loginHistory} />
         </DashboardLayout>
@@ -350,6 +353,41 @@ function PrivacyPasswordPanel({ privacy }: { privacy: Props['privacyPassword'] }
                     </button>
                 </div>
             </form>
+        </Panel>
+    );
+}
+
+/** Connected accounts (ADR-033): connect goes through the provider; disconnect keeps the password login. */
+function SocialPanel({ social }: { social: Props['social'] }) {
+    const t = useT();
+    if (social.length === 0) return null;
+
+    return (
+        <Panel id="connected" title={t('security.social.title')} description={t('security.social.hint')}>
+            <ul className="divide-y divide-line">
+                {social.map((s) => (
+                    <li key={s.provider} className="flex flex-wrap items-center gap-3 py-3">
+                        <ProviderLogo provider={s.provider} size={22} />
+                        <span className="min-w-0 flex-1">
+                            <span className="block font-semibold">{PROVIDER_LABEL[s.provider] ?? s.provider}</span>
+                            <span className="block truncate text-sm text-muted">{s.linked ? (s.email ?? '—') : t('security.social.not_connected')}</span>
+                        </span>
+                        {s.linked ? (
+                            <button
+                                type="button"
+                                className="btn-ghost text-sm"
+                                onClick={() => router.delete(`/settings/security/social/${s.provider}`, { preserveScroll: true })}
+                            >
+                                {t('security.social.disconnect')}
+                            </button>
+                        ) : (
+                            <a href={`/auth/${s.provider}/redirect`} className="btn-primary px-4 text-sm">
+                                {t('security.social.connect')}
+                            </a>
+                        )}
+                    </li>
+                ))}
+            </ul>
         </Panel>
     );
 }

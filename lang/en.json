@@ -1961,5 +1961,20 @@
     "auth.register.panel_title": "Join X2KEY 🎮",
     "auth.register.panel_text": "Buy keys, top-ups and in-game goods from verified sellers, or open your own store.",
     "auth.panel.title": "Your account, protected",
-    "auth.panel.text": "Two-step verification, new-device alerts and buyer protection on every order."
+    "auth.panel.text": "Two-step verification, new-device alerts and buyer protection on every order.",
+    "auth.social.or": "or continue with",
+    "auth.social.continue": "Continue with :provider",
+    "auth.social.terms": "By continuing with Google or Facebook you accept the Terms of service and the Privacy policy.",
+    "auth.social.failed": "We could not sign you in with that account. Please try again.",
+    "auth.social.no_email": "That account did not share an e-mail address. Allow e-mail access or sign up with a password.",
+    "auth.social.email_taken": "An X2KEY account already uses this e-mail. Log in with your password, then connect it in Settings › Security.",
+    "auth.social.linked_elsewhere": "That account is already connected to another X2KEY account.",
+    "auth.social.connected": ":provider is now connected. You can use it to log in.",
+    "auth.social.disconnected": ":provider was disconnected.",
+    "auth.social.welcome": "Welcome to X2KEY! Your account is ready.",
+    "security.social.title": "Connected accounts",
+    "security.social.hint": "Log in with Google or Facebook instead of your password. Your X2KEY password keeps working.",
+    "security.social.connect": "Connect",
+    "security.social.disconnect": "Disconnect",
+    "security.social.not_connected": "Not connected"
 }

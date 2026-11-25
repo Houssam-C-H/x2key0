@@ -77,3 +77,21 @@ Then a one-week staging soak with the scheduler and queue running before go-live
 - Founder decisions D1–D12 (docs/OPEN_QUESTIONS.md), real PSPs (D2), KYC provider (D11), SMS provider.
 - ClamAV scanning of uploads (files are stored with `scan_status = pending`).
 - Restore drill done and logged; load test passed; one-week staging soak.
+
+## 8. Social login (Google, Facebook)
+
+Buttons appear on the login and sign-up pages only for providers whose keys are set (ADR-033). Callback URLs use `APP_URL`, so set it to the public `https://` address first.
+
+**Google** — Google Cloud Console › APIs & Services:
+1. OAuth consent screen: External, app name X2KEY, support e-mail, logo, links to the privacy policy and terms; scopes `openid`, `email`, `profile`; publish the app.
+2. Credentials › Create credentials › OAuth client ID › Web application. Authorised redirect URI: `https://<your-domain>/auth/google/callback` (add `http://localhost/auth/google/callback` for local testing).
+3. Put the values in `.env`: `GOOGLE_CLIENT_ID=…`, `GOOGLE_CLIENT_SECRET=…`.
+
+**Facebook** — developers.facebook.com › My Apps › Create app › "Authenticate and request data from users with Facebook Login":
+1. Use cases › Facebook Login › Customise: add the `email` permission.
+2. Settings: Valid OAuth Redirect URIs `https://<your-domain>/auth/facebook/callback`.
+3. App settings › Basic: privacy policy URL, terms URL, data deletion instructions URL (`https://<your-domain>/en/page/privacy`), app icon; switch the app to Live.
+4. `.env`: `FACEBOOK_CLIENT_ID=<App ID>`, `FACEBOOK_CLIENT_SECRET=<App secret>`.
+
+After changing `.env` in production run `php artisan config:cache`. Test: log out, "Continue with Google", then Settings › Security › Connected accounts shows the link.
+

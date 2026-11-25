@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Settings;
 use App\Domains\Identity\Actions\ChangeEmail;
 use App\Domains\Identity\Actions\RevokeSessions;
 use App\Domains\Identity\Actions\SetPrivacyPassword;
+use App\Domains\Identity\Actions\SocialSignIn;
 use App\Domains\Identity\Actions\VerifyPhone;
+use App\Domains\Identity\Models\SocialAccount;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Models\UserSession;
 use App\Domains\Identity\Support\DeviceCookie;
@@ -38,8 +40,16 @@ final class SecurityController
 
         $pendingTwoFactor = $user->two_factor_secret !== null && $user->two_factor_confirmed_at === null;
 
+        $linked = SocialAccount::query()->where('user_id', $user->id)->get()->keyBy('provider');
+
         return Inertia::render('Settings/Security', [
             'email' => ['address' => $user->email, 'verified' => $user->hasVerifiedEmail()],
+            // Connected accounts (ADR-033): configured providers and what this user linked.
+            'social' => array_map(static fn (string $p): array => [
+                'provider' => $p,
+                'email' => $linked->get($p)?->email,
+                'linked' => $linked->has($p),
+            ], SocialSignIn::enabled()),
             'phone' => [
                 'number' => $user->phone,
                 'verified' => $user->hasVerifiedPhone(),

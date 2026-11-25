@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use App\Domains\Catalog\Models\Game;
+use App\Domains\Identity\Actions\SocialSignIn;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\AuthPageController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\BookmarkPromptController;
 use App\Http\Controllers\Buy\CommentController;
 use App\Http\Controllers\Buy\FinanceController;
@@ -134,6 +136,12 @@ Route::get('/sitemap-{locale}.xml', [SitemapController::class, 'locale'])->where
 Route::get('/two-factor-challenge', [AuthPageController::class, 'twoFactorChallenge'])
     ->middleware('guest')
     ->name('two-factor.login');
+
+// Social login (ADR-033). Guests log in / sign up; signed-in users connect an account from Settings.
+Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+    ->whereIn('provider', SocialSignIn::PROVIDERS)->middleware('throttle:20,1')->name('social.redirect');
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+    ->whereIn('provider', SocialSignIn::PROVIDERS)->middleware('throttle:20,1')->name('social.callback');
 
 /*
 | Dashboard (not localized; locale from cookie — ADR-005).
@@ -367,6 +375,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/settings/security/privacy-password', [SecurityController::class, 'setPrivacyPassword'])->name('settings.security.privacy');
     Route::delete('/settings/security/sessions/{session}', [SecurityController::class, 'revokeSession'])->name('settings.security.sessions.revoke');
     Route::post('/settings/security/sessions/revoke-others', [SecurityController::class, 'revokeOtherSessions'])->name('settings.security.sessions.revoke-others');
+    Route::delete('/settings/security/social/{provider}', [SocialAuthController::class, 'disconnect'])->whereIn('provider', SocialSignIn::PROVIDERS)->name('settings.security.social.disconnect');
 
     // Privacy Password gate (used by Storage in M5)
     Route::get('/security/privacy-verify', [SecurityController::class, 'showPrivacyVerify'])->name('privacy.verify');

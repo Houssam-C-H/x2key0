@@ -1961,5 +1961,20 @@
     "auth.register.panel_title": "Rejoignez X2KEY 🎮",
     "auth.register.panel_text": "Achetez clés, recharges et objets de jeu auprès de vendeurs vérifiés, ou ouvrez votre boutique.",
     "auth.panel.title": "Votre compte, protégé",
-    "auth.panel.text": "Vérification en deux étapes, alertes de nouvel appareil et protection acheteur sur chaque commande."
+    "auth.panel.text": "Vérification en deux étapes, alertes de nouvel appareil et protection acheteur sur chaque commande.",
+    "auth.social.or": "ou continuer avec",
+    "auth.social.continue": "Continuer avec :provider",
+    "auth.social.terms": "En continuant avec Google ou Facebook, vous acceptez les Conditions d’utilisation et la Politique de confidentialité.",
+    "auth.social.failed": "Connexion impossible avec ce compte. Veuillez réessayer.",
+    "auth.social.no_email": "Ce compte n'a pas partagé d'adresse e-mail. Autorisez l'accès à l'e-mail ou inscrivez-vous avec un mot de passe.",
+    "auth.social.email_taken": "Un compte X2KEY utilise déjà cet e-mail. Connectez-vous avec votre mot de passe, puis associez-le dans Paramètres › Sécurité.",
+    "auth.social.linked_elsewhere": "Ce compte est déjà associé à un autre compte X2KEY.",
+    "auth.social.connected": ":provider est maintenant associé. Vous pouvez l’utiliser pour vous connecter.",
+    "auth.social.disconnected": ":provider a été dissocié.",
+    "auth.social.welcome": "Bienvenue sur X2KEY ! Votre compte est prêt.",
+    "security.social.title": "Comptes associés",
+    "security.social.hint": "Connectez-vous avec Google ou Facebook au lieu de votre mot de passe. Votre mot de passe X2KEY reste valable.",
+    "security.social.connect": "Associer",
+    "security.social.disconnect": "Dissocier",
+    "security.social.not_connected": "Non associé"
 }

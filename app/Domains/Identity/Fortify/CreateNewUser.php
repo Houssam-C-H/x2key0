@@ -15,7 +15,7 @@ use Laravel\Fortify\Contracts\CreatesNewUsers;
 final class CreateNewUser implements CreatesNewUsers
 {
     /** Usernames that could impersonate staff or collide with routes. */
-    private const array RESERVED = [
+    public const array RESERVED = [
         'admin', 'administrator', 'root', 'support', 'staff', 'system', 'moderator', 'x2key',
         'help', 'security', 'billing', 'finance', 'dashboard', 'seller', 'store', 'api', 'null',
     ];

@@ -1961,5 +1961,20 @@
     "auth.register.panel_title": "انضم إلى X2KEY 🎮",
     "auth.register.panel_text": "اشترِ المفاتيح والشحن وعناصر الألعاب من بائعين موثّقين، أو افتح متجرك الخاص.",
     "auth.panel.title": "حسابك محمي",
-    "auth.panel.text": "تحقق بخطوتين وتنبيهات الأجهزة الجديدة وحماية المشتري في كل طلب."
+    "auth.panel.text": "تحقق بخطوتين وتنبيهات الأجهزة الجديدة وحماية المشتري في كل طلب.",
+    "auth.social.or": "أو تابع باستخدام",
+    "auth.social.continue": "المتابعة باستخدام :provider",
+    "auth.social.terms": "بالمتابعة باستخدام Google أو Facebook فإنك توافق على شروط الخدمة وسياسة الخصوصية.",
+    "auth.social.failed": "تعذّر تسجيل دخولك بهذا الحساب. حاول مرة أخرى.",
+    "auth.social.no_email": "لم يشارك هذا الحساب بريدًا إلكترونيًا. اسمح بالوصول إلى البريد أو سجّل بكلمة مرور.",
+    "auth.social.email_taken": "يستخدم حساب X2KEY هذا البريد بالفعل. سجّل الدخول بكلمة المرور ثم اربطه من الإعدادات › الأمان.",
+    "auth.social.linked_elsewhere": "هذا الحساب مرتبط بالفعل بحساب X2KEY آخر.",
+    "auth.social.connected": "تم ربط :provider. يمكنك استخدامه لتسجيل الدخول.",
+    "auth.social.disconnected": "تم فصل :provider.",
+    "auth.social.welcome": "مرحبًا بك في X2KEY! حسابك جاهز.",
+    "security.social.title": "الحسابات المرتبطة",
+    "security.social.hint": "سجّل الدخول باستخدام Google أو Facebook بدلًا من كلمة المرور. تظل كلمة مرور X2KEY صالحة.",
+    "security.social.connect": "ربط",
+    "security.social.disconnect": "فصل",
+    "security.social.not_connected": "غير مرتبط"
 }
