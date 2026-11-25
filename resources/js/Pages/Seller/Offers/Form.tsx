@@ -61,6 +61,8 @@ interface Props {
     offer: (Omit<FormData, 'terms' | 'description'> & { id: number; publicId: string; status: string; statusReason: string | null; description: Record<string, string | null> }) | null;
     /** Approved game×categories, with their category type and game name (category → game dropdowns). */
     services: (SellerService & { typeCode: string; game: string })[];
+    /** Games of each category the seller is not approved for yet (apply from this form). */
+    applicable: { id: number; typeCode: string; game: string; pending: boolean }[];
     category: Category | null;
     storageGroups: { id: number; name: string; type: string; available: number }[];
     options: { deliveryTimes: number[]; listingDays: number[]; insuranceDays: number[]; maxTiers: number };
@@ -70,13 +72,39 @@ interface Props {
 }
 
 /** Create New Offers / Edit offer (spec 1.8): one long form in the order of the reference screen. */
-export default function OfferForm({ offer, services, category, storageGroups, options, commissionBps, autoApprove, readOnly }: Props) {
+export default function OfferForm({ offer, services, applicable, category, storageGroups, options, commissionBps, autoApprove, readOnly }: Props) {
     const t = useT();
     const { locale, locales, categoryTypes } = useShared();
     const editing = offer !== null;
     const [typeCode, setTypeCode] = useState(category?.typeCode ?? '');
     const gamesInType = services.filter((s) => s.typeCode === typeCode).sort((a, b) => a.game.localeCompare(b.game));
     const approvedIn = (code: string) => services.filter((s) => s.typeCode === code).length;
+    const applyOptions = applicable.filter((a) => a.typeCode === typeCode);
+    const [applyOpen, setApplyOpen] = useState(false);
+    const [applyId, setApplyId] = useState('');
+    const [applying, setApplying] = useState(false);
+
+    /** Apply for a game×category without leaving the form (spec 6.9); an instant pass selects it right away. */
+    const apply = () => {
+        if (applyId === '') return;
+        const id = Number(applyId);
+        setApplying(true);
+        router.post(
+            '/seller/services',
+            { game_category_id: id },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: (page) => {
+                    setApplyId('');
+                    setApplyOpen(false);
+                    const approved = (page.props.services as { id: number }[] | undefined) ?? [];
+                    if (approved.some((s) => s.id === id)) chooseService(String(id));
+                },
+                onFinish: () => setApplying(false),
+            },
+        );
+    };
 
     const form = useForm<FormData>({
         game_category_id: offer?.game_category_id ?? category?.id ?? '',
@@ -138,7 +166,7 @@ export default function OfferForm({ offer, services, category, storageGroups, op
 
             <form className="space-y-6" onSubmit={submit}>
                 <Panel title={t('offer.form.selling')} description={t('offer.form.selling_help')}>
-                    {services.length === 0 ? (
+                    {services.length === 0 && applicable.length === 0 ? (
                         <p className="text-sm">
                             {t('offer.form.no_services')}{' '}
                             <Link href="/seller/services" className="font-semibold text-primary hover:underline">
@@ -177,15 +205,43 @@ export default function OfferForm({ offer, services, category, storageGroups, op
                                     ))}
                                 </select>
                                 {typeCode !== '' && gamesInType.length === 0 && (
-                                    <span className="text-xs text-muted">
-                                        {t('offer.form.no_games_in_category', { category: categoryTypes.find((c) => c.code === typeCode)?.label ?? '' })}{' '}
-                                        <Link href="/seller/services" className="font-semibold text-primary hover:underline">
-                                            {t('offer.form.apply_for_games')}
-                                        </Link>
-                                    </span>
+                                    <span className="text-xs text-muted">{t('offer.form.no_games_in_category', { category: categoryTypes.find((c) => c.code === typeCode)?.label ?? '' })}</span>
                                 )}
                                 {err('game_category_id') && <span className="text-sm text-danger">{err('game_category_id')}</span>}
+                                {!editing && typeCode !== '' && applyOptions.length > 0 && !applyOpen && (
+                                    <button type="button" onClick={() => setApplyOpen(true)} className="self-start text-sm font-semibold text-primary hover:underline">
+                                        + {t('offer.form.apply_another')}
+                                    </button>
+                                )}
                             </label>
+                            {!editing && applyOpen && (
+                                <div className="rounded-lg border border-line bg-canvas p-4 md:col-span-2">
+                                    <p className="font-medium">{t('offer.form.apply_title', { category: categoryTypes.find((c) => c.code === typeCode)?.label ?? '' })}</p>
+                                    <p className="mb-3 text-xs text-muted">{autoApprove ? t('offer.form.apply_instant') : t('offer.form.apply_review')}</p>
+                                    <div className="flex flex-wrap items-start gap-2">
+                                        <select className="field min-w-56 flex-1" value={applyId} onChange={(e) => setApplyId(e.target.value)} aria-label={t('offer.form.game')}>
+                                            <option value="">{t('offer.form.choose_game')}</option>
+                                            {applyOptions.map((a) => (
+                                                <option key={a.id} value={a.id} disabled={a.pending}>
+                                                    {a.game}
+                                                    {a.pending ? ' — ' + t('offer.form.apply_pending') : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button type="button" className="btn-primary" disabled={applyId === '' || applying} onClick={apply}>
+                                            {t('offer.form.apply_submit')}
+                                        </button>
+                                        <button type="button" className="btn-ghost" onClick={() => setApplyOpen(false)}>
+                                            {t('common.cancel')}
+                                        </button>
+                                    </div>
+                                    <p className="mt-2 text-xs text-muted">
+                                        <Link href="/seller/services" className="text-primary hover:underline">
+                                            {t('offer.form.apply_manage')}
+                                        </Link>
+                                    </p>
+                                </div>
+                            )}
                             {category && category.products.length > 0 && (
                                 <label className="flex flex-col gap-1">
                                     <span className="font-medium">{t('offer.form.product')}</span>

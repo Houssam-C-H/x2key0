@@ -1935,11 +1935,17 @@
     "offer.error.service_required": "اختر نوع خدمة لهذه الفئة.",
     "offer.error.unknown_service": "نوع الخدمة هذا غير متاح في هذه الفئة.",
     "offer.form.no_games_in_category": "لست معتمدًا لبيع أي لعبة في :category بعد.",
-    "offer.form.apply_for_games": "قدّم طلبًا لألعاب",
     "offer.form.category": "الفئة",
     "offer.form.game": "اللعبة",
     "offer.form.choose_category": "اختر فئة…",
     "offer.form.choose_category_first": "اختر فئة أولًا",
     "offer.form.choose_game": "اختر لعبة…",
-    "offer.form.choose_service_type": "اختر نوع الخدمة…"
+    "offer.form.choose_service_type": "اختر نوع الخدمة…",
+    "offer.form.apply_another": "قدّم طلبًا للعبة أخرى",
+    "offer.form.apply_title": "قدّم طلبًا لبيع لعبة في :category",
+    "offer.form.apply_instant": "مستواك كبائع يُعتمد فورًا: تُحدَّد اللعبة بمجرد تقديم الطلب.",
+    "offer.form.apply_review": "يراجع فريقنا الطلبات. يمكنك النشر في هذه اللعبة بعد اعتمادها.",
+    "offer.form.apply_pending": "قيد المراجعة",
+    "offer.form.apply_submit": "تقديم الطلب",
+    "offer.form.apply_manage": "عرض كل طلباتي"
 }

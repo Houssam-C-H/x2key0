@@ -1935,11 +1935,17 @@
     "offer.error.service_required": "Choisissez un type de service pour cette catégorie.",
     "offer.error.unknown_service": "Ce type de service n'est pas disponible dans cette catégorie.",
     "offer.form.no_games_in_category": "Vous n'êtes encore approuvé pour aucun jeu dans :category.",
-    "offer.form.apply_for_games": "Postuler pour des jeux",
     "offer.form.category": "Catégorie",
     "offer.form.game": "Jeu",
     "offer.form.choose_category": "Choisir une catégorie…",
     "offer.form.choose_category_first": "Choisissez d'abord une catégorie",
     "offer.form.choose_game": "Choisir un jeu…",
-    "offer.form.choose_service_type": "Choisir un type de service…"
+    "offer.form.choose_service_type": "Choisir un type de service…",
+    "offer.form.apply_another": "Postuler pour un autre jeu",
+    "offer.form.apply_title": "Postuler pour vendre un jeu dans :category",
+    "offer.form.apply_instant": "Votre niveau de vendeur est approuvé immédiatement : le jeu est sélectionné dès votre demande.",
+    "offer.form.apply_review": "Notre équipe examine les demandes. Vous pourrez publier dans ce jeu une fois approuvé.",
+    "offer.form.apply_pending": "en cours d’examen",
+    "offer.form.apply_submit": "Postuler",
+    "offer.form.apply_manage": "Voir toutes mes demandes"
 }

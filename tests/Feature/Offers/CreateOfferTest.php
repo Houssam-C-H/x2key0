@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Domains\Catalog\Enums\CategoryTypeCode;
+use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Offers\Enums\Fulfillment;
 use App\Domains\Offers\Enums\InsuranceMode;
 use App\Domains\Offers\Enums\OfferStatus;
@@ -10,6 +12,7 @@ use App\Domains\Offers\Models\OfferPriceHistory;
 use App\Domains\Offers\Models\OfferStatusChange;
 use App\Domains\Sellers\Enums\SellerStatus;
 use App\Domains\Sellers\Models\SellerLevel;
+use App\Domains\Sellers\Models\SellerServiceApplication;
 use App\Domains\Storage\Enums\StorageItemType;
 use App\Domains\Storage\Models\StorageGroup;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -196,4 +199,22 @@ it('gives each approved service its category type and game name for the category
         ->has('services', 2)
         ->where('services', fn ($services): bool => collect($services)->pluck('typeCode')->sort()->values()->all() === ['accounts', 'video_games']
             && collect($services)->every(fn (array $s): bool => $s['game'] === $this->fx['catalog']['game']->translate('name', 'en'))));
+});
+
+it('lists the games the seller can still apply for on the form, and applying passes instantly for auto-approve levels', function (): void {
+    $other = GameCategory::factory()->ofType(CategoryTypeCode::Accounts)->create();
+    $pending = GameCategory::factory()->ofType(CategoryTypeCode::Accounts)->create();
+    SellerServiceApplication::query()->create(['seller_profile_id' => $this->fx['profile']->id, 'game_category_id' => $pending->id]);
+
+    $this->get('/seller/offers/create')->assertInertia(fn (Assert $page) => $page
+        ->where('applicable', fn ($rows): bool => collect($rows)->pluck('id')->doesntContain($this->fx['accounts']->id)
+            && collect($rows)->firstWhere('id', $other->id)['pending'] === false
+            && collect($rows)->firstWhere('id', $pending->id)['pending'] === true));
+
+    $this->fx['profile']->forceFill(['seller_level_id' => SellerLevel::query()->where('code', 'silver')->value('id')])->save();
+    $this->from('/seller/offers/create')->post('/seller/services', ['game_category_id' => $other->id])->assertRedirect('/seller/offers/create');
+
+    $this->get('/seller/offers/create?category='.$other->id)->assertInertia(fn (Assert $page) => $page
+        ->where('category.id', $other->id)
+        ->where('applicable', fn ($rows): bool => collect($rows)->pluck('id')->doesntContain($other->id)));
 });

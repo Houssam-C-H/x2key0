@@ -220,6 +220,23 @@ final class OfferController
         $selected = $services->firstWhere('id', $categoryId);
         $profile->loadMissing('level');
 
+        // Games the seller can still apply for from this form (not passed): pending ones are shown but not selectable.
+        $statuses = $profile->serviceApplications()->pluck('status', 'game_category_id')->all();
+        $applicable = GameCategory::query()->visible()->whereNotIn('id', $services->pluck('id'))->with(['game', 'type'])->get()
+            ->map(static function (GameCategory $gc) use ($statuses, $locale): array {
+                $status = $statuses[$gc->id] ?? null;
+
+                return [
+                    'id' => $gc->id,
+                    'typeCode' => $gc->type->code->value,
+                    'game' => $gc->game->translate('name', $locale),
+                    'pending' => $status === ServiceApplicationStatus::Pending || $status === ServiceApplicationStatus::Pending->value,
+                ];
+            })
+            ->sortBy('game')
+            ->values()
+            ->all();
+
         return Inertia::render('Seller/Offers/Form', [
             'offer' => $offer === null ? null : $this->formValues($offer),
             // Create offer steps: category type first, then the game inside it (OfferTargetPicker).
@@ -241,6 +258,7 @@ final class OfferController
                 'products' => Product::query()->active()->where('game_category_id', $selected->id)->orderBy('slug')->limit(500)->get()
                     ->map(fn (Product $p): array => ['id' => $p->id, 'name' => $p->translate('name', $locale)])->all(),
             ],
+            'applicable' => $applicable,
             'storageGroups' => StorageGroup::query()->where('seller_profile_id', $profile->id)->orderBy('name')->get()
                 ->map(fn (StorageGroup $g): array => ['id' => $g->id, 'name' => $g->name, 'type' => $g->item_type->value, 'available' => $g->available_count_cached])->all(),
             'options' => [
