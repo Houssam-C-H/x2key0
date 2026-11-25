@@ -1,6 +1,8 @@
 import { router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import { PROVIDER_LABEL, ProviderLogo } from '@/Components/Auth/SocialButtons';
 import { Field } from '@/Components/Field';
+import { Icon } from '@/Components/Icon';
 import { DashboardLayout, Panel } from '@/Layouts/DashboardLayout';
 import { useT } from '@/lib/i18n';
 
@@ -207,97 +209,206 @@ function TwoFactorPanel({ twoFactor, passwordConfirmed }: { twoFactor: Props['tw
     const confirm = useForm({ code: '' });
     const busy = useForm({});
     const options = { preserveScroll: true } as const;
+    const [copied, setCopied] = useState<string | null>(null);
 
     const needsPassword = !passwordConfirmed;
     const confirmLink = `/user/confirm-password?return=${encodeURIComponent('/settings/security#two-factor')}`;
+    const copy = (key: string, text: string) => {
+        void navigator.clipboard?.writeText(text).then(() => {
+            setCopied(key);
+            window.setTimeout(() => setCopied(null), 2000);
+        });
+    };
+    const groupedSecret = (twoFactor.secret ?? '').replace(/\s+/g, '').replace(/(.{4})(?=.)/g, '$1 ');
+    const downloadCodes = () => {
+        const text = [t('security.two_factor.codes_file_title'), '', ...(twoFactor.recoveryCodes ?? [])].join('\n');
+        const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+        const a = Object.assign(document.createElement('a'), { href: url, download: 'x2key-recovery-codes.txt' });
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     return (
         <Panel id="two-factor" title={t('security.two_factor.title')} description={t('security.two_factor.hint')}>
-            <p className="mb-4 flex items-center gap-2">
-                <Badge ok={twoFactor.enabled}>{twoFactor.enabled ? t('security.two_factor.on') : t('security.two_factor.off')}</Badge>
-                {twoFactor.staffRequired && !twoFactor.enabled && <span className="text-sm font-semibold text-danger">{t('security.two_factor.staff_required')}</span>}
-            </p>
-
-            {needsPassword && (twoFactor.enabled || !twoFactor.pendingConfirmation) ? (
-                <a href={confirmLink} className="btn-outline-pill">
-                    {t('security.two_factor.confirm_password_first')}
-                </a>
-            ) : null}
-
-            {!needsPassword && !twoFactor.enabled && !twoFactor.pendingConfirmation && (
-                <button type="button" className="btn-primary" disabled={busy.processing} onClick={() => busy.post('/user/two-factor-authentication', options)}>
-                    {t('security.two_factor.enable')}
-                </button>
+            {twoFactor.staffRequired && !twoFactor.enabled && (
+                <p className="mb-4 flex items-start gap-2 rounded-lg bg-danger/5 p-3 text-sm text-danger">
+                    <Icon name="lock" size={18} className="mt-0.5 shrink-0" />
+                    {t('security.two_factor.staff_required')}
+                </p>
             )}
 
-            {twoFactor.pendingConfirmation && (
-                <div className="grid gap-6 md:grid-cols-[auto_1fr]">
-                    {twoFactor.qrSvg && (
-                        // SVG generated server-side by Fortify from the user's own secret (no user content).
-                        <div className="h-48 w-48 rounded-md border border-line bg-white p-2" dangerouslySetInnerHTML={{ __html: twoFactor.qrSvg }} />
+            {/* Off: explain, one button (password confirmation first when needed). */}
+            {!twoFactor.enabled && !twoFactor.pendingConfirmation && (
+                <div className="flex flex-wrap items-center gap-4 rounded-xl border border-line p-4">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                        <Icon name="shield" size={22} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-2 font-semibold">
+                            {t('security.two_factor.off_title')} <Badge ok={false}>{t('security.two_factor.off')}</Badge>
+                        </p>
+                        <p className="text-sm text-muted">{t('security.two_factor.off_text')}</p>
+                    </div>
+                    {needsPassword ? (
+                        <a href={confirmLink} className="btn-primary">
+                            {t('security.two_factor.enable')}
+                        </a>
+                    ) : (
+                        <button type="button" className="btn-primary" disabled={busy.processing} onClick={() => busy.post('/user/two-factor-authentication', options)}>
+                            {t('security.two_factor.enable')}
+                        </button>
                     )}
-                    <div>
-                        <p className="text-sm">{t('security.two_factor.scan')}</p>
-                        {twoFactor.secret && (
-                            <p className="mt-2 text-sm">
-                                {t('security.two_factor.secret')}: <code className="rounded bg-canvas px-1.5 py-0.5 font-mono">{twoFactor.secret}</code>
-                            </p>
-                        )}
+                    {needsPassword && <p className="w-full text-xs text-muted">{t('security.two_factor.password_note')}</p>}
+                </div>
+            )}
+
+            {/* Setup: three clear steps. */}
+            {twoFactor.pendingConfirmation && (
+                <ol className="space-y-6">
+                    <SetupStep n={1} title={t('security.two_factor.step_app')}>
+                        <p className="text-sm text-muted">{t('security.two_factor.step_app_text')}</p>
+                    </SetupStep>
+
+                    <SetupStep n={2} title={t('security.two_factor.step_scan')}>
+                        <div className="flex flex-wrap items-start gap-5">
+                            {twoFactor.qrSvg && (
+                                // SVG generated server-side by Fortify from the user's own secret (no user content).
+                                <div
+                                    className="h-44 w-44 shrink-0 rounded-xl border border-line bg-white p-3 [&>svg]:h-full [&>svg]:w-full"
+                                    aria-label={t('security.two_factor.qr_label')}
+                                    role="img"
+                                    dangerouslySetInnerHTML={{ __html: twoFactor.qrSvg }}
+                                />
+                            )}
+                            {twoFactor.secret && (
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    <p className="text-sm text-muted">{t('security.two_factor.cant_scan')}</p>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <code className="rounded-lg bg-canvas px-3 py-2 font-mono text-base tracking-wider">{groupedSecret}</code>
+                                        <button type="button" className="btn-ghost text-sm" onClick={() => copy('secret', (twoFactor.secret ?? '').replace(/\s+/g, ''))}>
+                                            <Icon name={copied === 'secret' ? 'check' : 'copy'} size={15} />
+                                            {copied === 'secret' ? t('security.two_factor.copied') : t('security.two_factor.copy')}
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-muted">{t('security.two_factor.key_note')}</p>
+                                </div>
+                            )}
+                        </div>
+                    </SetupStep>
+
+                    <SetupStep n={3} title={t('security.two_factor.step_code')} last>
                         <form
-                            className="mt-4 flex flex-wrap items-end gap-3"
+                            className="flex flex-wrap items-start gap-3"
                             onSubmit={(e) => {
                                 e.preventDefault();
                                 confirm.post('/user/confirmed-two-factor-authentication', { ...options, errorBag: 'confirmTwoFactorAuthentication', onSuccess: () => confirm.reset() });
                             }}
                         >
-                            <Field
-                                label={t('auth.two_factor.code')}
-                                name="code"
-                                inputMode="numeric"
-                                autoComplete="one-time-code"
-                                maxLength={6}
-                                required
-                                value={confirm.data.code}
-                                onChange={(e) => confirm.setData('code', e.target.value)}
-                                error={confirm.errors.code}
-                            />
-                            <button type="submit" className="btn-primary" disabled={confirm.processing}>
+                            <div>
+                                <input
+                                    name="code"
+                                    inputMode="numeric"
+                                    autoComplete="one-time-code"
+                                    pattern="[0-9]{6}"
+                                    maxLength={6}
+                                    required
+                                    placeholder="000000"
+                                    aria-label={t('auth.two_factor.code')}
+                                    value={confirm.data.code}
+                                    onChange={(e) => confirm.setData('code', e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    className="field h-12 w-48 text-center font-mono text-2xl tracking-[0.4em]"
+                                />
+                                {confirm.errors.code && <p className="mt-1 text-sm text-danger">{confirm.errors.code}</p>}
+                            </div>
+                            <button type="submit" className="btn-primary h-12 px-6" disabled={confirm.processing || confirm.data.code.length !== 6}>
                                 {t('security.two_factor.confirm')}
                             </button>
+                            <button type="button" className="btn-ghost h-12" disabled={busy.processing} onClick={() => busy.delete('/user/two-factor-authentication', options)}>
+                                {t('security.two_factor.cancel_setup')}
+                            </button>
                         </form>
+                        <p className="mt-2 text-xs text-muted">{t('security.two_factor.code_note')}</p>
+                    </SetupStep>
+                </ol>
+            )}
+
+            {/* On: status and management. */}
+            {twoFactor.enabled && (
+                <div className="flex flex-wrap items-center gap-4 rounded-xl border border-success/30 bg-success/5 p-4">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-success text-white">
+                        <Icon name="shield" size={22} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-2 font-semibold">
+                            {t('security.two_factor.on_title')} <Badge ok>{t('security.two_factor.on')}</Badge>
+                        </p>
+                        <p className="text-sm text-muted">{t('security.two_factor.on_text')}</p>
                     </div>
-                </div>
-            )}
-
-            {twoFactor.recoveryCodes && (
-                <div className="mt-6 rounded-md border-s-4 border-warning bg-warning-soft p-4">
-                    <p className="text-sm font-semibold">{t('security.two_factor.recovery_save')}</p>
-                    <ul className="mt-2 grid grid-cols-2 gap-1 font-mono text-sm">
-                        {twoFactor.recoveryCodes.map((c) => (
-                            <li key={c}>{c}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            {twoFactor.enabled && !needsPassword && (
-                <div className="mt-4 flex flex-wrap gap-3">
-                    <button type="button" className="btn-outline-pill" disabled={busy.processing} onClick={() => busy.post('/user/two-factor-recovery-codes', options)}>
-                        {t('security.two_factor.regenerate')}
-                    </button>
-                    {!twoFactor.staffRequired && (
-                        <button
-                            type="button"
-                            className="btn bg-danger/10 text-danger hover:bg-danger/20"
-                            disabled={busy.processing}
-                            onClick={() => window.confirm(t('security.two_factor.disable_confirm')) && busy.delete('/user/two-factor-authentication', options)}
-                        >
-                            {t('security.two_factor.disable')}
-                        </button>
+                    {needsPassword ? (
+                        <a href={confirmLink} className="btn-outline-pill">
+                            {t('security.two_factor.confirm_password_first')}
+                        </a>
+                    ) : (
+                        <div className="flex flex-wrap gap-2">
+                            <button type="button" className="btn-outline-pill" disabled={busy.processing} onClick={() => busy.post('/user/two-factor-recovery-codes', options)}>
+                                {t('security.two_factor.regenerate')}
+                            </button>
+                            {!twoFactor.staffRequired && (
+                                <button
+                                    type="button"
+                                    className="btn bg-danger/10 text-danger hover:bg-danger/20"
+                                    disabled={busy.processing}
+                                    onClick={() => window.confirm(t('security.two_factor.disable_confirm')) && busy.delete('/user/two-factor-authentication', options)}
+                                >
+                                    {t('security.two_factor.disable')}
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             )}
+
+            {/* Recovery codes: shown right after setup or regeneration. */}
+            {twoFactor.recoveryCodes && (
+                <div className="mt-5 rounded-xl border border-warning/40 bg-warning-soft p-4">
+                    <p className="flex items-center gap-2 font-semibold">
+                        <Icon name="lock" size={18} className="text-warning-ink" />
+                        {t('security.two_factor.step_save')}
+                    </p>
+                    <p className="mt-1 text-sm">{t('security.two_factor.recovery_save')}</p>
+                    <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {twoFactor.recoveryCodes.map((c) => (
+                            <li key={c} className="rounded-md bg-white px-2 py-1.5 text-center font-mono text-sm ring-1 ring-line">
+                                {c}
+                            </li>
+                        ))}
+                    </ul>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        <button type="button" className="btn-outline-pill" onClick={() => copy('codes', (twoFactor.recoveryCodes ?? []).join('\n'))}>
+                            {copied === 'codes' ? t('security.two_factor.copied') : t('security.two_factor.copy_codes')}
+                        </button>
+                        <button type="button" className="btn-outline-pill" onClick={downloadCodes}>
+                            {t('security.two_factor.download_codes')}
+                        </button>
+                    </div>
+                    <p className="mt-2 text-xs text-muted">{t('security.two_factor.recovery_where')}</p>
+                </div>
+            )}
         </Panel>
+    );
+}
+
+/** One numbered step of the 2FA setup, with a line joining it to the next. */
+function SetupStep({ n, title, last = false, children }: { n: number; title: string; last?: boolean; children: React.ReactNode }) {
+    return (
+        <li className="relative flex gap-4">
+            {!last && <span aria-hidden="true" className="absolute start-4 top-9 -bottom-6 w-px bg-line" />}
+            <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">{n}</span>
+            <div className="min-w-0 flex-1 pt-1">
+                <p className="mb-2 font-semibold">{title}</p>
+                {children}
+            </div>
+        </li>
     );
 }
 

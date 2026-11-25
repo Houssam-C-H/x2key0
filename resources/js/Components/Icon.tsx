@@ -44,6 +44,7 @@ const paths: Record<string, string> = {
     mail: 'M3 6h18v12H3V6Zm0 0 9 7 9-7',
     bag: 'M5 8h14l-1 12H6L5 8Zm4 0V6a3 3 0 0 1 6 0v2',
     phone: 'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm3 15h2',
+    copy: 'M9 9h11v11H9V9Zm-4 6H4V4h11v1',
     grid: 'M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z',
     fire: 'M12 21a7 7 0 0 0 7-7c0-4-3-6-4-9-1 3-3 3-3 3s0-3-2-5c0 4-5 6-5 11a7 7 0 0 0 7 7Zm0 0a3 3 0 0 0 3-3c0-2-2-3-2-4-1 1-2 1-2 1s-2 1-2 3a3 3 0 0 0 3 3Z',
 };
