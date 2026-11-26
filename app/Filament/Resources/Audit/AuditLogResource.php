@@ -118,9 +118,14 @@ final class AuditLogResource extends Resource
                         : null),
                 Filter::make('date')
                     ->schema([DatePicker::make('from'), DatePicker::make('until')])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when(is_string($data['from'] ?? null) && $data['from'] !== '', fn (Builder $w) => $w->where('created_at', '>=', Carbon::parse((string) $data['from'])->startOfDay()))
-                        ->when(is_string($data['until'] ?? null) && $data['until'] !== '', fn (Builder $w) => $w->where('created_at', '<', Carbon::parse((string) $data['until'])->addDay()->startOfDay()))),
+                    ->query(function (Builder $query, array $data): Builder {
+                        $from = is_string($data['from'] ?? null) && $data['from'] !== '' ? Carbon::parse($data['from'])->startOfDay() : null;
+                        $until = is_string($data['until'] ?? null) && $data['until'] !== '' ? Carbon::parse($data['until'])->addDay()->startOfDay() : null;
+
+                        return $query
+                            ->when($from !== null, fn (Builder $w) => $w->where('created_at', '>=', $from))
+                            ->when($until !== null, fn (Builder $w) => $w->where('created_at', '<', $until));
+                    }),
             ])
             ->recordActions([
                 Action::make('details')->icon(Heroicon::OutlinedEye)->color('gray')
