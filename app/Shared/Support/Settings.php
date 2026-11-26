@@ -61,7 +61,7 @@ final class Settings
     /**
      * Overrides a top-level policy key. Audited.
      */
-    public function set(string $key, mixed $value, ?Authenticatable $by = null): void
+    public function set(string $key, mixed $value, ?Authenticatable $by = null, ?string $reason = null): void
     {
         $this->assertKnown($key);
 
@@ -74,13 +74,13 @@ final class Settings
 
         $this->flush();
 
-        $this->audit->log('settings.updated', null, ['key' => $key, 'value' => $before], ['key' => $key, 'value' => $value], $by);
+        $this->audit->log('settings.updated', null, ['key' => $key, 'value' => $before], ['key' => $key, 'value' => $value] + ($reason !== null ? ['reason' => $reason] : []), $by);
     }
 
     /**
      * Removes an override so the config default applies again. Audited.
      */
-    public function reset(string $key, ?Authenticatable $by = null): void
+    public function reset(string $key, ?Authenticatable $by = null, ?string $reason = null): void
     {
         $this->assertKnown($key);
 
@@ -88,7 +88,14 @@ final class Settings
         Setting::query()->whereKey($key)->delete();
         $this->flush();
 
-        $this->audit->log('settings.reset', null, ['key' => $key, 'value' => $before], null, $by);
+        $this->audit->log('settings.reset', null, ['key' => $key, 'value' => $before], $reason === null ? null : ['key' => $key, 'reason' => $reason], $by);
+    }
+
+    public function isOverridden(string $key): bool
+    {
+        $this->assertKnown($key);
+
+        return array_key_exists($key, $this->overrides());
     }
 
     /**
