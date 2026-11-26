@@ -59,7 +59,7 @@ final class ServiceApplicationResource extends Resource
             ->columns([
                 TextColumn::make('id'),
                 TextColumn::make('profile.store_name')->label('Store')->searchable()
-                    ->url(fn (SellerServiceApplication $record): string => SellerProfileResource::getUrl('edit', ['record' => $record->seller_profile_id])),
+                    ->url(fn (SellerServiceApplication $record): string => SellerProfileResource::getUrl('view', ['record' => $record->seller_profile_id])),
                 TextColumn::make('service')->label('Service')
                     ->state(fn (SellerServiceApplication $record): string => $record->gameCategory->title('en')),
                 TextColumn::make('status')

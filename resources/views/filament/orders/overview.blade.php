@@ -16,7 +16,7 @@
                 </div>
                 <div>
                     <dt class="text-gray-500">Store</dt>
-                    <dd class="font-medium"><x-filament::link :href="\App\Filament\Resources\Sellers\SellerProfiles\SellerProfileResource::getUrl('edit', ['record' => $o['store']['id']])">{{ $o['store']['name'] }}</x-filament::link></dd>
+                    <dd class="font-medium"><x-filament::link :href="\App\Filament\Resources\Sellers\SellerProfiles\SellerProfileResource::getUrl('view', ['record' => $o['store']['id']])">{{ $o['store']['name'] }}</x-filament::link></dd>
                 </div>
             </dl>
             @if ($this->auditUrl())

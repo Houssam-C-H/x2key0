@@ -56,7 +56,7 @@ final class StorageGroupResource extends Resource
                 TextColumn::make('id'),
                 TextColumn::make('name')->searchable(),
                 TextColumn::make('seller.store_name')->label('Store')->searchable()
-                    ->url(fn (StorageGroup $record): string => SellerProfileResource::getUrl('edit', ['record' => $record->seller_profile_id])),
+                    ->url(fn (StorageGroup $record): string => SellerProfileResource::getUrl('view', ['record' => $record->seller_profile_id])),
                 TextColumn::make('item_type')->label('Type')->formatStateUsing(fn (StorageItemType $state): string => ucfirst(str_replace('_', ' ', $state->value))),
                 TextColumn::make('available_items')->label('Available'),
                 TextColumn::make('total_items')->label('Total'),

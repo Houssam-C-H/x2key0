@@ -69,7 +69,7 @@ final class OrderResource extends Resource
                 TextColumn::make('number')->searchable(),
                 TextColumn::make('buyer.username')->label('Buyer')->searchable(),
                 TextColumn::make('seller.store_name')->label('Store')
-                    ->url(fn (Order $record): string => SellerProfileResource::getUrl('edit', ['record' => $record->seller_profile_id])),
+                    ->url(fn (Order $record): string => SellerProfileResource::getUrl('view', ['record' => $record->seller_profile_id])),
                 TextColumn::make('item_title')->label('Item')->limit(40)
                     ->state(fn (Order $record): string => is_string($record->item->snapshot['title'] ?? null) ? $record->item->snapshot['title'] : ''),
                 TextColumn::make('total_amount')->label('Total')->money('USD', divideBy: 100)->sortable(),

@@ -13,11 +13,13 @@ use App\Domains\Sellers\StateMachines\SellerProfileStateMachine;
 use App\Domains\Storage\Actions\SetStorageAccess;
 use App\Filament\Resources\Sellers\SellerProfiles\Pages\EditSellerProfile;
 use App\Filament\Resources\Sellers\SellerProfiles\Pages\ListSellerProfiles;
+use App\Filament\Resources\Sellers\SellerProfiles\Pages\ViewSellerProfile;
 use App\Filament\Resources\Sellers\SellerProfiles\RelationManagers\ContactsRelationManager;
 use App\Filament\Resources\Sellers\SellerProfiles\RelationManagers\StatusChangesRelationManager;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -112,59 +114,72 @@ final class SellerProfileResource extends Resource
                 TernaryFilter::make('storage_enabled')->label('Storage'),
             ])
             ->recordActions([
+                ViewAction::make()->label('Open'),
                 EditAction::make(),
                 Action::make('view_store')
                     ->label('Public page')
                     ->url(fn (SellerProfile $record): string => $record->path('en'), shouldOpenInNewTab: true)
                     ->visible(fn (SellerProfile $record): bool => $record->status->isPublic()),
-                Action::make('suspend')
-                    ->color('danger')
-                    ->visible(fn (SellerProfile $record): bool => $record->status->canTransitionTo(SellerStatus::Suspended) && Gate::allows('moderate', $record))
-                    ->schema([Textarea::make('reason')->label('Reason shown to the seller')->required()->maxLength(500)])
-                    ->action(function (SellerProfile $record, array $data): void {
-                        app(SellerProfileStateMachine::class)->suspend($record, self::actor(), self::reason($data));
-                        Notification::make()->title('Store suspended')->warning()->send();
-                    }),
-                Action::make('reinstate')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->visible(fn (SellerProfile $record): bool => $record->status === SellerStatus::Suspended && Gate::allows('moderate', $record))
-                    ->action(function (SellerProfile $record): void {
-                        app(SellerProfileStateMachine::class)->reinstate($record, self::actor());
-                        Notification::make()->title('Store reinstated')->success()->send();
-                    }),
-                // Storage switch (ADR-034): off = no Storage writes, Storage offers out of stock; on = restored.
-                Action::make('storage_off')
-                    ->label('Storage off')
-                    ->color('warning')
-                    ->icon(Heroicon::OutlinedArchiveBoxXMark)
-                    ->visible(fn (SellerProfile $record): bool => $record->storage_enabled && Gate::allows('moderate', $record))
-                    ->modalDescription('The seller cannot add or change Storage items and every offer delivered from Storage goes out of stock. Keys stay encrypted; orders already reserved still deliver.')
-                    ->schema([Textarea::make('reason')->label('Reason (audit log)')->required()->maxLength(500)])
-                    ->action(function (SellerProfile $record, array $data): void {
-                        app(SetStorageAccess::class)->handle($record, false, self::actor(), self::reason($data));
-                        Notification::make()->title('Storage switched off')->warning()->send();
-                    }),
-                Action::make('storage_on')
-                    ->label('Storage on')
-                    ->color('success')
-                    ->icon(Heroicon::OutlinedArchiveBox)
-                    ->visible(fn (SellerProfile $record): bool => ! $record->storage_enabled && Gate::allows('moderate', $record))
-                    ->schema([Textarea::make('reason')->label('Reason (audit log)')->required()->maxLength(500)])
-                    ->action(function (SellerProfile $record, array $data): void {
-                        app(SetStorageAccess::class)->handle($record, true, self::actor(), self::reason($data));
-                        Notification::make()->title('Storage switched on; stock recounted')->success()->send();
-                    }),
-                Action::make('ban')
-                    ->color('danger')
-                    ->visible(fn (SellerProfile $record): bool => $record->status->canTransitionTo(SellerStatus::Banned) && Gate::allows('moderate', $record))
-                    ->schema([Textarea::make('reason')->label('Reason')->required()->maxLength(500)])
-                    ->requiresConfirmation()
-                    ->action(function (SellerProfile $record, array $data): void {
-                        app(SellerProfileStateMachine::class)->ban($record, self::actor(), self::reason($data));
-                        Notification::make()->title('Store banned')->danger()->send();
-                    }),
+                ...self::statusActions(),
             ]);
+    }
+
+    /**
+     * Status and Storage decisions on one store, shared by the list and the store page.
+     *
+     * @return list<Action>
+     */
+    public static function statusActions(): array
+    {
+        return [
+            Action::make('suspend')
+                ->color('danger')
+                ->visible(fn (SellerProfile $record): bool => $record->status->canTransitionTo(SellerStatus::Suspended) && Gate::allows('moderate', $record))
+                ->schema([Textarea::make('reason')->label('Reason shown to the seller')->required()->maxLength(500)])
+                ->action(function (SellerProfile $record, array $data): void {
+                    app(SellerProfileStateMachine::class)->suspend($record, self::actor(), self::reason($data));
+                    Notification::make()->title('Store suspended')->warning()->send();
+                }),
+            Action::make('reinstate')
+                ->color('success')
+                ->requiresConfirmation()
+                ->visible(fn (SellerProfile $record): bool => $record->status === SellerStatus::Suspended && Gate::allows('moderate', $record))
+                ->action(function (SellerProfile $record): void {
+                    app(SellerProfileStateMachine::class)->reinstate($record, self::actor());
+                    Notification::make()->title('Store reinstated')->success()->send();
+                }),
+            // Storage switch (ADR-034): off = no Storage writes, Storage offers out of stock; on = restored.
+            Action::make('storage_off')
+                ->label('Storage off')
+                ->color('warning')
+                ->icon(Heroicon::OutlinedArchiveBoxXMark)
+                ->visible(fn (SellerProfile $record): bool => $record->storage_enabled && Gate::allows('moderate', $record))
+                ->modalDescription('The seller cannot add or change Storage items and every offer delivered from Storage goes out of stock. Keys stay encrypted; orders already reserved still deliver.')
+                ->schema([Textarea::make('reason')->label('Reason (audit log)')->required()->maxLength(500)])
+                ->action(function (SellerProfile $record, array $data): void {
+                    app(SetStorageAccess::class)->handle($record, false, self::actor(), self::reason($data));
+                    Notification::make()->title('Storage switched off')->warning()->send();
+                }),
+            Action::make('storage_on')
+                ->label('Storage on')
+                ->color('success')
+                ->icon(Heroicon::OutlinedArchiveBox)
+                ->visible(fn (SellerProfile $record): bool => ! $record->storage_enabled && Gate::allows('moderate', $record))
+                ->schema([Textarea::make('reason')->label('Reason (audit log)')->required()->maxLength(500)])
+                ->action(function (SellerProfile $record, array $data): void {
+                    app(SetStorageAccess::class)->handle($record, true, self::actor(), self::reason($data));
+                    Notification::make()->title('Storage switched on; stock recounted')->success()->send();
+                }),
+            Action::make('ban')
+                ->color('danger')
+                ->visible(fn (SellerProfile $record): bool => $record->status->canTransitionTo(SellerStatus::Banned) && Gate::allows('moderate', $record))
+                ->schema([Textarea::make('reason')->label('Reason')->required()->maxLength(500)])
+                ->requiresConfirmation()
+                ->action(function (SellerProfile $record, array $data): void {
+                    app(SellerProfileStateMachine::class)->ban($record, self::actor(), self::reason($data));
+                    Notification::make()->title('Store banned')->danger()->send();
+                }),
+        ];
     }
 
     /**
@@ -182,6 +197,7 @@ final class SellerProfileResource extends Resource
     {
         return [
             'index' => ListSellerProfiles::route('/'),
+            'view' => ViewSellerProfile::route('/{record}'),
             'edit' => EditSellerProfile::route('/{record}/edit'),
         ];
     }

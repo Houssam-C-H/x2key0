@@ -67,7 +67,7 @@ final class OfferResource extends Resource
                 TextColumn::make('title')->searchable()->wrap()->limit(60)
                     ->description(fn (Offer $record): ?string => $record->duplicate_of_offer_id !== null ? "Duplicate of #{$record->duplicate_of_offer_id}" : null),
                 TextColumn::make('seller.store_name')->label('Store')->searchable()
-                    ->url(fn (Offer $record): string => SellerProfileResource::getUrl('edit', ['record' => $record->seller_profile_id])),
+                    ->url(fn (Offer $record): string => SellerProfileResource::getUrl('view', ['record' => $record->seller_profile_id])),
                 TextColumn::make('service')->label('Service')->state(fn (Offer $record): string => $record->gameCategory->title('en')),
                 TextColumn::make('delivery_method')->label('Delivery')->formatStateUsing(fn ($state): string => $state instanceof BackedEnum ? str_replace('_', ' ', (string) $state->value) : ''),
                 TextColumn::make('unit_price_amount')->label('Price')->money('USD', divideBy: 100)->sortable(),
