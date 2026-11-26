@@ -2,6 +2,7 @@ import { Logo } from '@/Components/Brand/Logo';
 import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { useLocalePath, useShared, useT } from '@/lib/i18n';
+import { useLiveCounters } from '@/lib/liveCounters';
 import { AccountMenu } from './AccountMenu';
 import { CategorySelect } from './CategorySelect';
 import { SearchSuggestions } from './SearchSuggestions';
@@ -14,6 +15,7 @@ export function Header() {
     const t = useT();
     const lp = useLocalePath();
     const { auth, locale, currency, app, inbox, chat } = useShared();
+    useLiveCounters(auth.user?.id);
     const [menuOpen, setMenuOpen] = useState(false);
     const [localeOpen, setLocaleOpen] = useState(false);
 

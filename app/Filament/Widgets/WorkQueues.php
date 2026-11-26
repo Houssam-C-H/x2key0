@@ -7,6 +7,7 @@ namespace App\Filament\Widgets;
 use App\Domains\Reporting\Reports;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Livewire\Attributes\On;
 
 /** What staff must work on now (all staff), each linking to its queue; orange while something waits. */
 final class WorkQueues extends StatsOverviewWidget
@@ -30,6 +31,10 @@ final class WorkQueues extends StatsOverviewWidget
         'affiliate_videos' => ['Affiliate videos', '/admin/affiliate-videos'],
         'ledger_adjustments' => ['Ledger adjustments', '/admin/ledger-adjustments'],
     ];
+
+    /** Live refresh relayed from the private `staff` channel (docs/ADMIN_PLAN.md item 11); polling stays as fallback. */
+    #[On('staff-queues-changed')]
+    public function refreshQueues(): void {}
 
     protected function getColumns(): int
     {

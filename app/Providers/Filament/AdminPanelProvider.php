@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Livewire\QueueCounter;
 use App\Http\Middleware\RequireStaffTwoFactor;
 use App\Http\Middleware\TrackUserSession;
 use Filament\Http\Middleware\Authenticate;
@@ -14,13 +15,18 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Vite as FoundationVite;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Livewire\Livewire;
 
 /**
  * Staff admin (spec Part 18). No panel login page: staff sign in through the normal Fortify
@@ -58,10 +64,28 @@ final class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            // Live staff counters (docs/ADMIN_PLAN.md item 11): queue counter in the top bar + websocket bridge.
+            ->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, fn (): string => Blade::render('@livewire(\'queue-counter\')'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn (): string => self::liveBridge())
             ->authMiddleware([
                 Authenticate::class,
                 TrackUserSession::class,
                 RequireStaffTwoFactor::class,
             ]);
+    }
+
+    public function boot(): void
+    {
+        Livewire::component('queue-counter', QueueCounter::class);
+    }
+
+    /** The admin websocket bridge script, when it is built (or the Vite dev server runs). */
+    public static function liveBridge(): string
+    {
+        $entry = 'resources/js/admin-live.ts';
+        $manifest = public_path('build/manifest.json');
+        $built = is_file($manifest) && str_contains((string) file_get_contents($manifest), '"'.$entry.'"');
+
+        return Vite::isRunningHot() || $built ? app(FoundationVite::class)($entry)->toHtml() : '';
     }
 }

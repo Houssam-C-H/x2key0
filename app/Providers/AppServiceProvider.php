@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domains\Admin\Models\SettingChange;
 use App\Domains\Affiliate\Listeners\AffiliateListeners;
 use App\Domains\Affiliate\Models\Affiliate;
 use App\Domains\Affiliate\Models\AffiliateVideoRecord;
 use App\Domains\Affiliate\Models\CreativeAsset;
 use App\Domains\Announcements\Listeners\SendOrderNotifications;
 use App\Domains\Announcements\Models\Announcement;
+use App\Domains\Announcements\Models\InboxItem;
 use App\Domains\Announcements\Policies\AnnouncementPolicy;
 use App\Domains\Campaigns\Models\Campaign;
 use App\Domains\Campaigns\Models\CampaignParticipation;
@@ -55,6 +57,7 @@ use App\Domains\Identity\Support\LogSmsSender;
 use App\Domains\Invoices\Models\Invoice;
 use App\Domains\Ledger\Events\HoldReleased;
 use App\Domains\Ledger\Models\LedgerAccount;
+use App\Domains\Ledger\Models\LedgerAdjustment;
 use App\Domains\Ledger\Models\LedgerJournal;
 use App\Domains\Ledger\Policies\LedgerPolicy;
 use App\Domains\Ledger\Support\LedgerCreditsWallet;
@@ -62,6 +65,7 @@ use App\Domains\Messaging\Events\ConversationUpdated;
 use App\Domains\Messaging\Listeners\OpenOrderConversation;
 use App\Domains\Messaging\Models\Conversation;
 use App\Domains\Messaging\Models\Message;
+use App\Domains\Messaging\Models\Participant;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\Policies\OfferPolicy;
 use App\Domains\Orders\Events\OrderCancelled;
@@ -78,6 +82,7 @@ use App\Domains\Payments\Providers\StripePaymentProvider;
 use App\Domains\Payouts\Models\PayoutMethodType;
 use App\Domains\Payouts\Models\WithdrawalRequest;
 use App\Domains\Payouts\Policies\PayoutPolicy;
+use App\Domains\Points\Models\PointsAdjustment;
 use App\Domains\Reviews\Listeners\ReviewListeners;
 use App\Domains\Reviews\Models\OrderComment;
 use App\Domains\Reviews\Policies\OrderCommentPolicy;
@@ -100,6 +105,7 @@ use App\Domains\Violations\Models\Violation;
 use App\Domains\Violations\Models\ViolationRule;
 use App\Domains\Violations\Policies\ViolationPolicy;
 use App\Shared\Audit\AuditLogger;
+use App\Shared\Realtime\Signals;
 use App\Shared\Support\Settings;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -272,6 +278,28 @@ final class AppServiceProvider extends ServiceProvider
                 }
             });
         });
+
+        // Live counters (docs/ADMIN_PLAN.md item 11): the bell and the chat badge of the users concerned, and the
+        // staff queue counters, get a content-free signal after commit (Signals never throws).
+        InboxItem::created(static function (InboxItem $item): void {
+            Signals::user($item->user_id, 'inbox');
+        });
+        Message::created(static function (Message $message): void {
+            Participant::query()->where('conversation_id', $message->conversation_id)
+                ->when($message->sender_id !== null, fn ($q) => $q->where('user_id', '!=', $message->sender_id))
+                ->pluck('user_id')
+                ->each(static fn (mixed $userId) => is_numeric($userId) ? Signals::user((int) $userId, 'chat') : null);
+            if ($message->body_redacted !== null) {
+                Signals::staffQueues();
+            }
+        });
+        foreach ([Order::class, RiskFlag::class, Dispute::class, Ticket::class, Offer::class, WithdrawalRequest::class, Certification::class, CampaignParticipation::class, AffiliateVideoRecord::class, LedgerAdjustment::class, SettingChange::class, PointsAdjustment::class] as $queued) {
+            $queued::saved(static function (Model $model): void {
+                if ($model->wasRecentlyCreated || $model->wasChanged('status')) {
+                    Signals::staffQueues();
+                }
+            });
+        }
 
         Gate::policy(Ticket::class, TicketPolicy::class);
 

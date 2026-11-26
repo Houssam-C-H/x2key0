@@ -20,3 +20,6 @@ Broadcast::channel('conversation.{publicId}', function (User $user, string $publ
 });
 
 Broadcast::channel('user.{id}', fn (User $user, int $id): bool => $user->id === $id);
+
+// Staff queue counters in the admin (docs/ADMIN_PLAN.md item 11): content-free "a queue changed" signals.
+Broadcast::channel('staff', fn (User $user): bool => $user->isStaff());
