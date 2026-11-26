@@ -99,8 +99,8 @@ final class TicketResource extends Resource
                 SelectFilter::make('status')->options(collect(TicketStatus::cases())->mapWithKeys(fn (TicketStatus $s): array => [$s->value => str_replace('_', ' ', $s->value)])->all()),
                 SelectFilter::make('priority')->options(TicketPriority::options()),
                 SelectFilter::make('topic')->options(collect(TicketTopic::cases())->mapWithKeys(fn (TicketTopic $t): array => [$t->value => str_replace('_', ' ', $t->value)])->all()),
-                Filter::make('mine')->label('Assigned to me')->query(fn (Builder $q) => $q->where('assigned_to', Auth::id())),
-                Filter::make('overdue')->label('SLA overdue')->query(fn (Builder $q) => $q->where('status', TicketStatus::Pending->value)->where('first_response_due_at', '<', now())),
+                Filter::make('mine')->label('Assigned to me')->query(fn (Builder $query) => $query->where('assigned_to', Auth::id())),
+                Filter::make('overdue')->label('SLA overdue')->query(fn (Builder $query) => $query->where('status', TicketStatus::Pending->value)->where('first_response_due_at', '<', now())),
             ])
             ->recordActions([
                 Action::make('chat')->label('Order chat')->icon(Heroicon::OutlinedChatBubbleOvalLeft)->color('gray')

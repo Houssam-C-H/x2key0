@@ -91,8 +91,8 @@ final class OfferResource extends Resource
                 TernaryFilter::make('duplicate')
                     ->label('Flagged duplicate')
                     ->queries(
-                        true: fn (Builder $q) => $q->whereNotNull('duplicate_of_offer_id'),
-                        false: fn (Builder $q) => $q->whereNull('duplicate_of_offer_id'),
+                        true: fn (Builder $query) => $query->whereNotNull('duplicate_of_offer_id'),
+                        false: fn (Builder $query) => $query->whereNull('duplicate_of_offer_id'),
                     ),
             ])
             ->recordActions([
