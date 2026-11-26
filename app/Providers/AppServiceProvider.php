@@ -105,14 +105,20 @@ use App\Domains\Violations\Models\Violation;
 use App\Domains\Violations\Models\ViolationRule;
 use App\Domains\Violations\Policies\ViolationPolicy;
 use App\Shared\Audit\AuditLogger;
+use App\Shared\Ops\MailLog;
+use App\Shared\Ops\ScheduleRuns;
 use App\Shared\Realtime\Signals;
 use App\Shared\Support\Settings;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Console\Events\ScheduledTaskFailed;
+use Illuminate\Console\Events\ScheduledTaskFinished;
+use Illuminate\Console\Events\ScheduledTaskSkipped;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -214,6 +220,12 @@ final class AppServiceProvider extends ServiceProvider
         Event::listen(OrderCancelled::class, RecordCancellationViolation::class);
         Event::listen(HoldReleased::class, [SendOrderNotifications::class, 'holdReleased']);
         Event::listen(Failed::class, RecordFailedLogin::class);
+
+        // Ops pages (docs/ADMIN_PLAN.md items 12–13): sent-mail log and last run of each scheduled job.
+        Event::listen(MessageSent::class, [MailLog::class, 'record']);
+        Event::listen(ScheduledTaskFinished::class, [ScheduleRuns::class, 'finished']);
+        Event::listen(ScheduledTaskFailed::class, [ScheduleRuns::class, 'failed']);
+        Event::listen(ScheduledTaskSkipped::class, [ScheduleRuns::class, 'skipped']);
 
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Certification::class, CertificationPolicy::class);

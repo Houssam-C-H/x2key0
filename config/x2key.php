@@ -61,6 +61,7 @@ return [
         'read_notifications' => 180,
         'risk_flags_resolved' => 730,
         'jobs_failed' => 30,
+        'mail_log' => 90,
     ],
 
     'brand' => [

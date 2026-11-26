@@ -28,6 +28,7 @@ final class PruneRetention
                 ->where('created_at', '<', now()->subDays($days('read_notifications')))->delete(),
             'risk_flags_resolved' => DB::table('risk_flags')->where('status', 'resolved')->where('resolved_at', '<', now()->subDays($days('risk_flags_resolved')))->delete(),
             'jobs_failed' => DB::table('failed_jobs')->where('failed_at', '<', now()->subDays($days('jobs_failed')))->delete(),
+            'mail_log' => DB::table('mail_log')->where('sent_at', '<', now()->subDays($days('mail_log')))->delete(),
         ];
     }
 }

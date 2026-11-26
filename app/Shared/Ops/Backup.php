@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use PharData;
 use RuntimeException;
+use Throwable;
 
 /**
  * Nightly backup (docs/RUNBOOK.md §4), on top of the provider's point-in-time recovery: a database dump
@@ -69,6 +70,43 @@ final class Backup
         } finally {
             File::deleteDirectory($work);
         }
+    }
+
+    /**
+     * Backup sets on the backup disk, newest first, for the Operations page (docs/ADMIN_PLAN.md item 13).
+     *
+     * @return list<array{stamp: string, files: int, bytes: int}>
+     */
+    public static function list(int $limit = 20): array
+    {
+        try {
+            $disk = Storage::disk(config()->string('x2key.ops.backup_disk'));
+            $dirs = $disk->directories('backups');
+        } catch (Throwable) {
+            return [];
+        }
+        rsort($dirs);
+
+        $out = [];
+        foreach (array_slice($dirs, 0, $limit) as $dir) {
+            $manifest = json_decode((string) $disk->get($dir.'/manifest.json'), true);
+            $files = is_array($manifest) && is_array($manifest['files'] ?? null) ? $manifest['files'] : [];
+            $out[] = [
+                'stamp' => basename($dir),
+                'files' => count($files),
+                'bytes' => array_sum(array_map(static fn (mixed $f): int => is_array($f) && is_int($f['bytes'] ?? null) ? $f['bytes'] : 0, $files)),
+            ];
+        }
+
+        return $out;
+    }
+
+    /** The last good backup as remembered by run(), or null. */
+    public static function last(): ?string
+    {
+        $last = Cache::get(self::LAST_KEY);
+
+        return is_array($last) && is_string($last['stamp'] ?? null) ? $last['stamp'] : null;
     }
 
     /** Seconds since the last good backup, or null when none is known. */
