@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Admin\Support;
 
 use App\Domains\Admin\Actions\StaffNotes;
+use App\Domains\Catalog\Models\Product;
 use App\Domains\Offers\Models\Offer;
 use App\Domains\Orders\Enums\OrderStatus;
 use App\Domains\Orders\Models\Order;
@@ -111,17 +112,19 @@ final class SellerOverview
     {
         $rows = DB::table('offers')
             ->join('price_alerts', 'price_alerts.product_id', '=', 'offers.product_id')
-            ->join('products', 'products.id', '=', 'offers.product_id')
             ->where('offers.seller_profile_id', $profile->id)
             ->whereIn('offers.id', Offer::query()->live()->where('seller_profile_id', $profile->id)->select('offers.id'))
-            ->groupBy('offers.product_id', 'products.name')
-            ->selectRaw('products.name as name, COUNT(DISTINCT price_alerts.id) as alerts, MIN(price_alerts.target_amount) as lowest, MIN(offers.unit_price_amount) as price, COUNT(DISTINCT CASE WHEN price_alerts.target_amount < offers.unit_price_amount THEN price_alerts.id END) as below')
+            ->groupBy('offers.product_id')
+            ->selectRaw('offers.product_id as product_id, COUNT(DISTINCT price_alerts.id) as alerts, MIN(price_alerts.target_amount) as lowest, MIN(offers.unit_price_amount) as price, COUNT(DISTINCT CASE WHEN price_alerts.target_amount < offers.unit_price_amount THEN price_alerts.id END) as below')
             ->orderByDesc('alerts')
             ->limit(15)
             ->get();
 
+        // Names are JSON: fetched apart, because PostgreSQL cannot GROUP BY a json column.
+        $names = Product::query()->whereIn('id', $rows->pluck('product_id')->filter()->all())->get()->mapWithKeys(fn (Product $p): array => [$p->id => $p->translate('name', 'en')]);
+
         return array_values($rows->map(fn (object $r): array => [
-            'product' => Translations::pick(is_string($r->name ?? null) ? json_decode($r->name, true) ?? $r->name : $r->name ?? '', 'en'),
+            'product' => is_numeric($r->product_id ?? null) && is_string($names[(int) $r->product_id] ?? null) ? $names[(int) $r->product_id] : '—',
             'alerts' => is_numeric($r->alerts ?? null) ? (int) $r->alerts : 0,
             'lowestTarget' => is_numeric($r->lowest ?? null) ? Format::money((int) $r->lowest) : '—',
             'storePrice' => is_numeric($r->price ?? null) ? Format::money((int) $r->price) : '—',

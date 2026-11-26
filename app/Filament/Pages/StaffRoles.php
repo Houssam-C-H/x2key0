@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Domains\Admin\Support\StaffAccessMatrix;
 use App\Filament\Support\Staff;
+use App\Filament\Support\StaffAccessMatrix;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;

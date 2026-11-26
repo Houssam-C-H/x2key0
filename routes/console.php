@@ -34,3 +34,4 @@ Schedule::command('ops:check')->everyFiveMinutes()->onOneServer();
 Schedule::command('fx:refresh')->dailyAt('06:10')->onOneServer()->withoutOverlapping();
 Schedule::command('alerts:prices')->everyTenMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('ops:backup')->dailyAt('03:15')->onOneServer()->withoutOverlapping()->when(static fn (): bool => config()->boolean('x2key.ops.backups_required'));
+Schedule::command('reports:weekly-summary')->weeklyOn(1, '07:00')->onOneServer()->withoutOverlapping();

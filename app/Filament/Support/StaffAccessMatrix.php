@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Admin\Support;
+namespace App\Filament\Support;
 
 use App\Domains\Identity\Enums\StaffRole;
 use App\Domains\Identity\Models\User;

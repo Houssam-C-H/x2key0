@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Domains\Admin\Actions\ChangePolicySetting;
 use App\Domains\Admin\Support\MyAssignments;
-use App\Domains\Admin\Support\StaffAccessMatrix;
 use App\Domains\Identity\Enums\StaffRole;
 use App\Domains\Identity\Models\User;
 use App\Domains\Sellers\Models\SellerProfile;
 use App\Filament\Pages\MyWork;
 use App\Filament\Pages\StaffRoles;
+use App\Filament\Support\StaffAccessMatrix;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
 
