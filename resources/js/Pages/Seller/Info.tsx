@@ -24,7 +24,7 @@ interface Props {
 /** Seller Information (spec 1.8): shop name, avatar, banner, description + operating information. */
 export default function Info({ store, services }: Props) {
     const t = useT();
-    const { locales } = useShared();
+    const { contentLocales: locales } = useShared();
     const form = useForm<{ store_name: string; bio: Record<string, string>; logo: File | null; banner: File | null }>({
         store_name: store.name,
         bio: Object.fromEntries(locales.map((l) => [l.code, store.bio[l.code] ?? ''])),

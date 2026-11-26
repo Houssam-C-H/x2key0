@@ -43,6 +43,8 @@ final class HandleInertiaRequests extends Middleware
             'locale' => $locale,
             'dir' => ResolveLocale::direction($locale),
             'locales' => ResolveLocale::localeOptions(),
+            // Languages seller/staff content is typed in (en, fr, ar); the rest are interface-only.
+            'contentLocales' => ResolveLocale::localeOptions(contentOnly: true),
             'currency' => $request->attributes->get('display_currency'),
             // Web push public key (ADR-037); null when push is not configured.
             'pushKey' => fn (): ?string => WebPushSender::enabled() ? config()->string('x2key.push.public_key') : null,

@@ -37,7 +37,7 @@ const STATUS_STYLE: Record<SellerStatus, string> = {
 /** Store Management › My Store: status, vacation, notice, auto-reply, languages. */
 export default function Store({ store, languageOptions, languageLevels, featuredMax, featured, featuredOptions }: Props) {
     const t = useT();
-    const { locales, errors } = useShared();
+    const { contentLocales: locales, errors } = useShared();
     const suspended = store.status === 'suspended';
     const form = useForm({
         vacation: store.status === 'vacation',

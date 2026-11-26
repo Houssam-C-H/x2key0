@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Seller\Concerns;
 use App\Domains\Offers\Enums\DeliveryMethod;
 use App\Domains\Offers\Enums\PublishMode;
 use App\Domains\Offers\Support\OfferRules;
+use App\Http\Middleware\ResolveLocale;
 use App\Shared\Money\Amount;
 use App\Shared\Validation\NoContactInfo;
 use Brick\Money\Money;
@@ -72,7 +73,7 @@ trait ReadsOfferForm
         $description = [];
         $rawDescription = $request->input('description');
         foreach (is_array($rawDescription) ? $rawDescription : [] as $locale => $text) {
-            if (is_string($locale) && in_array($locale, array_keys(config()->array('x2key.locales')), true)) {
+            if (is_string($locale) && in_array($locale, ResolveLocale::contentLocales(), true)) {
                 $description[$locale] = is_string($text) ? $text : null;
             }
         }

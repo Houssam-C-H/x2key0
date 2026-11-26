@@ -74,7 +74,7 @@ interface Props {
 /** Create New Offers / Edit offer (spec 1.8): one long form in the order of the reference screen. */
 export default function OfferForm({ offer, services, applicable, category, storageGroups, options, commissionBps, autoApprove, readOnly }: Props) {
     const t = useT();
-    const { locale, locales, categoryTypes } = useShared();
+    const { locale, contentLocales: locales, categoryTypes } = useShared();
     const editing = offer !== null;
     const [typeCode, setTypeCode] = useState(category?.typeCode ?? '');
     const gamesInType = services.filter((s) => s.typeCode === typeCode).sort((a, b) => a.game.localeCompare(b.game));

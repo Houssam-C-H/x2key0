@@ -64,6 +64,24 @@ final class ResolveLocale
         return array_keys($locales);
     }
 
+    /**
+     * Languages sellers and staff write content in (descriptions, notices, CMS); the others are interface-only.
+     *
+     * @return list<string>
+     */
+    public static function contentLocales(): array
+    {
+        $codes = [];
+
+        foreach (config()->array('x2key.locales') as $code => $locale) {
+            if (is_string($code) && is_array($locale) && ($locale['content'] ?? true) === true) {
+                $codes[] = $code;
+            }
+        }
+
+        return $codes;
+    }
+
     public static function preferredLocale(Request $request): string
     {
         $supported = self::supportedLocales();
@@ -105,11 +123,16 @@ final class ResolveLocale
     /**
      * @return list<array{code: string, name: string, dir: string}>
      */
-    public static function localeOptions(): array
+    public static function localeOptions(bool $contentOnly = false): array
     {
         $options = [];
+        $content = self::contentLocales();
 
         foreach (config()->array('x2key.locales') as $code => $locale) {
+            if ($contentOnly && ! in_array($code, $content, true)) {
+                continue;
+            }
+
             if (is_string($code) && is_array($locale) && is_string($locale['name'] ?? null) && is_string($locale['dir'] ?? null)) {
                 $options[] = ['code' => $code, 'name' => $locale['name'], 'dir' => $locale['dir']];
             }
