@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -59,9 +60,10 @@ final class User extends Authenticatable implements FilamentUser, MustVerifyEmai
 {
     use Auditable;
 
+    use HasApiTokens;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory;
-
     use HasRoles;
     use HasUlids;
     use Notifiable;

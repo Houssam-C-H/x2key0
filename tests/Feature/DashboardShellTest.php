@@ -62,7 +62,7 @@ it('renders every sidebar leaf with that leaf active (placeholder until its mile
         'disputes.index', 'disputes.stats', 'seller.violations', 'tickets.all', 'tickets.pending', 'tickets.awaiting', 'tickets.closed', 'seller.withdrawals.records', 'seller.withdrawals.methods', 'invoices.service', 'invoices.vouchers', 'invoices.info',
         'coupons.shopping', 'coupons.platform', 'seller.store.coupons', 'seller.store.coupons_private', 'seller.marketing.emails', 'seller.marketing.records', 'seller.marketing.campaigns',
         'affiliate.manage', 'affiliate.referrals', 'affiliate.videos', 'affiliate.bills', 'affiliate.assets',
-        'buy.comments', 'seller.store.comments', 'settings.delete', 'seller.analytics',
+        'buy.comments', 'seller.store.comments', 'settings.delete', 'seller.analytics', 'seller.api',
     ];
 
     foreach (DashboardMenu::leaves() as $leaf) {

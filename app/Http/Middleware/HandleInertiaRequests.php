@@ -99,6 +99,8 @@ final class HandleInertiaRequests extends Middleware
                 'error' => fn (): mixed => $request->session()->get('error'),
                 // Row errors of the last offer CSV import (Seller Center › Active offers).
                 'csvErrors' => fn (): mixed => $request->session()->get('csvErrors'),
+                // A just-created API token, shown once (Seller Center › API tokens).
+                'newToken' => fn (): mixed => $request->session()->get('newToken'),
             ],
         ];
     }

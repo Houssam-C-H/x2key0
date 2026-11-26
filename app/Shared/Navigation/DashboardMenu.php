@@ -60,6 +60,7 @@ final class DashboardMenu
                 self::leaf('seller.info', 'menu.seller.info', '/seller/info', 'M4'),
                 self::leaf('seller.violations', 'menu.seller.violations', '/seller/violations', 'M11'),
                 self::leaf('seller.contacts', 'menu.seller.contacts', '/seller/contacts', 'M4'),
+                self::leaf('seller.api', 'menu.seller.api', '/seller/api', 'M20'),
             ]),
             self::group('disputes', 'menu.disputes', 'scale', 'all', [
                 self::leaf('disputes.index', 'menu.disputes.index', '/disputes', 'M11'),

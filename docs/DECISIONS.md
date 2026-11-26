@@ -61,6 +61,9 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-038 — Seller API v1 (2026-11-26)
+**Decision:** Laravel Sanctum personal access tokens, created only in Seller Center › API tokens (password re-confirmed, max 10 per seller, audited, shown once). Abilities per area: `offers:read`, `offers:write`, `orders:read`, `storage:write` (the last needs two-step verification on the account). Routes `/api/v1/seller/*` (`routes/api.php`) behind `auth:sanctum`, `seller.api` (active store, JSON 403) and a 120/min per-token limiter. Writes reuse the website actions: `SaveOffer` via `Offers\Support\OfferInputBuilder` (shared with the CSV import), `BulkUpdateOffers` for deactivate/relist, `ImportStorageItems` (source `api`) for Storage. Orders are read-only and never include buyer contact data or delivered secrets; delivering stays on the website. Reference: docs/API.md.
+
 ## ADR-037 — Installable app and web push (2026-11-26)
 **Decision:** a plain service worker (`public/sw.js`) makes the site installable (existing manifest), shows `offline.html` when a page load fails, and displays web push; it never caches pages or API answers, so prices, stock and orders are always live. Web push uses VAPID (`minishlink/web-push`; keys from `php artisan push:keys` into `.env`, push is off without them). Subscriptions are per device (`push_subscriptions`, endpoint hashed for the unique index); `Notifier` queues `SendWebPush` for the same important types it e-mails, after commit; expired subscriptions (404/410) are deleted on send. Settings › Account › App and notifications: install button (or iPhone instructions) and turn push on/off for this device.
 

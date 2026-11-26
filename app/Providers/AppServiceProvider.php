@@ -187,6 +187,8 @@ final class AppServiceProvider extends ServiceProvider
     {
         // Personal data export (spec Part 23): its own counter, 3 per hour per user (numeric `throttle:x,y` limits
         // share one counter per user across routes).
+        // Seller API (ADR-038): 120 requests a minute per token.
+        RateLimiter::for('seller-api', static fn (Request $request): Limit => Limit::perMinute(120)->by('seller-api:'.(is_object($t = $request->user()?->currentAccessToken()) && property_exists($t, 'id') ? $t->id : $request->ip())));
         RateLimiter::for('data-export', static fn (Request $request): Limit => Limit::perHour(3)->by('data-export:'.(is_scalar($id = $request->user()?->getAuthIdentifier()) ? 'u'.$id : 'ip'.$request->ip())));
 
         // Fail loudly in dev/test on lazy loading, silently discarded attributes and missing attributes.

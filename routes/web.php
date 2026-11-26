@@ -33,6 +33,7 @@ use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\StoreController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\Seller\AnalyticsController as SellerAnalyticsController;
+use App\Http\Controllers\Seller\ApiTokenController;
 use App\Http\Controllers\Seller\CampaignController;
 use App\Http\Controllers\Seller\CommentController as SellerCommentController;
 use App\Http\Controllers\Seller\CouponController as SellerCouponController;
@@ -169,6 +170,7 @@ Route::middleware('auth')->group(function (): void {
         '/seller/services' => fn () => Route::get('/seller/services', [ServiceApplicationController::class, 'index'])->name('dash.seller.store.services'),
         '/seller/info' => fn () => Route::get('/seller/info', [SellerInfoController::class, 'show'])->name('dash.seller.info'),
         '/seller/analytics' => fn () => Route::get('/seller/analytics', SellerAnalyticsController::class)->name('dash.seller.analytics'),
+        '/seller/api' => fn () => Route::get('/seller/api', [ApiTokenController::class, 'index'])->name('dash.seller.api'),
         '/seller/contacts' => fn () => Route::get('/seller/contacts', MerchantContactsController::class)->name('dash.seller.contacts'),
         '/seller/offers' => fn () => Route::get('/seller/offers', [OfferController::class, 'index'])->name('dash.seller.offers'),
         '/seller/offers/create' => fn () => Route::get('/seller/offers/create', [OfferController::class, 'create'])->name('dash.seller.offers.create'),
@@ -256,6 +258,8 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/seller/offers/{offer}/edit', [OfferController::class, 'edit'])->whereNumber('offer')->name('seller.offers.edit');
         Route::put('/seller/offers/{offer}', [OfferController::class, 'update'])->whereNumber('offer')->middleware('throttle:60,1')->name('seller.offers.update');
         Route::post('/seller/offers/bulk', [OfferController::class, 'bulk'])->middleware('throttle:30,1')->name('seller.offers.bulk');
+        Route::post('/seller/api/tokens', [ApiTokenController::class, 'store'])->middleware(['recent.password', 'throttle:10,1'])->name('seller.api.tokens.store');
+        Route::delete('/seller/api/tokens/{token}', [ApiTokenController::class, 'destroy'])->whereNumber('token')->name('seller.api.tokens.destroy');
         Route::get('/seller/offers/export', [OfferCsvController::class, 'export'])->middleware('throttle:10,1')->name('seller.offers.export');
         Route::post('/seller/offers/import', [OfferCsvController::class, 'import'])->middleware('throttle:10,1')->name('seller.offers.import');
         Route::patch('/seller/offers/{offer}/inline', [OfferController::class, 'inline'])->whereNumber('offer')->middleware('throttle:120,1')->name('seller.offers.inline');
