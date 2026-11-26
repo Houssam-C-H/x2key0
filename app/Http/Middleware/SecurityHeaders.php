@@ -92,14 +92,15 @@ final class SecurityHeaders
         return $request->is('admin', 'admin/*', 'livewire/*', 'livewire-*/*', 'filament/*');
     }
 
-    /** Reverb websocket origins (live chat, ADR-021). */
+    /** Reverb websocket origins the browser connects to (live chat, ADR-021): the public address when set. */
     private static function reverbOrigins(): string
     {
-        $host = config('reverb.apps.apps.0.options.host');
+        $public = config('x2key.realtime.public_host');
+        $host = is_string($public) && $public !== '' ? $public : config('reverb.apps.apps.0.options.host');
         if (! is_string($host) || $host === '') {
             return '';
         }
-        $port = config('reverb.apps.apps.0.options.port');
+        $port = is_string($public) && $public !== '' ? config('x2key.realtime.public_port') : config('reverb.apps.apps.0.options.port');
         $suffix = is_scalar($port) && (string) $port !== '' ? ':'.$port : '';
 
         return "ws://{$host}{$suffix} wss://{$host}{$suffix}";

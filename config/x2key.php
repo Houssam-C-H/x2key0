@@ -39,6 +39,13 @@ return [
     ],
 
     // Web push (installable app, ADR-037): VAPID keys from `php artisan push:keys`. Empty = push switched off.
+    // Websocket address the browser uses for Reverb (live chat). Behind Docker or a proxy it differs from the
+    // address the app publishes to (REVERB_HOST/PORT); the CSP must allow this one (ADR-021).
+    'realtime' => [
+        'public_host' => env('VITE_REVERB_HOST'),
+        'public_port' => env('VITE_REVERB_PORT'),
+    ],
+
     'push' => [
         'public_key' => env('VAPID_PUBLIC_KEY'),
         'private_key' => env('VAPID_PRIVATE_KEY'),
