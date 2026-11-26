@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domains\Messaging\Models;
 
+use App\Domains\Identity\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -20,6 +22,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $body_redacted
  * @property array<string, mixed>|null $flags
  * @property Carbon $created_at
+ * @property Carbon|null $reviewed_at
+ * @property int|null $reviewed_by
+ * @property-read Conversation $conversation
+ * @property-read User|null $sender
  */
 final class Message extends Model
 {
@@ -32,6 +38,22 @@ final class Message extends Model
      */
     protected function casts(): array
     {
-        return ['flags' => 'array'];
+        return ['flags' => 'array', 'reviewed_at' => 'datetime'];
+    }
+
+    /**
+     * @return BelongsTo<Conversation, $this>
+     */
+    public function conversation(): BelongsTo
+    {
+        return $this->belongsTo(Conversation::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function sender(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sender_id');
     }
 }

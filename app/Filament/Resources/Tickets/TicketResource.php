@@ -15,6 +15,7 @@ use App\Domains\Tickets\Enums\TicketTopic;
 use App\Domains\Tickets\Exceptions\TicketException;
 use App\Domains\Tickets\Models\CannedReply;
 use App\Domains\Tickets\Models\Ticket;
+use App\Filament\Pages\ChatTranscript;
 use App\Filament\Resources\Tickets\Pages\ListTickets;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -102,6 +103,9 @@ final class TicketResource extends Resource
                 Filter::make('overdue')->label('SLA overdue')->query(fn (Builder $q) => $q->where('status', TicketStatus::Pending->value)->where('first_response_due_at', '<', now())),
             ])
             ->recordActions([
+                Action::make('chat')->label('Order chat')->icon(Heroicon::OutlinedChatBubbleOvalLeft)->color('gray')
+                    ->visible(fn (Ticket $record): bool => ChatTranscript::urlForOrder($record->order_id, 'ticket', $record->public_id) !== null)
+                    ->url(fn (Ticket $record): ?string => ChatTranscript::urlForOrder($record->order_id, 'ticket', $record->public_id)),
                 Action::make('thread')->label('Open')->icon(Heroicon::OutlinedChatBubbleLeftRight)
                     ->modalHeading(fn (Ticket $record): string => $record->subject)
                     ->modalContent(fn (Ticket $record) => view('filament.tickets.thread', ['ticket' => $record->load(['messages.author', 'messages.attachments', 'history', 'order', 'user'])]))

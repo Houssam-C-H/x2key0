@@ -13,6 +13,7 @@ use App\Domains\Disputes\Enums\DisputeStatus;
 use App\Domains\Disputes\Exceptions\DisputeException;
 use App\Domains\Disputes\Models\Dispute;
 use App\Domains\Identity\Models\User;
+use App\Filament\Pages\ChatTranscript;
 use App\Filament\Resources\Disputes\Pages\ListDisputes;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -91,6 +92,9 @@ final class DisputeResource extends Resource
                 SelectFilter::make('status')->options(collect(DisputeStatus::cases())->mapWithKeys(fn (DisputeStatus $s): array => [$s->value => str_replace('_', ' ', $s->value)])->all()),
             ])
             ->recordActions([
+                Action::make('chat')->label('Chat')->icon(Heroicon::OutlinedChatBubbleOvalLeft)->color('gray')
+                    ->visible(fn (Dispute $record): bool => ChatTranscript::urlForOrder($record->order_id, 'dispute', $record->public_id) !== null)
+                    ->url(fn (Dispute $record): ?string => ChatTranscript::urlForOrder($record->order_id, 'dispute', $record->public_id)),
                 Action::make('thread')
                     ->label('Case')
                     ->icon(Heroicon::OutlinedChatBubbleLeftRight)
