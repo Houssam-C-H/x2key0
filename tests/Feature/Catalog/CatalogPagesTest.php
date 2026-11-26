@@ -77,7 +77,7 @@ it('sends canonical and hreflang alternates for every locale', function (): void
     $this->get('/fr/star-quest/video-games')
         ->assertInertia(fn (Assert $page) => $page
             ->where('seo.canonical', url('/fr/star-quest/video-games'))
-            ->where('seo.alternates', fn ($alts) => collect($alts)->pluck('locale')->all() === ['en', 'fr', 'ar', 'x-default'])
+            ->where('seo.alternates', fn ($alts) => collect($alts)->pluck('locale')->all() === ['en', 'fr', 'ar', 'es', 'de', 'pt', 'tr', 'x-default'])
             ->where('seo.jsonLd.0.@type', 'BreadcrumbList'));
 });
 
@@ -201,7 +201,7 @@ it('publishes sitemaps per locale without thin pages', function (): void {
         ->not->toContain('draft-standard')
         ->not->toContain('empty-game');
 
-    $this->get('/sitemap-de.xml')->assertNotFound();
+    $this->get('/sitemap-it.xml')->assertNotFound();
 });
 
 it('recounts idempotently', function (): void {

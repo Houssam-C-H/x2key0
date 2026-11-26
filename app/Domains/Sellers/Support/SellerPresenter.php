@@ -103,13 +103,13 @@ final class SellerPresenter
 
     /**
      * @param  array<array-key, mixed>|null  $values
-     * @return array<string, string|null> one entry per supported locale
+     * @return array<string, string|null> one entry per content locale
      */
     public static function perLocale(?array $values): array
     {
         $out = [];
 
-        foreach (ResolveLocale::supportedLocales() as $code) {
+        foreach (ResolveLocale::contentLocales() as $code) {
             $value = $values[$code] ?? null;
             $out[$code] = is_string($value) ? $value : null;
         }

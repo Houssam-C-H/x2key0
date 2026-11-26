@@ -54,7 +54,7 @@ it('validates account fields', function (array $overrides, string $field): void 
         ->put('/settings/account', accountPayload($overrides))
         ->assertSessionHasErrors($field);
 })->with([
-    [['locale' => 'de'], 'locale'],
+    [['locale' => 'it'], 'locale'],
     [['display_currency' => 'BTC'], 'display_currency'],
     [['timezone' => 'Mars/Base'], 'timezone'],
     [['country' => 'MAR'], 'country'],

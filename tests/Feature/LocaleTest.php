@@ -10,7 +10,8 @@ it('redirects the bare domain to the browser language', function (string $header
 })->with([
     ['fr-FR,fr;q=0.9,en;q=0.8', 'fr'],
     ['ar-MA,ar;q=0.9', 'ar'],
-    ['de-DE,de;q=0.9', 'en'],
+    ['de-DE,de;q=0.9', 'de'],
+    ['it-IT,it;q=0.9', 'en'],
 ]);
 
 it('prefers the locale cookie over the browser language', function (): void {
@@ -42,7 +43,7 @@ it('translates category labels server-side', function (): void {
 });
 
 it('returns 404 for unsupported locales', function (): void {
-    $this->get('/de')->assertNotFound();
+    $this->get('/it')->assertNotFound();
 });
 
 it('saves locale and currency preferences and swaps the locale in the path', function (): void {

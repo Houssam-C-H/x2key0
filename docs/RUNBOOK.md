@@ -124,3 +124,18 @@ Buttons appear on the login and sign-up pages only for providers whose keys are 
 
 After changing `.env` in production run `php artisan config:cache`. Test: log out, "Continue with Google", then Settings › Security › Connected accounts shows the link.
 
+
+## 9. Interface languages (Spanish, German, Portuguese, Turkish)
+
+English, French and Arabic are **content languages**: fully translated, and sellers and staff type descriptions,
+notices and CMS pages in them. Spanish, German, Portuguese and Turkish are **interface languages**: the screens every
+visitor sees (header, menus, home page, footer, search, cookie banner, language picker) are translated, and every other
+string shows in English until a translator fills it in. Seller and CMS content falls back to English.
+
+- Progress: `php artisan lang:missing` (translated / total per language).
+- Send work to a translator: `php artisan lang:missing es --export=es.csv` → a CSV with `key, english, translation`
+  (opens in Excel / Google Sheets). Keep words that start with a colon (`:count`, `:amount`) exactly as they are.
+- Bring it back: `php artisan lang:missing es --import=es.csv`. Lines whose placeholders changed are skipped and
+  listed. Commit `lang/es.json`, then deploy.
+- A new language: add it to `x2key.locales` in `config/x2key.php` (`content => false`) and create `lang/<code>.json`
+  (a test checks that every configured language has a file).

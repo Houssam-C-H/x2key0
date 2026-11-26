@@ -29,6 +29,8 @@ export interface SharedProps {
     locale: string;
     dir: Dir;
     locales: LocaleOption[];
+    /** Languages sellers and staff type content in (subset of locales). */
+    contentLocales: LocaleOption[];
     currency: string;
     /** Display rate for approximate prices (ADR-036); null = USD. */
     fx?: { currency: string; rate: number } | null;

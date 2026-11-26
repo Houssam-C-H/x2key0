@@ -29,7 +29,7 @@ it('renders a public store with SEO in every locale', function (string $locale):
             ->where('isOwner', false)
             ->where('seo.canonical', url("/{$locale}/store/pixel-vault"))
             ->where('seo.noindex', false)
-            ->has('seo.alternates', 4));
+            ->has('seo.alternates', count(config('x2key.locales')) + 1));
 })->with(['en', 'fr', 'ar']);
 
 it('hides inactive, suspended and banned stores', function (SellerStatus $status): void {

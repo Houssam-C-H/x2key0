@@ -69,9 +69,15 @@ return [
     'settlement_currency' => 'USD',
 
     'locales' => [
-        'en' => ['name' => 'English', 'dir' => 'ltr'],
-        'fr' => ['name' => 'Français', 'dir' => 'ltr'],
-        'ar' => ['name' => 'العربية', 'dir' => 'rtl'],
+        // content = sellers and staff type texts in this language (descriptions, notices, CMS). Interface-only
+        // languages show the core screens translated and fall back to English per string (docs/RUNBOOK.md §9).
+        'en' => ['name' => 'English', 'dir' => 'ltr', 'content' => true],
+        'fr' => ['name' => 'Français', 'dir' => 'ltr', 'content' => true],
+        'ar' => ['name' => 'العربية', 'dir' => 'rtl', 'content' => true],
+        'es' => ['name' => 'Español', 'dir' => 'ltr', 'content' => false],
+        'de' => ['name' => 'Deutsch', 'dir' => 'ltr', 'content' => false],
+        'pt' => ['name' => 'Português', 'dir' => 'ltr', 'content' => false],
+        'tr' => ['name' => 'Türkçe', 'dir' => 'ltr', 'content' => false],
     ],
 
     'default_locale' => 'en',

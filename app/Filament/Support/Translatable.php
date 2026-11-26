@@ -18,7 +18,7 @@ final class Translatable
     {
         $inputs = [];
 
-        foreach (ResolveLocale::supportedLocales() as $locale) {
+        foreach (ResolveLocale::contentLocales() as $locale) {
             $component = $multiline
                 ? Textarea::make("{$field}.{$locale}")->rows(4)->maxLength(20000)
                 : TextInput::make("{$field}.{$locale}")->maxLength($maxLength);
