@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use App\Domains\Payments\Providers\FakePaymentProvider;
+use App\Domains\Payments\Providers\NowPaymentsProvider;
 use App\Domains\Payments\Providers\StripePaymentProvider;
 
 /*
@@ -110,6 +111,13 @@ return [
         'providers' => [
             'fake' => FakePaymentProvider::class,
             'stripe' => StripePaymentProvider::class,
+            'nowpayments' => NowPaymentsProvider::class,
+        ],
+        // NOWPayments crypto invoices (ADR-041). Keys only in .env. IPN URL to register: {APP_URL}/webhooks/nowpayments.
+        'nowpayments' => [
+            'api_key' => env('NOWPAYMENTS_API_KEY', ''),
+            'ipn_secret' => env('NOWPAYMENTS_IPN_SECRET', ''),
+            'sandbox' => (bool) env('NOWPAYMENTS_SANDBOX', false),
         ],
         // Stripe Checkout (M6b). Keys only in .env, never in the repository.
         'stripe' => [

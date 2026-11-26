@@ -355,6 +355,7 @@
 - [ ] ClamAV container (deferred to M5, first file uploads)
 
 ## Log
+- 2026-11-26 — NOWPayments crypto checkout added (ADR-041): hosted invoice, signed IPN, manual refunds flagged for finance. Stripe Checkout switched on locally with test keys.
 - 2026-11-26 — Admin completion (docs/ADMIN_PLAN.md, all 18 items) built on branch `admin-panel`, ADR-040. Bug found and fixed: three admin filters ignored their query because Filament injects closure arguments by name.
 - 2026-11-22 — Spec copied to docs/X2KEY_SPEC.md, CLAUDE.md created, git repo initialised.
 - 2026-11-22 — Repo moved to C:\dev\x2key. Docker Desktop installed; WSL2 install needs admin rights (founder action).

@@ -29,6 +29,21 @@ final class PaymentMethodSeeder extends Seeder
             'sort' => 0,
         ]);
 
+        // NOWPayments crypto (ADR-041): offered only when its API key and IPN secret are configured. The buyer picks
+        // the coin on the NOWPayments page; small amounts are refused there, hence the higher minimum.
+        PaymentMethod::query()->updateOrCreate(['code' => 'nowpayments_crypto'], [
+            'name' => ['en' => 'Crypto (BTC, ETH, USDT…) · NOWPayments', 'fr' => 'Crypto (BTC, ETH, USDT…) · NOWPayments', 'ar' => 'عملات رقمية (BTC، ETH، USDT…) · NOWPayments'],
+            'provider' => 'nowpayments',
+            'countries' => null,
+            'currencies' => ['USD'],
+            'min_amount' => 500,
+            'max_amount' => 1_000_000,
+            'fee_bps' => 0,
+            'fee_fixed' => 0,
+            'is_enabled' => true,
+            'sort' => 1,
+        ]);
+
         if (app()->isProduction()) {
             return;
         }

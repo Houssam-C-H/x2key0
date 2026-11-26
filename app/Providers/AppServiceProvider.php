@@ -78,6 +78,7 @@ use App\Domains\Payments\Contracts\CreditsWallet;
 use App\Domains\Payments\Models\Chargeback;
 use App\Domains\Payments\Policies\ChargebackPolicy;
 use App\Domains\Payments\Providers\FakePaymentProvider;
+use App\Domains\Payments\Providers\NowPaymentsProvider;
 use App\Domains\Payments\Providers\StripePaymentProvider;
 use App\Domains\Payouts\Models\PayoutMethodType;
 use App\Domains\Payouts\Models\WithdrawalRequest;
@@ -159,6 +160,12 @@ final class AppServiceProvider extends ServiceProvider
             $webhook = config('x2key.payments.stripe.webhook_secret');
 
             return new StripePaymentProvider(is_string($secret) ? $secret : '', is_string($webhook) ? $webhook : '');
+        });
+        $this->app->bind(NowPaymentsProvider::class, static function (): NowPaymentsProvider {
+            $key = config('x2key.payments.nowpayments.api_key');
+            $ipn = config('x2key.payments.nowpayments.ipn_secret');
+
+            return new NowPaymentsProvider(is_string($key) ? $key : '', is_string($ipn) ? $ipn : '', config()->boolean('x2key.payments.nowpayments.sandbox'));
         });
         $this->app->bind(SmsSender::class, LogSmsSender::class);
 

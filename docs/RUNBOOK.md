@@ -157,3 +157,10 @@ where the **app** reaches Reverb (Docker: `reverb`, `8080`, `http`); `VITE_REVER
 allows the `VITE_REVERB_*` address. Run `npm run build` after changing any `VITE_*` value.
 Check: `npx playwright test tests/e2e/live.spec.ts --project=desktop` (two browsers, message arrives over the websocket).
 After deploying PHP changes restart the workers (`php artisan queue:restart`, `php artisan reverb:restart`).
+
+## 11. Crypto payments (NOWPayments, ADR-041)
+- In the NOWPayments dashboard: create the API key and the IPN secret, put them in `.env` as `NOWPAYMENTS_API_KEY` / `NOWPAYMENTS_IPN_SECRET`, then `php artisan config:clear` and `php artisan queue:restart`.
+- Register the IPN URL `{APP_URL}/webhooks/nowpayments`. It must be reachable from the internet: on a laptop, use a tunnel (e.g. `cloudflared tunnel --url http://localhost`) and set `APP_URL` to the tunnel address, or test with `NOWPAYMENTS_SANDBOX=true` and a sandbox account.
+- Without IPNs nothing completes: the order stays "pending payment" and expires after the payment window. Check Admin › Payments › Provider events.
+- Refunds: each crypto refund raises a `manual_crypto_refund` risk flag (Admin › Risk flags) with the amount and invoice. Send the crypto from the NOWPayments dashboard to the buyer, then resolve the flag.
+- A payment that ends `partially_paid` stays pending; settle it with the buyer in the NOWPayments dashboard (top-up or refund) — X2KEY never captures a partial payment.

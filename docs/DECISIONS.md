@@ -246,3 +246,12 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - **Filament filter closures** name their query argument `$query` (Filament injects by name; a test scans for the pattern).
 - **Exports** are fixed-column CSVs, formula-safe and audited (`admin.exported`); user exports carry no e-mail or phone.
 - **Scheduled e-mail** `reports:weekly-summary` claims its ISO week in `report_digests` before sending.
+
+## ADR-041 — NOWPayments crypto checkout (2026-11-26)
+**Context:** Buyers asked for crypto. NOWPayments offers hosted invoices and signed IPN notifications.
+**Decision:**
+- **Hosted invoice, like Stripe Checkout:** `NowPaymentsProvider::createPayment` creates `POST /v1/invoice` priced in USD (the buyer picks the coin on the NOWPayments page, fixed rate, fees paid by the merchant); the invoice id is the provider payment id. No wallet or key touches X2KEY.
+- **IPN = the only source of truth:** `/webhooks/nowpayments`, `x-nowpayments-sig` = HMAC-SHA512 of the key-sorted JSON body with the IPN secret. `confirmed`/`finished` → captured, `failed` → failed, `expired` → cancelled, everything else (including `partially_paid`) stays pending. The event id is `{payment_id}:{status}`, so repeats are stored once. There is no API-key lookup of an invoice's payment, so `fetchPayment` reports pending and the sync job leaves these payments alone.
+- **USD amount checked** against the payment (ApplyPaymentEvent, spec 9.3 #6); the JSON number is converted to cents with two-decimal string formatting.
+- **Refunds are manual:** NOWPayments has no refund API for payments, so a refund is recorded `processing` with a `manual_crypto_refund` risk flag; finance sends the crypto back and closes the flag. The ledger already moved the money at refund time.
+- Offered only when both `NOWPAYMENTS_API_KEY` and `NOWPAYMENTS_IPN_SECRET` are set; minimum USD 5 (coin minimums). `NOWPAYMENTS_SANDBOX=true` switches to the sandbox API. Keys live only in `.env`.

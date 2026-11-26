@@ -38,6 +38,8 @@
         <env name="STRIPE_KEY" value="" force="true"/>
         <env name="STRIPE_SECRET" value="" force="true"/>
         <env name="STRIPE_WEBHOOK_SECRET" value="" force="true"/>
+        <env name="NOWPAYMENTS_API_KEY" value="" force="true"/>
+        <env name="NOWPAYMENTS_IPN_SECRET" value="" force="true"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
     </php>
 </phpunit>
