@@ -139,3 +139,21 @@ string shows in English until a translator fills it in. Seller and CMS content f
   listed. Commit `lang/es.json`, then deploy.
 - A new language: add it to `x2key.locales` in `config/x2key.php` (`content => false`) and create `lang/<code>.json`
   (a test checks that every configured language has a file).
+
+## 10. Live chat, queue and scheduler
+
+Three background processes run next to the website. In Docker they are the `reverb`, `queue` and `scheduler`
+services in `compose.yaml` (`docker compose up -d` starts them); on a server, run each under Supervisor/systemd.
+
+| Process | Command | Without it |
+|---|---|---|
+| Websockets (live chat) | `php artisan reverb:start --host=0.0.0.0 --port=8080` | chat falls back to refreshing every 5 s |
+| Queue worker | `php artisan queue:work --queue=payments,default --tries=3` | no notification e-mails, no web push, payment webhooks are not applied |
+| Scheduler | `php artisan schedule:work` (or cron `* * * * * php artisan schedule:run`) | no auto-complete, auto-cancel, backups, price alerts, FX rates |
+
+Settings: `BROADCAST_CONNECTION=reverb`; `REVERB_APP_ID/KEY/SECRET` (random, any values); `REVERB_HOST/PORT/SCHEME` =
+where the **app** reaches Reverb (Docker: `reverb`, `8080`, `http`); `VITE_REVERB_HOST/PORT/SCHEME` = where the
+**browser** reaches it (production: your domain, `443`, `https`, proxied to Reverb). The page's security policy
+allows the `VITE_REVERB_*` address. Run `npm run build` after changing any `VITE_*` value.
+Check: `npx playwright test tests/e2e/live.spec.ts --project=desktop` (two browsers, message arrives over the websocket).
+After deploying PHP changes restart the workers (`php artisan queue:restart`, `php artisan reverb:restart`).

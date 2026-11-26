@@ -139,3 +139,16 @@ it('serves robots.txt with private areas disallowed and the sitemap', function (
 it('marks session cookies secure in production by default', function (): void {
     expect(require base_path('config/session.php'))->toHaveKey('secure');
 });
+
+it('lets the browser reach Reverb at its public address, not the internal one', function (): void {
+    config([
+        'reverb.apps.apps.0.options.host' => 'reverb',
+        'reverb.apps.apps.0.options.port' => 8080,
+        'x2key.realtime.public_host' => 'ws.example.test',
+        'x2key.realtime.public_port' => 443,
+    ]);
+
+    $csp = (string) $this->get('/en')->headers->get('Content-Security-Policy');
+
+    expect($csp)->toContain('wss://ws.example.test:443')->not->toContain('reverb:8080');
+});

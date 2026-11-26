@@ -28,6 +28,48 @@ services:
             - meilisearch
             - rustfs
             - mailpit
+    # Background processes the web container does not run (ADR-021 live chat, queued mail/push/payments, schedule).
+    reverb:
+        image: 'sail-8.5/app'
+        command: ['php', 'artisan', 'reverb:start', '--host=0.0.0.0', '--port=8080']
+        ports:
+            - '${REVERB_PUBLIC_PORT:-8080}:8080'
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - laravel.test
+        restart: unless-stopped
+    queue:
+        image: 'sail-8.5/app'
+        command: ['php', 'artisan', 'queue:work', '--queue=payments,default', '--tries=3', '--max-time=3600']
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - laravel.test
+        restart: unless-stopped
+    scheduler:
+        image: 'sail-8.5/app'
+        command: ['php', 'artisan', 'schedule:work']
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - laravel.test
+        restart: unless-stopped
     pgsql:
         image: 'postgres:18-alpine'
         ports:
