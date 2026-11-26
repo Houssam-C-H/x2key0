@@ -39,4 +39,27 @@ final class Points
 
         return is_numeric($balance) ? (int) $balance : 0;
     }
+
+    /**
+     * The user's latest points movements, newest first.
+     *
+     * @return list<array{at: string, type: string, points: int, description: string|null}>
+     */
+    public static function history(int $userId, int $limit = 20): array
+    {
+        return array_values(DB::table('points_postings')
+            ->join('points_accounts', 'points_accounts.id', '=', 'points_postings.account_id')
+            ->join('points_journals', 'points_journals.id', '=', 'points_postings.journal_id')
+            ->where('points_accounts.code', PointsAccountCode::User->value)
+            ->where('points_accounts.owner_user_id', $userId)
+            ->orderByDesc('points_postings.id')
+            ->limit($limit)
+            ->get(['points_journals.posted_at', 'points_journals.type', 'points_postings.amount', 'points_journals.description'])
+            ->map(fn (object $row): array => [
+                'at' => is_string($row->posted_at ?? null) ? substr($row->posted_at, 0, 16) : '',
+                'type' => is_string($row->type ?? null) ? str_replace('_', ' ', $row->type) : '',
+                'points' => is_numeric($row->amount ?? null) ? (int) $row->amount : 0,
+                'description' => is_string($row->description ?? null) ? $row->description : null,
+            ])->all());
+    }
 }

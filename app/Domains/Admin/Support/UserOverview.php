@@ -124,6 +124,7 @@ final class UserOverview
                     'status' => Format::enum($v->status),
                     'at' => Format::date($v->created_at),
                 ])->all(),
+            'points' => Points::history($user->id, 15),
             'notes' => $this->notes->for('user', $user->id)->map(fn ($n): array => [
                 'author' => $n->author->username,
                 'at' => Format::date($n->created_at),

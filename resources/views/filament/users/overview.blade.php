@@ -104,6 +104,10 @@
         </x-filament::section>
     </div>
 
+    <x-filament::section heading="X2K Score history" collapsible>
+        <x-admin.rows :rows="$o['points']" :columns="['at' => 'When', 'type' => 'Type', 'points' => 'Points', 'description' => 'Note']" empty="No points yet." />
+    </x-filament::section>
+
     <x-filament::section heading="Sign-in history" collapsible>
         <table class="w-full text-sm">
             <thead><tr class="text-gray-500"><th class="text-start">When</th><th class="text-start">Result</th><th class="text-start">IP</th><th class="text-start">Browser</th></tr></thead>

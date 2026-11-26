@@ -102,6 +102,7 @@ final class PolicyCatalog
         'points_redeem_to_credits_enabled' => ['marketing', 'bool', 'Points can be turned into credits'],
         'points_redeem_min' => ['marketing', 'count', 'Minimum points per redemption', 100000000],
         'points_redeem_per_day' => ['marketing', 'count', 'Redemptions per day', 100],
+        'points_adjustment_dual_approval' => ['marketing', 'count', 'Points adjustments need a second approver from', 100000000],
         'affiliate_commission_bps' => ['marketing', 'bps', 'Affiliate commission (share of the fee)', 10000],
         'affiliate_level2_bps' => ['marketing', 'bps', 'Affiliate second-level commission', 10000],
         'affiliate_attribution_days' => ['marketing', 'days', 'Referral cookie lasts', 365],

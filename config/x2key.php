@@ -163,6 +163,7 @@ return [
         'points_redeem_to_credits_enabled' => false, // D9: points → coupons only (see OPEN_QUESTIONS #1)
         'points_redeem_min' => 50000,
         'points_redeem_per_day' => 1,
+        'points_adjustment_dual_approval' => 10000, // manual points adjustments from this size need a second staff member
         'affiliate_commission_bps' => 2000,
         'affiliate_level2_bps' => 300,
         'affiliate_attribution_days' => 90,
