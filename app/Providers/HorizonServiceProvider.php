@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Domains\Identity\Enums\StaffRole;
 use App\Domains\Identity\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Horizon\Horizon;
@@ -28,7 +29,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
      */
     protected function gate(): void
     {
-        // Deny outside local until staff roles exist (M2: spatie/laravel-permission `admin`).
-        Gate::define('viewHorizon', static fn (?User $user = null): bool => false);
+        // Admins with two-step verification only (same bar as /admin, RUNBOOK §1).
+        Gate::define('viewHorizon', static fn (?User $user = null): bool => $user !== null && $user->hasStaffRole(StaffRole::Admin) && $user->hasTwoFactorEnabled());
     }
 }

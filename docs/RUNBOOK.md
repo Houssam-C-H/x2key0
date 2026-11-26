@@ -1,6 +1,7 @@
 # X2KEY operations runbook
 
 For whoever runs X2KEY in production: what runs where, how to tell it is healthy, and what to do when it is not.
+First installation, step by step from an empty server: [DEPLOYMENT.md](DEPLOYMENT.md).
 Spec references: Part 23 (security & privacy), Part 25 M19 (launch hardening), Part 27 (settings).
 
 ## 1. What must be running
@@ -9,7 +10,7 @@ Spec references: Part 23 (security & privacy), Part 25 M19 (launch hardening), P
 |---|---|---|
 | Web | PHP-FPM / FrankenPHP behind HTTPS | `APP_ENV=production`, `APP_DEBUG=false`, `php artisan optimize` after each deploy |
 | SSR | `php artisan inertia:start-ssr` | one per web host; pages still work (client-rendered) if it is down |
-| Queue | `php artisan horizon` | payment events, mail, broadcasts; Horizon dashboard at `/horizon` (admins) |
+| Queue | `php artisan horizon` | queues `payments` (first) and `default`: payment events, mail, broadcasts; dashboard at `/horizon` (admins with 2FA) |
 | Scheduler | cron `* * * * * php artisan schedule:run` | **one** server; every job uses `onOneServer()` |
 | Websockets | `php artisan reverb:start` | live chat; chat falls back to polling if down |
 | Search | Meilisearch | `CATALOG_SEARCH_DRIVER=meilisearch`; `php artisan catalog:search-sync` rebuilds |

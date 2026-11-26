@@ -199,7 +199,8 @@ return [
     'defaults' => [
         'supervisor-1' => [
             'connection' => 'redis',
-            'queue' => ['default'],
+            // `payments` first: provider webhooks (ProcessPaymentEvent) must never wait behind mail and broadcasts.
+            'queue' => ['payments', 'default'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,

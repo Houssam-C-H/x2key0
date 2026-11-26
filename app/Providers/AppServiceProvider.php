@@ -329,6 +329,11 @@ final class AppServiceProvider extends ServiceProvider
 
         // Admins can do everything, except abilities that must hold for everyone (self-review).
         Gate::before(static function (User $user, string $ability, array $arguments): ?bool {
+            // The Horizon dashboard keeps its own rule (admins with 2FA), outside the admin panel's 2FA middleware.
+            if ($ability === 'viewHorizon') {
+                return null;
+            }
+
             if ($ability === 'review' && ($arguments[0] ?? null) instanceof Certification && $arguments[0]->user_id === $user->id) {
                 return false;
             }
