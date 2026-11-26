@@ -9,6 +9,8 @@ use App\Domains\Payments\Enums\PaymentStatus;
 use App\Domains\Payments\Models\Payment;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Payments\Pages\ListPayments;
+use App\Filament\Support\CsvExport;
+use App\Filament\Support\MinorUnits;
 use App\Filament\Support\Staff;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -88,6 +90,19 @@ final class PaymentResource extends Resource
                 SelectFilter::make('status')->options(collect(PaymentStatus::cases())->mapWithKeys(fn (PaymentStatus $s): array => [$s->value => str_replace('_', ' ', $s->value)])->all()),
                 SelectFilter::make('provider')->options(fn (): array => Payment::query()->distinct()->orderBy('provider')->pluck('provider', 'provider')->all()),
                 SelectFilter::make('method_code')->label('Method')->options(fn (): array => Payment::query()->distinct()->orderBy('method_code')->pluck('method_code', 'method_code')->all()),
+            ])
+            ->toolbarActions([
+                CsvExport::bulkAction('payments', [
+                    'Payment' => fn (Model $r): string => $r instanceof Payment ? $r->public_id : '',
+                    'Order' => fn (Model $r): string => $r instanceof Payment && $r->order !== null ? $r->order->number : '',
+                    'Provider' => fn (Model $r): string => $r instanceof Payment ? $r->provider : '',
+                    'Method' => fn (Model $r): string => $r instanceof Payment ? $r->method_code : '',
+                    'Amount' => fn (Model $r): string => $r instanceof Payment ? MinorUnits::toDecimal($r->amount) : '',
+                    'Currency' => fn (Model $r): string => $r instanceof Payment ? $r->currency : '',
+                    'Status' => fn (Model $r): string => $r instanceof Payment ? $r->status->value : '',
+                    'Failure' => fn (Model $r): string => $r instanceof Payment ? (string) $r->failure_reason : '',
+                    'Created' => fn (Model $r): string => $r instanceof Payment ? $r->created_at->toDateTimeString() : '',
+                ]),
             ]);
     }
 

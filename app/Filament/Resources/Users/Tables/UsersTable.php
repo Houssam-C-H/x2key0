@@ -8,6 +8,7 @@ use App\Domains\Identity\Actions\ModerateUser;
 use App\Domains\Identity\Enums\UserStatus;
 use App\Domains\Identity\Models\User;
 use App\Filament\Resources\Sellers\SellerProfiles\SellerProfileResource;
+use App\Filament\Support\CsvExport;
 use DomainException;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -19,6 +20,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 
 final class UsersTable
@@ -63,6 +65,18 @@ final class UsersTable
                     Action::make('sign_out')->label('Sign out everywhere')->requiresConfirmation()
                         ->visible(fn (User $record): bool => Gate::allows('update', $record))
                         ->action(fn (User $record) => self::run(fn () => app(ModerateUser::class)->signOut($record, SellerProfileResource::actor(), 'staff'), 'All sessions revoked')),
+                ]),
+            ])
+            // No e-mails or phone numbers in exports: usernames and account facts only.
+            ->toolbarActions([
+                CsvExport::bulkAction('users', [
+                    'ID' => fn (Model $r): int => $r instanceof User ? $r->id : 0,
+                    'Public ID' => fn (Model $r): string => $r instanceof User ? $r->public_id : '',
+                    'Username' => fn (Model $r): string => $r instanceof User ? $r->username : '',
+                    'Status' => fn (Model $r): string => $r instanceof User ? $r->status->value : '',
+                    'Country' => fn (Model $r): string => $r instanceof User ? (string) $r->country : '',
+                    'Staff roles' => fn (Model $r): string => $r instanceof User ? $r->getRoleNames()->implode(' ') : '',
+                    'Joined' => fn (Model $r): string => $r instanceof User ? $r->created_at->toDateTimeString() : '',
                 ]),
             ]);
     }

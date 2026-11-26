@@ -17,8 +17,10 @@ use App\Domains\Tickets\Models\CannedReply;
 use App\Domains\Tickets\Models\Ticket;
 use App\Filament\Pages\ChatTranscript;
 use App\Filament\Resources\Tickets\Pages\ListTickets;
+use App\Filament\Support\CsvExport;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -32,6 +34,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -163,6 +166,35 @@ final class TicketResource extends Resource
                             is_numeric($data['qty'] ?? null) ? (int) $data['qty'] : 1,
                         ), 'Dispute opened; ticket closed');
                     }),
+            ])
+            ->toolbarActions([
+                BulkAction::make('assignSelected')->label('Assign selected')->icon(Heroicon::OutlinedUserPlus)
+                    ->schema([
+                        Select::make('staff')->label('Staff member')->required()
+                            ->options(fn (): array => User::staffQuery()->orderBy('username')->pluck('username', 'id')->all())
+                            ->default(fn (): ?int => is_int($id = Auth::id()) ? $id : null),
+                    ])
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (EloquentCollection $records, array $data): void {
+                        $staff = User::staffQuery()->whereKey(is_numeric($data['staff'] ?? null) ? (int) $data['staff'] : 0)->first();
+                        $done = 0;
+                        foreach ($records as $record) {
+                            if ($staff !== null && $record instanceof Ticket && Gate::allows('update', $record)) {
+                                app(TicketDesk::class)->assign($record, $staff);
+                                $done++;
+                            }
+                        }
+                        Notification::make()->title("{$done} ticket(s) assigned")->success()->send();
+                    }),
+                CsvExport::bulkAction('tickets', [
+                    'Ticket' => fn (Model $r): string => $r instanceof Ticket ? $r->public_id : '',
+                    'Subject' => fn (Model $r): string => $r instanceof Ticket ? $r->subject : '',
+                    'User' => fn (Model $r): string => $r instanceof Ticket ? $r->user->username : '',
+                    'Topic' => fn (Model $r): string => $r instanceof Ticket ? $r->topic->value : '',
+                    'Priority' => fn (Model $r): string => $r instanceof Ticket ? $r->priority->value : '',
+                    'Status' => fn (Model $r): string => $r instanceof Ticket ? $r->status->value : '',
+                    'Created' => fn (Model $r): string => $r instanceof Ticket ? $r->created_at->toDateTimeString() : '',
+                ]),
             ]);
     }
 

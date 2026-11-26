@@ -16,6 +16,8 @@ use App\Domains\Payments\Actions\ReviewPayment;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Filament\Resources\Sellers\SellerProfiles\SellerProfileResource;
+use App\Filament\Support\CsvExport;
+use App\Filament\Support\MinorUnits;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -100,6 +102,20 @@ final class OrderResource extends Resource
                 Action::make('timeline')->icon(Heroicon::OutlinedClock)->color('gray')
                     ->modalSubmitAction(false)->modalCancelActionLabel('Close')
                     ->modalContent(fn (Order $record): HtmlString => self::timeline($record)),
+            ])
+            ->toolbarActions([
+                CsvExport::bulkAction('orders', [
+                    'Order' => fn (Model $r): string => $r instanceof Order ? $r->number : '',
+                    'Buyer' => fn (Model $r): string => $r instanceof Order ? $r->buyer->username : '',
+                    'Store' => fn (Model $r): string => $r instanceof Order ? $r->seller->store_name : '',
+                    'Status' => fn (Model $r): string => $r instanceof Order ? $r->status->value : '',
+                    'Total' => fn (Model $r): string => $r instanceof Order ? MinorUnits::toDecimal($r->total_amount) : '',
+                    'Currency' => fn (Model $r): string => $r instanceof Order ? $r->currency : '',
+                    'Commission' => fn (Model $r): string => $r instanceof Order ? MinorUnits::toDecimal($r->commission_amount) : '',
+                    'Risk score' => fn (Model $r): int => $r instanceof Order ? $r->risk_score : 0,
+                    'Created' => fn (Model $r): string => $r instanceof Order ? $r->created_at->toDateTimeString() : '',
+                    'Paid' => fn (Model $r): string => $r instanceof Order && $r->paid_at !== null ? $r->paid_at->toDateTimeString() : '',
+                ]),
             ]);
     }
 

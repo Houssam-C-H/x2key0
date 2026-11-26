@@ -10,6 +10,8 @@ use App\Domains\Offers\Models\Offer;
 use App\Domains\Offers\StateMachines\OfferStateMachine;
 use App\Filament\Resources\Offers\Pages\ListOffers;
 use App\Filament\Resources\Sellers\SellerProfiles\SellerProfileResource;
+use App\Filament\Support\CsvExport;
+use App\Filament\Support\MinorUnits;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -141,6 +143,33 @@ final class OfferResource extends Resource
                         }
                         Notification::make()->title("{$done} offer(s) approved")->success()->send();
                     }),
+                BulkAction::make('rejectSelected')
+                    ->label('Reject selected')
+                    ->color('danger')
+                    ->schema([Textarea::make('reason')->label('Reason shown to each seller')->required()->maxLength(500)])
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (Collection $records, array $data): void {
+                        $done = 0;
+                        foreach ($records as $record) {
+                            if ($record instanceof Offer && $record->status === OfferStatus::PendingReview && Gate::allows('moderate', $record)) {
+                                try {
+                                    app(OfferStateMachine::class)->reject($record, SellerProfileResource::actor(), SellerProfileResource::reason($data));
+                                    $done++;
+                                } catch (OfferException) {
+                                    // changed meanwhile
+                                }
+                            }
+                        }
+                        Notification::make()->title("{$done} offer(s) rejected")->success()->send();
+                    }),
+                CsvExport::bulkAction('offers', [
+                    'Offer' => fn (Model $r): string => $r instanceof Offer ? $r->public_id : '',
+                    'Title' => fn (Model $r): string => $r instanceof Offer ? $r->title : '',
+                    'Store' => fn (Model $r): string => $r instanceof Offer ? $r->seller->store_name : '',
+                    'Status' => fn (Model $r): string => $r instanceof Offer ? $r->status->value : '',
+                    'Unit price' => fn (Model $r): string => $r instanceof Offer ? MinorUnits::toDecimal($r->unit_price_amount).' '.$r->currency : '',
+                    'Created' => fn (Model $r): string => $r instanceof Offer ? $r->created_at->toDateTimeString() : '',
+                ]),
             ]);
     }
 
