@@ -234,3 +234,15 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Transitions added to spec 6.2: `active|out_of_stock → pending_review` (content edit) and `pending_publish → deactivated`; the spec's `suspended` is `system_deactivated` (OPEN_QUESTIONS #5); staff restore it to `deactivated` and the seller relists.
 - Game×category, product and delivery method of an offer are immutable (spec 6.2: a new offer instead). Attribute values of catalog-product offers are copied from the product.
 - Favorites and browsing history store public ULIDs in requests and numeric ids in tables; guest history uses a random 40-char cookie token (`x2k_history`), never an IP.
+
+## ADR-040 — Admin completion conventions (2026-11-26)
+**Context:** docs/ADMIN_PLAN.md (18 items) added settings, 360° pages, payments, points, ops and live counters to the Filament admin.
+**Decision:**
+- **Settings from the screen** go through `Admin\Actions\ChangePolicySetting` (admins, reason required); `Admin\Support\PolicyCatalog` labels every Part 27 key (a test keeps it in step with config) and marks money settings, which wait for a second admin (`setting_changes`). Money is typed as decimals and stored as integer minor units with string maths only.
+- **Second approval** follows one pattern everywhere (ledger adjustments, points adjustments, money settings): request row → another qualified staff member approves → posting; nobody approves their own; every step audited.
+- **360° pages** (user, order, store) are ViewRecord pages with a Blade view fed by a presenter in `Admin\Support\*Overview`; they never show secrets (2FA, vault payloads, buyer inputs, token values). Staff notes are append-only (`staff_notes`, `Admin\Actions\StaffNotes`).
+- **Staff reading chats** is read-only and audited per opening with its case (`Messaging\Actions\StaffChatAccess`).
+- **Live counters:** content-free broadcasts after commit — `user.signal` on `private-user.{id}` (bell, chat badge; the browser reloads the shared counters) and `queues.changed` on `private-staff` (admin top-bar counter, work-queue widget); `Shared\Realtime\Signals` never throws and debounces staff signals.
+- **Filament filter closures** name their query argument `$query` (Filament injects by name; a test scans for the pattern).
+- **Exports** are fixed-column CSVs, formula-safe and audited (`admin.exported`); user exports carry no e-mail or phone.
+- **Scheduled e-mail** `reports:weekly-summary` claims its ISO week in `report_digests` before sending.

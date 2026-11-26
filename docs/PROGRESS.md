@@ -24,6 +24,16 @@
 | M17 | Home CMS, News, Help, footer pages | ✅ code done | See checklist below |
 | M18 | Admin & risk completion, reports | ✅ code done | See checklist below |
 | M19 | Launch hardening | ✅ code done | See checklist below; staging soak, restore drill and legal texts need people |
+| A1 | Admin completion (docs/ADMIN_PLAN.md, 18 items) | ✅ code done | Branch `admin-panel`; see checklist below |
+
+## A1 checklist (admin completion)
+- [x] Phase 1: platform settings (reason, second admin for money), audit log, user / order 360° pages with staff notes, payments + provider events (safe re-apply) + refunds, chat moderation (audited transcripts, flagged queue)
+- [x] Phase 2: points rules / history / adjustments (second approval from `points_adjustment_dual_approval`), affiliate commissions + monthly bills + transfers, payment methods catalog, store 360° (API token revoke, price alerts)
+- [x] Phase 3: live bell / chat badge / staff queue counter over private channels, queues & e-mail page (failed jobs retry/forget, mail log, push counts), operations page (health, scheduled runs, backups, FX), search misses → game aliases + translation progress, staff roles matrix + My work
+- [x] Phase 4: global search (7 resources), bulk reject / assign / CSV export (audited), report CSV + weekly e-mail
+- [x] Bug fixed: ticket and offer filters with a `$q` closure argument silently did nothing (test scans for the pattern)
+- [x] 806 tests: SQLite 787 passed / 19 skipped; PostgreSQL 795 passed / 10 skipped / 1 failed (`BackupAndAlertsTest` backup run: expects `database.sql`, needs `pg_dump` on PATH — environment, not this work); Larastan max 0 errors; Pint; TS strict; Vite build
+- [ ] Live counters need Reverb running (`php artisan reverb:start`) and `npm run build` for the admin bridge (`resources/js/admin-live.ts`)
 
 ## M19 checklist
 - [x] **Security headers** on every response: CSP with a per-request script nonce (Vite tags carry it, no `unsafe-eval` / `unsafe-inline` scripts on the site), a separate looser CSP only for the Filament admin (Alpine needs `unsafe-eval`), `frame-ancestors 'none'` + X-Frame-Options, nosniff, strict-origin referrer, Permissions-Policy, COOP, HSTS in production over HTTPS; `CSP_REPORT_ONLY` to trial changes; secure session cookies by default in production
@@ -345,6 +355,7 @@
 - [ ] ClamAV container (deferred to M5, first file uploads)
 
 ## Log
+- 2026-11-26 — Admin completion (docs/ADMIN_PLAN.md, all 18 items) built on branch `admin-panel`, ADR-040. Bug found and fixed: three admin filters ignored their query because Filament injects closure arguments by name.
 - 2026-11-22 — Spec copied to docs/X2KEY_SPEC.md, CLAUDE.md created, git repo initialised.
 - 2026-11-22 — Repo moved to C:\dev\x2key. Docker Desktop installed; WSL2 install needs admin rights (founder action).
 - 2026-11-23 — M1 scaffold built with portable PHP 8.4 + Composer in C:\dev\tools (no admin needed). 59 tests green on SQLite; Larastan max clean; SSR verified in en/fr/ar.

@@ -1,6 +1,31 @@
 # Admin panel: implementation plan
 
-Status 2026-11-26. Compared against spec Part 18 (Admin), Part 27 (policy defaults) and the features added since.
+Status 2026-11-26: **all 18 items built** on branch `admin-panel` (one commit per item, ADR-040). Compared against spec Part 18 (Admin), Part 27 (policy defaults) and the features added since.
+
+## Done
+
+| # | Where |
+|---|---|
+| 1 Platform settings | System › Platform settings (`Admin\Actions\ChangePolicySetting`, `Admin\Support\PolicyCatalog`) |
+| 2 Audit log | System › Audit log |
+| 3 User 360° | Users › open a user (`Admin\Support\UserOverview`, staff notes) |
+| 4 Order 360° | Orders › open an order (`Admin\Support\OrderOverview`) |
+| 5 Payments and refunds | Payments › Payments / Provider events (safe re-apply) / Refunds |
+| 6 Chat moderation | Support › Chat moderation; Chat links on orders, disputes, tickets |
+| 7 Points | Points › Rules / Adjustments; history on the user page |
+| 8 Affiliate commissions and bills | Affiliates › Commissions / Monthly bills |
+| 9 Payment methods | Payments › Payment methods |
+| 10 Seller 360° | Sellers › Stores › open a store (`Admin\Support\SellerOverview`) |
+| 11 Live bell | `Shared\Realtime\Signals`, top-bar queue counter |
+| 12 Queue and e-mail health | System › Queues & e-mail |
+| 13 Operations | System › Operations |
+| 14 Search and languages | Catalog › Search & languages |
+| 15 Staff roles matrix | Users › Staff roles; My work |
+| 16 Global search | top bar: users, orders, offers, tickets, disputes, stores, payments |
+| 17 Bulk actions | offers (approve/reject), tickets (assign), CSV export on orders, payments, offers, tickets, users |
+| 18 Report exports | Reports › Export CSV; `reports:weekly-summary` (Mondays 07:00) |
+
+Also fixed on the way: the ticket "Assigned to me" / "SLA overdue" and offer "duplicate" filters did nothing (Filament closure argument named `$q`).
 
 ## What the admin has today
 
