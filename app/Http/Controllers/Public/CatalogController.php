@@ -12,6 +12,7 @@ use App\Domains\Catalog\Models\GameCategory;
 use App\Domains\Catalog\Models\Platform;
 use App\Domains\Catalog\Models\Product;
 use App\Domains\Catalog\Models\Region;
+use App\Domains\Catalog\Models\SearchMiss;
 use App\Domains\Catalog\Models\ServiceType;
 use App\Domains\Catalog\Search\CatalogSearch;
 use App\Domains\Catalog\Search\ListingQuery;
@@ -89,6 +90,10 @@ final class CatalogController
 
         // Nothing found: a probable typo gets "Did you mean …?" (spec 1.2).
         $didYouMean = $results['games'] === [] && $results['products'] === [] ? $suggest->didYouMean($text, $locale) : null;
+        // …and is counted for staff, who can turn it into a game alias (docs/ADMIN_PLAN.md item 14).
+        if ($text !== '' && $results['games'] === [] && $results['products'] === []) {
+            SearchMiss::record($text, $locale);
+        }
 
         return Inertia::render('Public/Catalog/Search', [
             'q' => $text,
