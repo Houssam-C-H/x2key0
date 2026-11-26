@@ -14,9 +14,11 @@ use App\Domains\Orders\Models\OrderStatusHistory;
 use App\Domains\Orders\StateMachines\OrderStateMachine;
 use App\Domains\Payments\Actions\ReviewPayment;
 use App\Filament\Resources\Orders\Pages\ListOrders;
+use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Filament\Resources\Sellers\SellerProfiles\SellerProfileResource;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -91,28 +93,41 @@ final class OrderResource extends Resource
                     ->options(collect(OrderStatus::cases())->mapWithKeys(fn (OrderStatus $s): array => [$s->value => ucfirst(str_replace('_', ' ', $s->value))])->all()),
             ])
             ->recordActions([
-                Action::make('approve')
-                    ->label('Approve payment')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->visible(fn (Order $record): bool => $record->status === OrderStatus::PaymentReview && Gate::allows('review', $record))
-                    ->action(fn (Order $record) => self::run(fn () => app(ReviewPayment::class)->approve($record, SellerProfileResource::actor()), 'Order paid')),
-                Action::make('reject')
-                    ->label('Reject')
-                    ->color('danger')
-                    ->visible(fn (Order $record): bool => $record->status === OrderStatus::PaymentReview && Gate::allows('review', $record))
-                    ->schema([Textarea::make('reason')->label('Reason (internal)')->required()->maxLength(400)])
-                    ->action(fn (Order $record, array $data) => self::run(fn () => app(ReviewPayment::class)->reject($record, SellerProfileResource::actor(), SellerProfileResource::reason($data)), 'Order cancelled; captured amount flagged for refund')),
+                ViewAction::make()->label('Open'),
+                ...self::orderActions(),
                 // Timeline (spec Part 18 "Orders (timeline …)"): every status change with actor and reason.
                 Action::make('timeline')->icon(Heroicon::OutlinedClock)->color('gray')
                     ->modalSubmitAction(false)->modalCancelActionLabel('Close')
                     ->modalContent(fn (Order $record): HtmlString => self::timeline($record)),
-                // Staff cancel with a full refund to the original sources: paid, nothing delivered (spec 6.1).
-                Action::make('staff_cancel')->label('Cancel & refund')->color('danger')
-                    ->visible(fn (Order $record): bool => $record->status === OrderStatus::Paid && $record->item->delivered_qty === 0 && self::canCancel())
-                    ->schema([Textarea::make('reason')->label('Reason (shown in the order timeline)')->required()->maxLength(400)])
-                    ->action(fn (Order $record, array $data) => self::run(fn () => app(OrderStateMachine::class)->cancel($record, 'staff: '.SellerProfileResource::reason($data), ActorType::Staff, SellerProfileResource::actor()), 'Order cancelled and refunded')),
             ]);
+    }
+
+    /**
+     * Staff decisions on one order, shared by the list and the order page (header actions).
+     *
+     * @return list<Action>
+     */
+    public static function orderActions(): array
+    {
+        return [
+            Action::make('approve')
+                ->label('Approve payment')
+                ->color('success')
+                ->requiresConfirmation()
+                ->visible(fn (Order $record): bool => $record->status === OrderStatus::PaymentReview && Gate::allows('review', $record))
+                ->action(fn (Order $record) => self::run(fn () => app(ReviewPayment::class)->approve($record, SellerProfileResource::actor()), 'Order paid')),
+            Action::make('reject')
+                ->label('Reject')
+                ->color('danger')
+                ->visible(fn (Order $record): bool => $record->status === OrderStatus::PaymentReview && Gate::allows('review', $record))
+                ->schema([Textarea::make('reason')->label('Reason (internal)')->required()->maxLength(400)])
+                ->action(fn (Order $record, array $data) => self::run(fn () => app(ReviewPayment::class)->reject($record, SellerProfileResource::actor(), SellerProfileResource::reason($data)), 'Order cancelled; captured amount flagged for refund')),
+            // Staff cancel with a full refund to the original sources: paid, nothing delivered (spec 6.1).
+            Action::make('staff_cancel')->label('Cancel & refund')->color('danger')
+                ->visible(fn (Order $record): bool => $record->status === OrderStatus::Paid && $record->item->delivered_qty === 0 && self::canCancel())
+                ->schema([Textarea::make('reason')->label('Reason (shown in the order timeline)')->required()->maxLength(400)])
+                ->action(fn (Order $record, array $data) => self::run(fn () => app(OrderStateMachine::class)->cancel($record, 'staff: '.SellerProfileResource::reason($data), ActorType::Staff, SellerProfileResource::actor()), 'Order cancelled and refunded')),
+        ];
     }
 
     /**
@@ -148,6 +163,9 @@ final class OrderResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => ListOrders::route('/')];
+        return [
+            'index' => ListOrders::route('/'),
+            'view' => ViewOrder::route('/{record}'),
+        ];
     }
 }
