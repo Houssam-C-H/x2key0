@@ -12,6 +12,7 @@ use DomainException;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
@@ -49,7 +50,8 @@ final class UsersTable
                 SelectFilter::make('roles')->relationship('roles', 'name')->label('Staff role'),
             ])
             ->recordActions([
-                EditAction::make(),
+                ViewAction::make(),
+                EditAction::make()->label('Roles'),
                 ActionGroup::make([
                     self::status('suspend', UserStatus::Suspended, 'warning', fn (User $u): bool => $u->status === UserStatus::Active),
                     self::status('ban', UserStatus::Banned, 'danger', fn (User $u): bool => in_array($u->status, [UserStatus::Active, UserStatus::Suspended], true)),
