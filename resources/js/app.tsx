@@ -17,3 +17,10 @@ createInertiaApp({
         color: '#d91a21',
     },
 });
+
+// Installable app + offline page + web push (ADR-037). Registered after load so it never slows the first paint.
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        void navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+    });
+}

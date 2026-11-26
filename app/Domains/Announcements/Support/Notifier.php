@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Announcements\Support;
 
+use App\Domains\Announcements\Jobs\SendWebPush;
 use App\Domains\Announcements\Mail\NotificationMail;
 use App\Domains\Announcements\Models\InboxItem;
 use App\Domains\Identity\Models\User;
@@ -76,6 +77,9 @@ final class Notifier
 
         if (array_key_exists($type, self::EMAILED) && ! self::coolingDown($userId, $type, $item->id)) {
             DB::afterCommit(static fn () => self::email($userId, $type, $data));
+            if (WebPushSender::enabled()) {
+                DB::afterCommit(static fn () => self::push($userId, $type, $data));
+            }
         }
 
         return $item;
@@ -110,6 +114,21 @@ final class Notifier
             ->whereKeyNot($exceptId)
             ->where('created_at', '>=', now()->subMinutes($minutes))
             ->exists();
+    }
+
+    /**
+     * @param  array<string, string|int>  $data
+     */
+    private static function push(int $userId, string $type, array $data): void
+    {
+        $locale = User::query()->whereKey($userId)->value('locale');
+        $locale = is_string($locale) && $locale !== '' ? $locale : config()->string('app.locale');
+        $replace = array_map(static fn (string|int $v): string => (string) $v, array_filter($data, static fn (mixed $v, string $k): bool => $k !== 'href', ARRAY_FILTER_USE_BOTH));
+        $title = __("notify.{$type}.title", $replace, $locale);
+        $body = __("notify.{$type}.body", $replace, $locale);
+        $href = isset($data['href']) ? (string) $data['href'] : '/announcements';
+
+        SendWebPush::dispatch($userId, ['title' => is_string($title) ? $title : $type, 'body' => is_string($body) ? $body : '', 'url' => $href]);
     }
 
     public static function wants(int $userId, string $preference): bool

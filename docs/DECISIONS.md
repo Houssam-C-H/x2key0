@@ -61,6 +61,9 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-037 — Installable app and web push (2026-11-26)
+**Decision:** a plain service worker (`public/sw.js`) makes the site installable (existing manifest), shows `offline.html` when a page load fails, and displays web push; it never caches pages or API answers, so prices, stock and orders are always live. Web push uses VAPID (`minishlink/web-push`; keys from `php artisan push:keys` into `.env`, push is off without them). Subscriptions are per device (`push_subscriptions`, endpoint hashed for the unique index); `Notifier` queues `SendWebPush` for the same important types it e-mails, after commit; expired subscriptions (404/410) are deleted on send. Settings › Account › App and notifications: install button (or iPhone instructions) and turn push on/off for this device.
+
 ## ADR-036 — Display currencies (2026-11-26)
 **Decision:** X2KEY charges, settles, holds balances and pays out in USD only (D5). Buyers may choose a display currency: `fx:refresh` (daily 06:10) stores units-per-USD from open.er-api.com (free, keyless, USD base, covers MAD/AED/EGP… that the ECB does not; attribution link at checkout) into `fx_rates`; rates older than 72 h are ignored. The shared `fx` prop carries the chosen currency's rate; `usePrice()` shows browsing prices (cards, product/offer pages, buy box, store, home) converted, with a note that the charge is in USD; checkout shows the USD amount charged plus "about … in your currency". Money screens (checkout totals, wallets, seller pages, invoices) keep `formatUsd`.
 

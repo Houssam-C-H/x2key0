@@ -32,6 +32,8 @@ export interface SharedProps {
     currency: string;
     /** Display rate for approximate prices (ADR-036); null = USD. */
     fx?: { currency: string; rate: number } | null;
+    /** Web push VAPID public key (ADR-037); null when push is off. */
+    pushKey?: string | null;
     currencies: string[];
     translations: Record<string, string>;
     categoryTypes: CategoryType[];

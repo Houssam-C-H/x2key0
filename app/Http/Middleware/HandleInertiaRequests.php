@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Domains\Announcements\Support\AnnouncementCenter;
+use App\Domains\Announcements\Support\WebPushSender;
 use App\Domains\Catalog\Enums\CategoryTypeCode;
 use App\Domains\Catalog\Support\CatalogReader;
 use App\Domains\Content\Support\FooterContent;
@@ -43,6 +44,8 @@ final class HandleInertiaRequests extends Middleware
             'dir' => ResolveLocale::direction($locale),
             'locales' => ResolveLocale::localeOptions(),
             'currency' => $request->attributes->get('display_currency'),
+            // Web push public key (ADR-037); null when push is not configured.
+            'pushKey' => fn (): ?string => WebPushSender::enabled() ? config()->string('x2key.push.public_key') : null,
             // Approximate prices in the display currency (ADR-036); null = show USD. Charges always stay USD.
             'fx' => function () use ($request): ?array {
                 $currency = $request->attributes->get('display_currency');

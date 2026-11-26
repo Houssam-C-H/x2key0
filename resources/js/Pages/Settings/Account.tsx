@@ -1,5 +1,6 @@
 import { Link, useForm } from '@inertiajs/react';
 import { Field, SelectField } from '@/Components/Field';
+import { PwaPanel } from '@/Components/PwaPanel';
 import { DashboardLayout, Panel } from '@/Layouts/DashboardLayout';
 import { useShared, useT } from '@/lib/i18n';
 
@@ -140,6 +141,8 @@ export default function Account({ account, messengers, timezones }: Props) {
             </Panel>
 
             <EmailsPanel emails={account.emails} />
+
+            <PwaPanel />
 
             <Panel title={t('settings.account.social')} description={t('settings.account.social_hint')}>
                 <Link href="/settings/security#connected" className="btn-outline-pill px-4 py-2 text-sm">

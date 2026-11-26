@@ -2139,5 +2139,15 @@
     "catalog.landing.faq.problem_a": "Open a claim from the order before confirming. Not delivered, not as described or invalid codes are refunded under buyer protection.",
     "fx.estimate": "Prices in :currency are estimates; you pay in USD.",
     "fx.checkout": "About :amount in your currency. You are charged in USD; your bank sets the final conversion.",
-    "fx.source": "Rates by Exchange Rate API"
+    "fx.source": "Rates by Exchange Rate API",
+    "pwa.title": "App and notifications",
+    "pwa.hint": "Install X2KEY on your phone or computer and get order, chat and payout updates as notifications.",
+    "pwa.install": "Install app",
+    "pwa.installed": "Installed on this device",
+    "pwa.install_ios": "On iPhone: Share › Add to Home Screen.",
+    "pwa.push_on": "Turn on notifications",
+    "pwa.push_off": "Turn off notifications on this device",
+    "pwa.push_enabled": "Notifications are on for this device.",
+    "pwa.push_blocked": "Notifications are blocked in your browser settings for this site.",
+    "pwa.push_unsupported": "This browser does not support notifications."
 }

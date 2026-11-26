@@ -48,6 +48,10 @@ levels recompute, trending, account deletions, retention pruning, `ops:heartbeat
 | payments | Check the PSP status page and webhook delivery; `php artisan payments:sync-pending` pulls state from the PSP. Events are stored once and applied once (safe to replay). |
 | database / cache | Provider console; app returns 503 until back. |
 
+### Web push (installable app)
+
+Generate keys once with `php artisan push:keys` and put `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (and `VAPID_SUBJECT=mailto:support@<your-domain>`) in `.env`, then `config:cache`. Never change them afterwards: every device would have to subscribe again. Push needs HTTPS and a running queue worker.
+
 ### Alerts and uptime
 
 - `ops:check` (every 5 minutes) sends failing checks to `OPS_ALERT_EMAIL` and/or a Slack incoming webhook `OPS_SLACK_WEBHOOK`: once when a check fails, every `OPS_ALERT_REPEAT_MINUTES` (60) while it stays down, once when it recovers. Messages contain check names and short details only.

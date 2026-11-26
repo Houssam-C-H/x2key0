@@ -31,6 +31,7 @@ use App\Http\Controllers\Public\ContentController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\StoreController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\Seller\AnalyticsController as SellerAnalyticsController;
 use App\Http\Controllers\Seller\CampaignController;
 use App\Http\Controllers\Seller\CommentController as SellerCommentController;
@@ -332,6 +333,8 @@ Route::middleware('auth')->group(function (): void {
 
     // Dispute Center (spec Part 10 / Part 20): open from an order, thread, proposals, escalation
     Route::get('/buy/claim', BuyerClaimController::class)->name('buy.claim');
+    Route::post('/push/subscription', [PushSubscriptionController::class, 'store'])->middleware('throttle:20,1')->name('push.subscribe');
+    Route::delete('/push/subscription', [PushSubscriptionController::class, 'destroy'])->middleware('throttle:20,1')->name('push.unsubscribe');
     Route::get('/buy/price-alerts', [PriceAlertController::class, 'index'])->name('buy.price-alerts');
     Route::post('/price-alerts', [PriceAlertController::class, 'store'])->middleware('throttle:30,1')->name('price-alerts.store');
     Route::delete('/price-alerts/{alert}', [PriceAlertController::class, 'destroy'])->whereNumber('alert')->name('price-alerts.destroy');

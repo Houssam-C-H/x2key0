@@ -38,6 +38,13 @@ return [
         'alert_repeat_minutes' => (int) env('OPS_ALERT_REPEAT_MINUTES', 60),
     ],
 
+    // Web push (installable app, ADR-037): VAPID keys from `php artisan push:keys`. Empty = push switched off.
+    'push' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', env('APP_URL', 'https://x2key.com')),
+    ],
+
     // Data retention per table (spec Part 23 "retention per table"), applied by `privacy:prune` daily.
     // Money, orders, journals, disputes and audit logs are never pruned.
     'retention_days' => [
