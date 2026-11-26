@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useShared, useT } from '@/lib/i18n';
-import { formatUsd } from '@/lib/money';
+import { usePrice } from '@/lib/price';
 import { deliveryTime, unitPriceFor } from '@/lib/offer';
 import type { OfferRow } from '@/types/offer';
 import { FavoriteButton } from './FavoriteButton';
@@ -26,6 +26,7 @@ interface Props {
 function QuantityTiers({ base, tiers, qty, max, onPick }: { base: number; tiers: { minQty: number; priceCents: number }[]; qty: number; max: number; onPick: (qty: number) => void }) {
     const t = useT();
     const { locale } = useShared();
+    const displayPrice = usePrice();
     const rows = [{ minQty: 1, priceCents: base }, ...[...tiers].sort((a, b) => a.minQty - b.minQty)];
     const active = rows.reduce((current, row) => (qty >= row.minQty ? row : current), rows[0]!);
     const next = rows.find((row) => row.minQty > qty && row.minQty <= max);
@@ -50,7 +51,7 @@ function QuantityTiers({ base, tiers, qty, max, onPick }: { base: number; tiers:
                             >
                                 <span>{t('offer.tiers.from_qty', { qty: row.minQty })}</span>
                                 <span className="flex items-center gap-2">
-                                    <span>{t('offer.tiers.each', { price: formatUsd(row.priceCents, locale) ?? '' })}</span>
+                                    <span>{t('offer.tiers.each', { price: displayPrice(row.priceCents) ?? '' })}</span>
                                     {saving > 0 && <span className="rounded-md bg-success/10 px-1.5 py-0.5 text-[11px] font-bold text-success">−{saving}%</span>}
                                 </span>
                             </button>
@@ -60,7 +61,7 @@ function QuantityTiers({ base, tiers, qty, max, onPick }: { base: number; tiers:
             </ul>
             {next && (
                 <p className="mt-2 text-xs text-ink/80">
-                    {t('offer.tiers.nudge', { more: next.minQty - qty, price: formatUsd(next.priceCents, locale) ?? '' })}
+                    {t('offer.tiers.nudge', { more: next.minQty - qty, price: displayPrice(next.priceCents) ?? '' })}
                 </p>
             )}
         </div>
@@ -69,7 +70,8 @@ function QuantityTiers({ base, tiers, qty, max, onPick }: { base: number; tiers:
 
 export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents = null, recommended = false }: Props) {
     const t = useT();
-    const { locale, auth } = useShared();
+    const { locale, auth, fx } = useShared();
+    const displayPrice = usePrice();
     const step = offer.integerMultiple ? offer.minQty : 1;
     const max = Math.max(offer.minQty, Math.min(offer.maxQty ?? offer.stock, offer.stock));
     const [qty, setQty] = useState(offer.minQty);
@@ -116,7 +118,7 @@ export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents
                     </button>
                 </div>
                 <span className="text-sm text-muted">
-                    {offer.unitLabel ?? '1'} = USD {formatUsd(unit, locale)}
+                    {offer.unitLabel ?? '1'} = {displayPrice(unit)}
                 </span>
             </div>
             {offer.tiers.length > 0 && (
@@ -130,9 +132,10 @@ export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents
             )}
 
             <div>
-                {msrpCents !== null && msrpCents > unit && <p className="text-sm text-muted line-through">{formatUsd(msrpCents * qty, locale)}</p>}
-                <p className="text-3xl font-extrabold">{formatUsd(unit * qty, locale)}</p>
+                {msrpCents !== null && msrpCents > unit && <p className="text-sm text-muted line-through">{displayPrice(msrpCents * qty)}</p>}
+                <p className="text-3xl font-extrabold">{displayPrice(unit * qty)}</p>
                 <p className="text-xs text-muted">{t('catalog.product.fees_note')}</p>
+                {fx && <p className="text-xs text-muted">{t('fx.estimate', { currency: fx.currency })}</p>}
             </div>
 
             <button
@@ -146,7 +149,7 @@ export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents
 
             {otherCount > 0 && otherFromCents !== null && (
                 <a href="#other-sellers" className="block text-sm font-semibold text-primary hover:underline">
-                    {t('offer.more_offers', { count: otherCount, price: formatUsd(otherFromCents, locale) ?? '' })}
+                    {t('offer.more_offers', { count: otherCount, price: displayPrice(otherFromCents) ?? '' })}
                 </a>
             )}
 
@@ -154,7 +157,7 @@ export function BuyBox({ offer, msrpCents = null, otherCount = 0, otherFromCents
             <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pt-3 shadow-[0_-4px_16px_rgb(0_0_0/0.06)] backdrop-blur lg:hidden" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
                 <div className="mx-auto flex max-w-xl items-center gap-3">
                     <div className="min-w-0 flex-1">
-                        <p className="text-lg font-extrabold leading-tight">{formatUsd(unit * qty, locale)}</p>
+                        <p className="text-lg font-extrabold leading-tight">{displayPrice(unit * qty)}</p>
                         <p className="truncate text-xs text-muted">
                             {qty} × {offer.unitLabel ?? '1'}
                         </p>

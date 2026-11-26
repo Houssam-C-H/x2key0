@@ -61,6 +61,9 @@ The Filament panel has no login page; guests are sent to `/{locale}/login`, so s
 - Staff level overrides set `level_locked` so the recompute job (M16) leaves the store alone; all edits are audited.
 - Seller-written text (description, notice, auto-reply, shop name) is checked by `NoContactInfo`; offers reuse it in M5.
 
+## ADR-036 — Display currencies (2026-11-26)
+**Decision:** X2KEY charges, settles, holds balances and pays out in USD only (D5). Buyers may choose a display currency: `fx:refresh` (daily 06:10) stores units-per-USD from open.er-api.com (free, keyless, USD base, covers MAD/AED/EGP… that the ECB does not; attribution link at checkout) into `fx_rates`; rates older than 72 h are ignored. The shared `fx` prop carries the chosen currency's rate; `usePrice()` shows browsing prices (cards, product/offer pages, buy box, store, home) converted, with a note that the charge is in USD; checkout shows the USD amount charged plus "about … in your currency". Money screens (checkout totals, wallets, seller pages, invoices) keep `formatUsd`.
+
 ## ADR-035 — Speed pass (2026-11-25)
 **Findings:** busiest pages run 0–25 queries and 4–45 ms of database time (home and game index are served from cache). Time on the local Docker setup is dominated by Xdebug and Docker-on-Windows file and network overhead, not by the application.
 **Decisions:** every single-column foreign key gets an index (PostgreSQL does not add them; 102 were missing — order items, payments, ledger postings, deliveries, disputes, tickets…), enforced by `tests/Feature/Ops/ForeignKeyIndexesTest` on PostgreSQL. `php artisan perf:pages` measures pages and flags repeated queries. Production settings (OPcache without Xdebug, Redis, `optimize` + `filament:optimize`, immutable caching and compression for hashed assets) are in docs/RUNBOOK.md §1.

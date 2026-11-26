@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { useShared, useT } from '@/lib/i18n';
-import { formatUsd } from '@/lib/money';
+import { usePrice } from '@/lib/price';
 import { deliveryTime } from '@/lib/offer';
 import type { OfferRow } from '@/types/offer';
 import { SellerLine } from './SellerLine';
@@ -13,6 +13,7 @@ import { SellerLine } from './SellerLine';
 export function OffersTable({ offers, methods, selectedId, onSelect }: { offers: OfferRow[]; methods: string[]; selectedId: string | null; onSelect: (id: string) => void }) {
     const t = useT();
     const { locale } = useShared();
+    const displayPrice = usePrice();
     const [method, setMethod] = useState<string | null>(null);
     const [sort, setSort] = useState<'recommended' | 'price_asc'>('recommended');
 
@@ -84,7 +85,7 @@ export function OffersTable({ offers, methods, selectedId, onSelect }: { offers:
                                 <td className="py-2.5">{o.insuranceDays > 0 ? t('offer.insurance_days', { count: o.insuranceDays }) : '—'}</td>
                                 <td className="py-2.5 text-end font-bold">
                                     {o.priceCents === lowest && <span className="me-2 rounded bg-success/10 px-1.5 py-0.5 text-[11px] font-semibold text-success">{t('offer.lowest')}</span>}
-                                    {formatUsd(o.priceCents, locale)}
+                                    {displayPrice(o.priceCents)}
                                 </td>
                                 <td className="py-2.5 text-end">
                                     <button type="button" className="btn-outline-pill px-3 py-1 text-xs" onClick={() => onSelect(o.id)}>

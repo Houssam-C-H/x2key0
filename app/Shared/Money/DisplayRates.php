@@ -35,8 +35,11 @@ final class DisplayRates
 
         $stored = 0;
         foreach (config()->array('x2key.display_currencies') as $currency) {
+            if (! is_string($currency) || $currency === 'USD') {
+                continue;
+            }
             $rate = $rates[$currency] ?? null;
-            if (! is_string($currency) || $currency === 'USD' || ! is_numeric($rate) || (float) $rate <= 0) {
+            if (! is_numeric($rate) || (float) $rate <= 0) {
                 continue;
             }
             DB::table('fx_rates')->updateOrInsert(['currency' => $currency], [

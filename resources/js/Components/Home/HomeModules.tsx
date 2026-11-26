@@ -2,7 +2,7 @@ import { Link } from '@inertiajs/react';
 import { HistoryStrip } from '@/Components/Offer/HistoryStrip';
 import { CommunityRatings, type CommunityRating } from '@/Components/Reviews/CommunityRatings';
 import { categoryIcon, Icon } from '@/Components/Icon';
-import { formatUsd } from '@/lib/money';
+import { usePrice } from '@/lib/price';
 import { useShared, useT } from '@/lib/i18n';
 import type { HistoryItem } from '@/types/offer';
 import { CATEGORY_TINT, GameArt, GameCard, type GameTileData, Rail, SectionHeading } from './HomeParts';
@@ -33,7 +33,8 @@ const TRENDING_CATEGORY: Record<string, string> = {
 export function HomeModuleView({ module }: { module: HomeModule }) {
     const t = useT();
     const { locale, auth } = useShared();
-    const money = (cents: number) => formatUsd(cents, locale) ?? '';
+    const displayPrice = usePrice();
+    const money = (cents: number) => displayPrice(cents) ?? '';
     const title = module.title ?? t('home.module.' + module.code);
     const d = module.data;
 

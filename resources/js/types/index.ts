@@ -30,6 +30,8 @@ export interface SharedProps {
     dir: Dir;
     locales: LocaleOption[];
     currency: string;
+    /** Display rate for approximate prices (ADR-036); null = USD. */
+    fx?: { currency: string; rate: number } | null;
     currencies: string[];
     translations: Record<string, string>;
     categoryTypes: CategoryType[];

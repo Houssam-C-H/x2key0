@@ -2136,5 +2136,8 @@
     "catalog.landing.faq.pay_q": "How can I pay?",
     "catalog.landing.faq.pay_a": "By card or with X2KEY credits. Your card details never reach the seller.",
     "catalog.landing.faq.problem_q": "What if my :title order has a problem?",
-    "catalog.landing.faq.problem_a": "Open a claim from the order before confirming. Not delivered, not as described or invalid codes are refunded under buyer protection."
+    "catalog.landing.faq.problem_a": "Open a claim from the order before confirming. Not delivered, not as described or invalid codes are refunded under buyer protection.",
+    "fx.estimate": "Prices in :currency are estimates; you pay in USD.",
+    "fx.checkout": "About :amount in your currency. You are charged in USD; your bank sets the final conversion.",
+    "fx.source": "Rates by Exchange Rate API"
 }

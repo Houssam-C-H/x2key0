@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { useShared, useT } from '@/lib/i18n';
-import { formatUsd } from '@/lib/money';
+import { usePrice } from '@/lib/price';
 import { deliveryTime } from '@/lib/offer';
 import type { OfferCardData } from '@/types/offer';
 import { SellerBadgeChips, SellerStars } from './SellerLine';
@@ -12,6 +12,7 @@ import { SellerBadgeChips, SellerStars } from './SellerLine';
 export function OfferCard({ offer }: { offer: OfferCardData }) {
     const t = useT();
     const { locale } = useShared();
+    const displayPrice = usePrice();
 
     return (
         <Link href={offer.href} className="group card flex h-full flex-col overflow-hidden transition-shadow hover:shadow-md">
@@ -43,7 +44,7 @@ export function OfferCard({ offer }: { offer: OfferCardData }) {
                 </span>
                 <span className="text-end font-bold">
                     <span className="block text-[11px] font-normal text-muted">{t('catalog.from')}</span>
-                    {formatUsd(offer.priceCents, locale)}
+                    {displayPrice(offer.priceCents)}
                 </span>
             </div>
         </Link>

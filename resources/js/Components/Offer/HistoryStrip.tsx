@@ -1,12 +1,13 @@
 import { Link, router } from '@inertiajs/react';
 import { useShared, useT } from '@/lib/i18n';
-import { formatUsd } from '@/lib/money';
+import { usePrice } from '@/lib/price';
 import type { HistoryItem } from '@/types/offer';
 
 /** Browsing History strip (spec 1.3 #2 / 1.5): cards with × per card and "Remove all". */
 export function HistoryStrip({ items }: { items: HistoryItem[] }) {
     const t = useT();
     const { locale } = useShared();
+    const displayPrice = usePrice();
 
     if (items.length === 0) return null;
 
@@ -35,7 +36,7 @@ export function HistoryStrip({ items }: { items: HistoryItem[] }) {
                             <div className="space-y-1 p-2">
                                 <p className="line-clamp-2 text-xs font-semibold">{item.kind === 'product' ? item.name : item.title}</p>
                                 {item.kind === 'offer' && <p className="truncate text-[11px] text-muted">{item.seller.name}</p>}
-                                <p className="text-sm font-bold">{formatUsd(item.priceCents, locale) ?? '—'}</p>
+                                <p className="text-sm font-bold">{displayPrice(item.priceCents) ?? '—'}</p>
                             </div>
                         </Link>
                     </li>

@@ -59,7 +59,7 @@ interface EligibleCoupon {
  */
 export default function CheckoutShow({ offer, gameCategory, quantity, quote, methods, method, credits, buyerInputs, idempotencyKey, coupons }: Props) {
     const t = useT();
-    const { locale, errors } = useShared();
+    const { locale, errors, fx } = useShared();
     const [inputs, setInputs] = useState<Record<string, string>>(Object.fromEntries(buyerInputs.map((f) => [f.key, ''])));
     const [submitting, setSubmitting] = useState(false);
     const money = (cents: number) => formatUsd(cents, locale) ?? '';
@@ -265,6 +265,14 @@ export default function CheckoutShow({ offer, gameCategory, quantity, quote, met
                     <button type="submit" className="btn-primary h-12 w-full" disabled={submitting || (quote.pspDue > 0 && method === null)}>
                         {t('checkout.pay', { amount: money(quote.pspDue > 0 ? quote.pspDue : quote.total) })}
                     </button>
+                    {fx && (
+                        <p className="text-xs text-muted">
+                            {t('fx.checkout', { amount: new Intl.NumberFormat(locale, { style: 'currency', currency: fx.currency }).format(((quote.pspDue > 0 ? quote.pspDue : quote.total) / 100) * fx.rate) })}{' '}
+                            <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer" className="underline">
+                                {t('fx.source')}
+                            </a>
+                        </p>
+                    )}
                     <p className="text-xs text-muted">{t('checkout.terms')}</p>
                 </aside>
             </form>

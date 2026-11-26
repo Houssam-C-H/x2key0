@@ -2136,5 +2136,8 @@
     "catalog.landing.faq.pay_q": "Comment payer ?",
     "catalog.landing.faq.pay_a": "Par carte ou avec des crédits X2KEY. Vos données de carte ne parviennent jamais au vendeur.",
     "catalog.landing.faq.problem_q": "Et si ma commande :title pose problème ?",
-    "catalog.landing.faq.problem_a": "Ouvrez une réclamation depuis la commande avant de confirmer. Non livré, non conforme ou codes invalides sont remboursés par la protection acheteur."
+    "catalog.landing.faq.problem_a": "Ouvrez une réclamation depuis la commande avant de confirmer. Non livré, non conforme ou codes invalides sont remboursés par la protection acheteur.",
+    "fx.estimate": "Prix en :currency indicatifs ; vous payez en USD.",
+    "fx.checkout": "Environ :amount dans votre devise. Vous êtes débité en USD ; votre banque fixe la conversion finale.",
+    "fx.source": "Taux : Exchange Rate API"
 }

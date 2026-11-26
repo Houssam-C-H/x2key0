@@ -10,7 +10,7 @@ import { HistoryStrip } from '@/Components/Offer/HistoryStrip';
 import { OffersTable } from '@/Components/Offer/OffersTable';
 import { PublicLayout } from '@/Layouts/PublicLayout';
 import { useShared, useT } from '@/lib/i18n';
-import { formatUsd } from '@/lib/money';
+import { usePrice } from '@/lib/price';
 import type { Crumb, GameCategoryInfo, ProductCardData, Seo } from '@/types/catalog';
 import type { HistoryItem, OfferRow } from '@/types/offer';
 
@@ -34,11 +34,12 @@ interface Props {
 export default function Product({ product, gameCategory, gameCategoryHref, offers, deliveryMethods, isFavorite, history, breadcrumbs, seo, priceAlert }: Props) {
     const t = useT();
     const { locale } = useShared();
+    const displayPrice = usePrice();
     const [selectedId, setSelectedId] = useState<string | null>(offers[0]?.id ?? null);
     const selected = offers.find((o) => o.id === selectedId) ?? offers[0] ?? null;
     const others = offers.filter((o) => o.id !== selected?.id);
     const otherFrom = others.length > 0 ? Math.min(...others.map((o) => o.priceCents)) : null;
-    const msrp = formatUsd(product.msrpCents, locale);
+    const msrp = displayPrice(product.msrpCents);
 
     return (
         <PublicLayout>

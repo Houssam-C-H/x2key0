@@ -1,14 +1,15 @@
 import { Link } from '@inertiajs/react';
 import { useShared, useT } from '@/lib/i18n';
-import { formatUsd } from '@/lib/money';
+import { usePrice } from '@/lib/price';
 import type { ProductCardData } from '@/types/catalog';
 
 /** Product card (spec 1.4.1): cover, region/platform badges, title, offers, from-price, MSRP + discount. */
 export function ProductCard({ product, layout = 'grid' }: { product: ProductCardData; layout?: 'grid' | 'list' }) {
     const t = useT();
     const { locale } = useShared();
-    const price = formatUsd(product.priceCents, locale);
-    const msrp = formatUsd(product.msrpCents, locale);
+    const displayPrice = usePrice();
+    const price = displayPrice(product.priceCents);
+    const msrp = displayPrice(product.msrpCents);
 
     const cover = (
         <div className={`relative overflow-hidden bg-gradient-to-br from-primary/80 to-surface-dark-2 ${layout === 'grid' ? 'aspect-[4/3]' : 'h-24 w-32 shrink-0 rounded-md'}`}>
