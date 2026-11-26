@@ -32,6 +32,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use UnitEnum;
@@ -163,6 +164,40 @@ final class TicketResource extends Resource
                         ), 'Dispute opened; ticket closed');
                     }),
             ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['subject', 'public_id', 'user.username'];
+    }
+
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        return $record instanceof Ticket ? 'Ticket: '.$record->subject : '';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return $record instanceof Ticket ? ['From' => $record->user->username, 'Status' => str_replace('_', ' ', $record->status->value)] : [];
+    }
+
+    public static function getGlobalSearchResultUrl(Model $record): string
+    {
+        return self::getUrl('index', ['search' => $record instanceof Ticket ? $record->subject : '']);
+    }
+
+    /**
+     * @return Builder<Model>
+     */
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('user');
     }
 
     /**

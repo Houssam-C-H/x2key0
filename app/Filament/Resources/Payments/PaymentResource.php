@@ -92,6 +92,40 @@ final class PaymentResource extends Resource
     }
 
     /**
+     * @return list<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['public_id', 'provider_payment_id'];
+    }
+
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        return $record instanceof Payment ? 'Payment '.substr($record->public_id, -8) : '';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return $record instanceof Payment ? ['Amount' => $record->currency.' '.number_format($record->amount / 100, 2), 'Status' => $record->status->value] : [];
+    }
+
+    public static function getGlobalSearchResultUrl(Model $record): string
+    {
+        return $record instanceof Payment && $record->order_id !== null ? OrderResource::getUrl('view', ['record' => $record->order_id]) : self::getUrl('index');
+    }
+
+    /**
+     * @return Builder<Model>
+     */
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('order');
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public static function getPages(): array
